@@ -78,6 +78,70 @@ per-user authorization, and durable idempotency. No new public write endpoints a
 API shape reference: [Nessie's official SDK](https://github.com/nessieisreal/nessie-javascript-sdk).
 Older SDK routes can differ from the deployed sandbox; creation and read-back are verified live by the new seeder.
 
+## Supabase retrieval database
+
+Nessie remains the source of truth for accounts, transactions and bills. Supabase is a separate,
+dated, read-only search mirror for the future chatbot. It does not replace the bank API or the
+forecast engine, and browser decisions are still stored locally.
+
+Fill the `SUPABASE_*` values in `.env.local` using `.env.example`. The database setup uses the
+Supabase **session pooler** on port 5432 with certificate verification. The included certificate
+is Supabase's public CA, not a private key. Keep the raw database password quoted; do not URL-encode it.
+
+```bash
+npm run db:setup      # apply the versioned schema once; reruns verify its checksum
+npm run db:sync       # read both configured Nessie datasets and publish complete snapshots
+npm run db:verify     # read-only checks of relationships, access, search and exact totals
+```
+
+The sync never writes to Nessie. It reuses identical snapshots; a failed import rolls back before
+the active snapshot changes. Seven RLS-enabled tables hold datasets, snapshots, accounts, merchants,
+bills, transactions and search documents. Anonymous and signed-in browser roles have no access.
+The runtime secret can read but cannot edit these tables; migration credentials stay local.
+
+`api/_knowledge.js` provides server-only full-text search and exact SQL activity totals, with source
+IDs and data dates. Totals use all matching posted records, not only the top search results. Derived
+income and goals are labeled estimates/defaults. A retrieval result is not proof that a forecast is
+current: refresh Nessie before calculating a new scenario.
+
+This is a retrieval foundation, **not a connected chatbot yet**. It has no embeddings, agent tools,
+per-user authentication or public chat endpoint. Those must be added before personal data is served.
+Never pass a dataset selected by the model directly to the helper; choose it from an authorized
+session. Only `SUPABASE_URL` and `SUPABASE_SECRET_KEY` would be needed by a future hosted chat route;
+never expose secrets through `VITE_` variables or deploy the database password to the browser.
+
+## Weather demo and browser checks
+
+Choose **Dark** for a moonlit dashboard, **Light** for the daytime palette, or **Auto** to follow the
+system. The choice persists. Controls are in the sidebar on desktop and the top bar on phones.
+Weather follows the calculated balance, not the theme or the number of unread alerts.
+
+1. Start from **Reset my decisions** (desktop) or **Reset demo** (phone).
+2. On Today, choose **Review it** for the example internet notice.
+3. Read the highlighted source and preview, then **Add this change to internet**: the projected low
+   drops from $200 to $175 and rain begins.
+4. Choose **Undo**: the change is removed and rain stops. Use Reset to restore the waiting example
+   for another run. Reset only clears local decisions; it does not undo bank transactions.
+
+The original demo returns to **partly cloudy**, not full sunshine: its $200 low is exactly its $200
+cushion. We keep those numbers honest. Reduced-motion preferences replace animated rain with a
+faint static treatment.
+
+Playwright CLI checks covered all seven sections at desktop and phone sizes, both themes, system
+theme changes, notice/preview/apply/cancel/Undo, reload persistence, transaction search/category
+corrections, keyboard dismissal and reduced motion. Screenshots belong in ignored `output/playwright/`,
+not in source control. No sandbox transfer was submitted during the browser run.
+
+For repeat checks, run `npm run dev`, then open a fresh browser session:
+
+```bash
+npx --package @playwright/cli playwright-cli open http://127.0.0.1:5176/
+```
+
+Confirm the displayed data source; live API failures
+fall back to the bundled sample. Verify a preview never changes the accepted plan, rain clears only
+when the calculated dip clears, and phone transaction amounts are visible without sideways scrolling.
+
 ## How it works
 
 Everything on every screen comes from one simulation. A household (facts from the bank) and a scenario (what the user is considering) go into `simulate()`, and the chart, the statuses, the supported contribution, the goal projection, the options and the alerts all read from its result. Change the bill increase and every number moves.
