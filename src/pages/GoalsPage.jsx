@@ -121,13 +121,20 @@ export default function GoalsPage({ h, base, plan, change, cap, goal, history, o
           <div className="card">
             <div className="hd"><h2>Contribution schedule</h2>
               <span className="fine">{goal.accepted ? 'The plan you accepted' : 'The affordable plan'}</span></div>
-            <table><tbody>{goal.schedule.map((iso, i) => (
-              <tr key={iso}>
-                <td style={{ paddingLeft: 0 }} className="muted">{prettyIso(iso)}</td>
-                <td>Contribution {i + 1} of {goal.left}</td>
-                <td className="r" style={{ paddingRight: 0 }}><b>{money(goal.contribution)}</b></td>
-              </tr>
-            ))}</tbody></table>
+            {/* A timeline rather than a table, with every date and amount still written on its node,
+                so the shape of the plan is visible without losing the figures a table gave. */}
+            <div className="scroll-x">
+              <ol className="timeline" aria-label="Contribution schedule" style={{ '--n': goal.schedule.length }}>
+                {goal.schedule.map((iso, i) => (
+                  <li key={iso} className="tl-node" style={{ '--i': i }}>
+                    <b className="tl-amt num">{money(goal.contribution)}</b>
+                    <span className="tl-dot" aria-hidden="true" />
+                    <span className="tl-date">{prettyIso(iso)}</span>
+                    <span className="tl-n">{i + 1} of {goal.left}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
             <div className="fine">
               Every bill and paycheck between now and {prettyIso(goal.checkedThrough)} was checked against this
               contribution, not just the next few weeks.

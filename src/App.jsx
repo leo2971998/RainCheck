@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useReducedMotion } from './hooks/useMotion.js';
+import { Toasts, toast } from './components/Toast.jsx';
 import { useHousehold } from './hooks/useHousehold.js';
 import { useTransfer } from './hooks/useTransfer.js';
 import { usePersistentState, clearPersisted, hasPersisted } from './hooks/usePersistentState.js';
@@ -160,6 +161,36 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
   };
 
   const resetAll = () => { clearPersisted(); window.location.reload(); };
+
+  // A plan change reports its consequence in one line, with Undo beside it. The figures come from
+  // this render, so the toast can never disagree with the cards it summarises.
+  const seen = useRef(history.length);
+  const before = useRef({ cap, gap: goal.gap, low: sim.low.balance });
+  useEffect(() => {
+    const grew = history.length > seen.current;
+    seen.current = history.length;
+    const prev = before.current;
+    before.current = { cap, gap: goal.gap, low: sim.low.balance };
+    if (!grew) return;
+    const entry = history[history.length - 1];
+    const parts = [];
+    if (cap !== prev.cap) parts.push(`plan carries ${money(prev.cap)} → ${money(cap)}`);
+    if (goal.gap !== prev.gap) parts.push(goal.gap ? `goal ${money(goal.gap)} short` : 'goal back on track');
+    if (sim.low.balance !== prev.low) parts.push(`lowest balance ${money(sim.low.balance)}`);
+    const worse = goal.gap > prev.gap || sim.low.balance < prev.low || cap < prev.cap;
+    toast.push({ title: entry.label, body: parts.length ? parts.join(' · ') : 'Forecast unchanged',
+      tone: worse ? 'warn' : 'good', ttl: 9000, actions: [{ label: 'Undo', run: undo }] });
+  }, [history.length]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Bills due soon are announced once per session. The reminder card stays; this is the nudge.
+  useEffect(() => {
+    if (!reminders.length) return;
+    try { if (sessionStorage.getItem('raincheck:reminded')) return; sessionStorage.setItem('raincheck:reminded', '1'); } catch { /* private mode */ }
+    reminders.slice(0, 3).forEach((r, i) => setTimeout(() => toast.push({
+      title: `${r.label} charges ${r.when}`, body: money(r.amount), tone: 'neutral', ttl: 9000,
+      actions: [{ label: 'Mark paid', run: () => markPaid(r) }],
+    }), 900 + i * 350));
+  }, [reminders.length]);   // eslint-disable-line react-hooks/exhaustive-deps
   const sourceLabel = source === 'nessie' ? 'Nessie sandbox' : source === 'snapshot' ? 'Saved sandbox snapshot' : 'Sample data';
 
   return (
@@ -184,6 +215,7 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
         {page === 'goals' && <GoalsPage h={h} base={base} plan={plan} change={change} cap={cap} goal={goal} history={history} onUndo={undo} open={open} transfer={transfer} />}
       </main>
 
+      <Toasts />
       {drawer === 'bill' && <BillDrawer h={h} notice={notice} billId={billId} plan={plan} change={change} cap={cap} onCompare={() => setDrawer('compare')} onClose={() => setDrawer(null)} />}
       {drawer === 'notice' && <NoticeDrawer h={h} base={base} plan={plan} cap={cap} change={change}
         initialText={noticeText} origin={waiting.find(n => n.id === billId)}

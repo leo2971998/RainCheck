@@ -1,5 +1,7 @@
 import { Icon, Kpi, Num, STATE, money, prettyDate, longDate, prettyIso, weekdayIso } from '../components/ui.jsx';
-import { AreaChart, GoalChart, CashBars } from '../components/charts.jsx';
+import { AreaChart, CashBars } from '../components/charts.jsx';
+import { Sky, Outlook, timeOfDay } from '../components/Weather.jsx';
+import { GoalRing } from '../components/GoalRing.jsx';
 import IncomeList from '../components/IncomeList.jsx';
 import Alerts from '../components/Alerts.jsx';
 import Reminders from '../components/Reminders.jsx';
@@ -25,24 +27,22 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
   const lastDay = sim.days[sim.days.length - 1];
   const reviewCount = h.recurring.filter(r => r.unexplained).length;
   // The weather picture reports the same status as everything else. Decoration that always showed
-  // sunshine would be the one part of the page that could not deliver bad news.
-  const sky = { over: { sun: false, drops: '····' }, below: { sun: false, drops: '···' },
-                tight: { sun: true, drops: '··' }, ok: { sun: true, drops: null } }[sim.worst];
+  // sunshine would be the one part of the page that could not deliver bad news. The clock picks
+  // only the sky behind it, so an evening never looks like a bad forecast.
+  const tod = timeOfDay();
+  const night = tod === 'night';
   const headline = sim.worst === 'over' ? 'Your balance would go below zero before payday.' : sim.worst === 'below' ? 'Bills are covered, but your savings plan dips below your cushion.' : goal.gap > 0 ? 'Bills are covered, but your goal needs an adjustment.' : 'Bills are covered and your goal is on track.';
   return (
     <>
-      <div className="weather-hero">
+      <div className={'weather-hero sky-' + tod}>
         <div className="weather-copy">
-          <span className="weather-kicker">TODAY’S FINANCIAL FORECAST</span>
+          <span className="weather-kicker">{night ? 'TONIGHT’S' : 'TODAY’S'} FINANCIAL FORECAST</span>
           <h1>{headline}</h1>
           <div className="sub">{longDate(today)}{nextPay ? ` · Next paycheck ${weekdayIso(nextPay.date)}` : ''} · Forecast through {prettyDate(lastDay.date)}</div>
         </div>
-        <div className="hero-weather" aria-hidden="true">
-          {sky.sun && <span className="sun">☀</span>}
-          <span className="cloud">☁</span>
-          {sky.drops && <span className="drops">{sky.drops}</span>}
-        </div>
+        <div className="hero-weather"><Sky state={sim.worst} night={night} /></div>
       </div>
+      <Outlook sim={sim} h={h} />
       <div className="top-actions"><span className="pill teal"><Icon n="bank" s={13} />{sourceLabel}</span><span className="pill neutral" title="Items needing attention"><Icon n="bell" s={13} />{alerts.filter(a => a.tone !== 'good').length}</span></div>
       <div className="grid g4" style={{ marginBottom: 18 }}>
         <Kpi label="Checking balance" value={<Num v={h.checking} />} sub="Everyday Checking" />
@@ -55,7 +55,7 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
           <div className="card">
             <div className="hd"><div><h2>Projected checking balance</h2><div className="fine">{preview ? `Dashed line: ${preview.title.toLowerCase()}. Solid line: your current plan.` : `Next ${h.windowDays} days · scheduled bills, expected income, everyday spending and your ${money(sc.contribution)} contribution`}</div></div>
               <div className="legend"><span><i style={{ background: 'var(--rain)' }}></i>Balance</span><span><i style={{ background: 'var(--mint)', borderRadius: '50%' }}></i>Paycheck</span><span><i style={{ background: 'var(--surface)', border: '2px solid var(--rain)', borderRadius: '50%', width: 8, height: 8 }}></i>Bill ≥ $100</span><span><i style={{ background: 'var(--warn)', height: 2, width: 14 }}></i>Cushion</span></div></div>
-            <AreaChart h={h} sim={sim} preview={previewSim} id="dash" />
+            <AreaChart h={h} sim={sim} preview={previewSim} id="dash" height={210} compact />
           </div>
           <div className="grid g2">
             <div className="card">
@@ -104,7 +104,14 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
             </div>
             <div className="card">
               <div className="hd"><h2>{h.goal.label}</h2><span className={'pill ' + (goal.gap ? 'bad' : 'good')}>{goal.gap ? `${money(goal.gap)} short` : 'On track'}</span></div>
-              <GoalChart h={h} goal={goal} cap={goal.contribution} />
+              <div className="row" style={{ gap: 16, alignItems: 'center' }}>
+                <GoalRing saved={h.goal.saved} target={h.goal.target} projected={goal.projected} />
+                <div className="grid" style={{ gap: 6 }}>
+                  <span className="row" style={{ gap: 8 }}><i className="dot" style={{ background: 'var(--rain)' }} /><span className="fine">Saved <b className="num">{money(h.goal.saved)}</b></span></span>
+                  <span className="row" style={{ gap: 8 }}><i className="dot" style={{ background: 'var(--sky)' }} /><span className="fine">Plan reaches <b className="num">{money(goal.projected)}</b></span></span>
+                  <span className="row" style={{ gap: 8 }}><i className="dot" style={{ background: 'var(--line)' }} /><span className="fine">Target <b className="num">{money(h.goal.target)}</b> by {goal.targetLabel}</span></span>
+                </div>
+              </div>
               <div className="row between fine"><span>Saved <b className="num">{money(h.goal.saved)}</b> · projected <b className="num">{money(goal.projected)}</b></span><span>{goal.accepted ? 'Accepted plan' : 'Affordable plan'} <b className="num">{money(goal.contribution)}/mo</b></span></div>
               {lastAction && <span className="row" style={{ gap: 6 }}><span className="pill good"><Icon n="check" s={11} />{lastAction.label}</span><button className="link" style={{ fontSize: 13 }} onClick={onUndo}>Undo</button></span>}
             </div>
