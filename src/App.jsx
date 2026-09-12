@@ -10,6 +10,7 @@ import { simulate, capacity, goalPlan, dateToReach, hypothetical } from './engin
 import { emptyPlan, applyPatch, undoLatest, scenarioFor, householdFor } from './engine/plan.js';
 import { buildOptions, currentOutcome } from './engine/options.js';
 import { buildAlerts } from './engine/alerts.js';
+import { migrateBillReviews, needsBillReview } from './engine/bill-reviews.js';
 import { buildReminders } from './engine/reminders.js';
 import { Icon, money, monthOf } from './components/ui.jsx';
 import Dashboard from './pages/Dashboard.jsx';
@@ -100,8 +101,10 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
   const [protectedIds, setProtectedIds] = usePersistentState('protected', { groceries: true });
   const [found, setFound] = usePersistentState('found', true);
   const [leadDays, setLeadDays] = usePersistentState('leadDays', 3);
+  const [billNotes, setBillNotes] = usePersistentState('billNotes', {});
 
-  const plan = planSaved ?? emptyPlan();
+  const plan = useMemo(() => migrateBillReviews(base, planSaved ?? emptyPlan()), [base, planSaved]);
+  useEffect(() => { if (planSaved && plan !== planSaved) setPlanSaved(plan); }, [plan, planSaved, setPlanSaved]);
   const h = useMemo(() => householdFor(base, plan), [base, plan]);
   const sc = useMemo(() => scenarioFor(h, plan), [h, plan]);
 
@@ -143,14 +146,14 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
   const previewGoal = useMemo(() => (preview ? goalPlan(h, sc, { target: h.goal.target, targetDate: h.goal.targetDate, saved: h.goal.saved, contribution: preview.outcome.contribution }) : null), [h, sc, preview]);
 
   const badges = useMemo(() => ({
-    recurring: h.recurring.filter(r => r.change || (r.unexplained && !(r.id in (plan.treatAsNewPrice || {})))).length,
+    recurring: h.recurring.filter(r => needsBillReview(r, sc)).length + discovered.length,
     transactions: transactions.filter(t => t.note).length,
-  }), [h, transactions, plan]);
+  }), [h, transactions, sc, discovered]);
 
   const transfer = useTransfer(source);
   const [reviewedNotices, setReviewedNotices] = usePersistentState('reviewedNotices', {});
   const waiting = pendingNotices.filter(n => !reviewedNotices[n.id]);
-  const navBadges = { ...badges, alerts: alerts.filter(a => a.tone !== 'good').length + reminders.length + waiting.length };
+  const navBadges = { ...badges, alerts: alerts.filter(a => a.tone !== 'good').length };
 
   const open = (what, id = null) => {
     if (what.startsWith('page:')) { setDrawer(null); setBackTo(page === 'dashboard' ? 'dashboard' : null); setPage(what.slice(5)); return; }
@@ -168,7 +171,10 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
 
   const markPaid = r => change({ paid: { [r.billId]: r.cycle } }, `${r.label} marked paid`);
   const adopt = f => change({ adopted: { [f.id]: f } }, `${f.label} added as a commitment`);
-  const dismiss = f => change({ dismissed: { [f.id]: true } }, `${f.label} is not a commitment`);
+  const dismiss = f => {
+    change({ dismissed: { [f.id]: true } }, `${f.label} is not a commitment`);
+    toast.push({ title: `${f.label} suggestion dismissed`, body: 'Other bill reviews stay open until you review those charges separately.', tone: 'neutral' });
+  };
 
   const applyOption = () => {
     change(confirm.apply, confirm.apply.label);
@@ -243,7 +249,7 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
         <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
         {backTo && page !== backTo && <button className="back-link" onClick={() => navigate(backTo)}><i className="back-ic"><Icon n="arrow" s={14} /></i>Back to Today</button>}
         {page === 'dashboard' && <Dashboard h={h} source={source} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
-        {page === 'alerts' && <AlertsPage h={h} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} found={found} setFound={setFound} />}
+        {page === 'alerts' && <AlertsPage h={h} sc={sc} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} found={found} setFound={setFound} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
         {page === 'purchases' && <PurchasesPage h={h} available={purchasesAvailable} open={open} refresh={refresh} />}
         {page === 'transactions' && <TransactionsPage transactions={transactions} allowances={h.allowances} corrections={corrections} setCorrections={setCorrections} />}

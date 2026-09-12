@@ -15,7 +15,7 @@
 // a first cancellation or imported change survived its own undo.
 const ABSENT = '__raincheck_absent__';
 
-const MERGED = ['cuts', 'cancelled', 'pendingCancel', 'treatAsNewPrice', 'whatIf', 'billChanges', 'paid', 'adopted', 'dismissed', 'goals', 'subscriptions'];
+const MERGED = ['cuts', 'cancelled', 'pendingCancel', 'treatAsNewPrice', 'whatIf', 'billChanges', 'billReviews', 'paid', 'adopted', 'dismissed', 'goals', 'subscriptions'];
 
 /** A plan with nothing decided yet. `null` means "use the affordable/default value". */
 export function emptyPlan() {
@@ -26,6 +26,7 @@ export function emptyPlan() {
     cuts: {}, cancelled: {}, pendingCancel: {}, treatAsNewPrice: {},
     whatIf: {},             // billId → an amount the user typed, overriding that bill's notice
     billChanges: {},        // billId → a change imported from a notice the user pasted
+    billReviews: {},        // posted-charge key → review and chosen forecast estimate (notes stay separate)
     paid: {},               // billId → the 'YYYY-MM' cycle the user confirmed paid
     adopted: {},            // id → a commitment found in spending that the user confirmed
     dismissed: {},          // id → a proposal the user rejected, so it is not offered again

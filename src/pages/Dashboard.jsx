@@ -4,6 +4,7 @@ import { AreaChart } from '../components/charts.jsx';
 import { Sky, Outlook, timeOfDay } from '../components/Weather.jsx';
 import { GoalRing } from '../components/GoalRing.jsx';
 import { budgetStatus } from '../engine/review-status.js';
+import { needsBillReview } from '../engine/bill-reviews.js';
 
 export default function Dashboard({ h, source, plan, sc, change, sim, previewSim, preview, cap, goal, alerts, waiting = [], onReviewNotice, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
   // The scenario, not the raw plan: an unaccepted plan has no contribution of its own and falls back
@@ -12,7 +13,7 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
   const lastAction = history?.[history.length - 1];
   const [st, tone] = STATE[sim.worst];
   const changedBills = h.recurring.filter(r => r.change);
-  const unexplainedBills = h.recurring.filter(r => r.unexplained && !(sc.treatAsNewPrice && r.id in sc.treatAsNewPrice));
+  const unexplainedBills = h.recurring.filter(r => needsBillReview(r, sc));
   const today = new Date(h.today + 'T12:00:00');
   const sourceLabel = { sample: 'Sample data', nessie: 'Nessie sandbox', snapshot: 'Saved sandbox snapshot' }[source];
   const nextPay = (sc.income || h.income)[0];
@@ -31,7 +32,7 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
   // and stormy for a severe alert. Positive confirmations do not cloud the forecast.
   const activeAlerts = alerts.filter(a => a.tone !== 'good');
   const weatherState = activeAlerts.some(a => a.tone === 'bad') ? 'over' : activeAlerts.length ? 'tight' : 'ok';
-  const attention = activeAlerts.length + reminders.length + waiting.length;
+  const attention = activeAlerts.length;
   const night = tod === 'night';
   const goalStatus = budgetStatus({ ...goal, low: sim.low.balance }, h.cushion);
   const headline = sim.worst === 'over' ? 'Your balance would go below zero before payday.' : sim.worst === 'below' ? 'Bills are covered, but your savings plan dips below your cushion.' : !goal.fits || goal.gap > 0 ? 'Bills are covered, but your goal needs an adjustment.' : 'Bills are covered and your goal is on track.';
@@ -41,6 +42,7 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
         <div className="weather-copy">
           <span className="weather-kicker">{night ? 'TONIGHT’S' : 'TODAY’S'} FINANCIAL FORECAST</span>
           <h1>{headline}</h1>
+          <div className="weather-status">{attention ? `${attention} open budget ${attention === 1 ? 'alert' : 'alerts'}` : 'No open budget alerts'} · Upcoming bills are listed separately.</div>
           <div className="sub">{longDate(today)}{nextPay ? ` · Next paycheck ${weekdayIso(nextPay.date)}` : ''} · Forecast through {prettyDate(lastDay.date)}</div>
         </div>
         <div className="hero-weather"><Sky state={weatherState} night={night} /></div>

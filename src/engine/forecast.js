@@ -1,6 +1,7 @@
 // src/engine/forecast.js
 // The forecast engine. Pure functions, no React, no wall-clock dates.
 import { purchaseSchedule } from './purchases.js';
+import { latestBillEstimate } from './bill-reviews.js';
 
 export const iso = d => d.toISOString().slice(0, 10);
 export const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
@@ -37,7 +38,9 @@ export function amountFor(r, key, sc = {}) {
     // A figure the user typed overrides the notice for THIS bill only.
     return sc.whatIf?.[r.id] ?? r.change.to;
   }
-  // A higher posted charge counts only once the user says it is the new price, not before.
+  const reviewedEstimate = latestBillEstimate(r, sc, key);
+  if (reviewedEstimate != null) return reviewedEstimate;
+  // Compatibility with earlier saved decisions, migrated to charge-specific reviews on load.
   if (r.unexplained && sc.treatAsNewPrice?.[r.id]) return r.lastPosted;
   return r.amount;
 }

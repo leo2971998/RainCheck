@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { household as sampleHousehold, transactions as sampleTx, notice as sampleNotice } from '../../data/household.sample.js';
+import { household as sampleHousehold, transactions as sampleTx } from '../../data/household.sample.js';
 import sampleSnapshot from '../../data/nessie-snapshot.json';
 import { discoverCommitments } from '../engine/discover.js';
 
@@ -12,21 +12,12 @@ import { discoverCommitments } from '../engine/discover.js';
 // from a different household's spending would be worse than showing none.
 const sampleDiscovered = discoverCommitments(sampleSnapshot, sampleHousehold);
 
-// The same example, waiting rather than applied. Sample mode must not know something live mode
-// only learns when the user accepts it.
-const samplePending = [{
-  id: 'example-internet',
-  text: sampleNotice,
-  origin: 'example',
-  originLabel: 'Example notice included with this demo',
-}];
-
 const SAMPLE = {
   household: sampleHousehold,
   transactions: sampleTx,
-  notice: sampleNotice,
+  notice: '',
   discovered: sampleDiscovered,
-  pendingNotices: samplePending,
+  pendingNotices: [],
   source: 'sample',
 };
 

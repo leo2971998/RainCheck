@@ -1,8 +1,6 @@
-import { readFile } from 'node:fs/promises';
 import { datasetConfig } from './_dataset.js';
 import { loadHouseholdContext } from './_household-context.js';
 import { localReviewAllowed } from './_local-workspace.js';
-import { parseNotice } from '../src/engine/changes.js';
 import { discoverCommitments } from '../src/engine/discover.js';
 import { transactionRecords } from '../src/engine/records.js';
 import { householdVersion } from './_review.js';
@@ -17,28 +15,13 @@ export default async function handler(req, res) {
     const { snapshot: snap, base: household } = await loadHouseholdContext({ dataset: req.query?.dataset, purchases: purchasesAvailable });
     const today = snap.asOf;
 
-    const notice = await readFile(new URL('../data/notice-internet.txt', import.meta.url), 'utf8');
-
-    // A charge that came in higher than expected is something the BANK told us, so it belongs to
-    // the household. A provider notice is not: RainCheck has no mailbox, and a bank's transaction
-    // history cannot contain a price that has not been charged yet.
-    //
-    // So the bundled notice is NOT applied here. It is offered as an example waiting to be
-    // reviewed, and it only reaches the forecast once the user accepts it — by the same path a
-    // notice they pasted themselves would take.
+    // Bank charges can reveal differences, not a provider's explanation. Do not invent a notice.
+    const notice = '', pendingNotices = [];
 
     // Computed HERE, from the same snapshot the household was built from. The client used to run
     // this against the bundled sample, which meant live balances could be shown beside proposals
     // drawn from a different household's spending.
     const discovered = discoverCommitments(snap, household);
-
-    const change = parseNotice(notice, new Date(today).getFullYear());
-    const pendingNotices = change ? [{
-      id: 'example-internet',
-      text: notice,
-      origin: 'example',
-      originLabel: 'Example notice included with this demo',
-    }] : [];
 
     return res.status(200).json({
       source: snap.source, dataset: snap.dataset, asOf: today, purchasesAvailable, baseVersion: householdVersion(household), household, notice, discovered, pendingNotices,

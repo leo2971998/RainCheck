@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { emptyPlan, applyPatch } from '../src/engine/plan.js';
 import { budgetImpact, readGoal, readSubscription, planningLimit } from '../src/engine/budget.js';
 import { purchaseImpact } from '../src/engine/purchase-impact.js';
+import { billReviewKey, NEXT_STEPS } from '../src/engine/bill-reviews.js';
 
 export const householdVersion = base => createHash('sha256').update(JSON.stringify(base)).digest('hex');
 const fail = () => { throw new Error('This plan contains a value the review cannot use. Check its amounts and dates.'); };
@@ -21,11 +22,11 @@ function date(value, base, past = false) {
   return value;
 }
 const boolean = v => { if (typeof v !== 'boolean') fail(); return v; };
-function map(value, read) {
+function map(value, read, keyPattern = /^[a-zA-Z0-9-]{1,100}$/) {
   const entries = Object.entries(object(value));
   if (entries.length > 50) fail();
   return Object.fromEntries(entries.map(([id, v]) => {
-    if (!/^[a-zA-Z0-9-]{1,100}$/.test(id)) fail();
+    if (!keyPattern.test(id)) fail();
     return [id, read(v, id)];
   }));
 }
@@ -52,6 +53,20 @@ export function readReviewPlan(raw, base) {
   });
   const billIds = new Set([...base.recurring.map(r => r.id), ...Object.keys(p.subscriptions), ...Object.keys(p.adopted)]);
   const billMap = (value, read) => map(value, (v, id) => { if (!billIds.has(id)) fail(); return read(v); });
+  p.billReviews = map(p.billReviews, (v, key) => {
+    object(v);
+    const fields = ['billId', 'label', 'postedId', 'postedDate', 'amount', 'expected', 'forecastAmount', 'nextStep', 'reviewed', 'updatedAt'];
+    if (Object.keys(v).some(k => !fields.includes(k)) || !billIds.has(v.billId)
+      || typeof v.postedId !== 'string' || !/^[a-zA-Z0-9-]{0,100}$/.test(v.postedId)
+      || typeof v.updatedAt !== 'string' || v.updatedAt.length > 30 || !Number.isFinite(Date.parse(v.updatedAt))
+      || !Object.hasOwn(NEXT_STEPS, v.nextStep)) fail();
+    const record = { billId: v.billId, label: 'Reviewed bill', postedId: v.postedId,
+      postedDate: date(v.postedDate, base, true), amount: amount(v.amount), expected: amount(v.expected),
+      forecastAmount: amount(v.forecastAmount), nextStep: v.nextStep, reviewed: boolean(v.reviewed), updatedAt: v.updatedAt };
+    if (record.postedDate > base.today || key !== billReviewKey({ id: record.billId,
+      lastPostedId: record.postedId, lastPostedDate: record.postedDate, lastPosted: record.amount })) fail();
+    return record;
+  }, /^[a-zA-Z0-9_-]{1,240}$/);
   for (const k of ['cancelled', 'pendingCancel', 'treatAsNewPrice']) p[k] = billMap(p[k], boolean);
   p.whatIf = billMap(p.whatIf, amount);
   p.billChanges = billMap(p.billChanges, v => {

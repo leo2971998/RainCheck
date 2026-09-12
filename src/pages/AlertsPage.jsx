@@ -1,6 +1,7 @@
 import { Icon } from '../components/ui.jsx';
 import Alerts from '../components/Alerts.jsx';
 import Reminders from '../components/Reminders.jsx';
+import { needsBillReview } from '../engine/bill-reviews.js';
 
 /** Describes the gap between the first two expected paychecks in words, rather than assuming it. */
 function cadenceWords(income) {
@@ -17,9 +18,9 @@ function cadenceWords(income) {
  * alerts, the bills due soon, notices waiting to be read, and the one-time summary of what was
  * found in the records. The bell on Today counts what is here.
  */
-export default function AlertsPage({ h, alerts, reminders, leadDays, setLeadDays, onPaid, waiting = [], onReviewNotice, open, found, setFound }) {
-  const attention = alerts.filter(a => a.tone !== 'good').length + reminders.length + waiting.length;
-  const reviewCount = h.recurring.filter(r => r.unexplained).length;
+export default function AlertsPage({ h, sc = {}, alerts, reminders, leadDays, setLeadDays, onPaid, waiting = [], onReviewNotice, open, found, setFound }) {
+  const attention = alerts.filter(a => a.tone !== 'good').length;
+  const reviewCount = h.recurring.filter(r => needsBillReview(r, sc)).length;
   return (
     <>
       <div className="topbar">

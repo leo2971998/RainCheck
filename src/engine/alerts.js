@@ -1,4 +1,5 @@
 import { goalAt, simulate } from './forecast.js';
+import { needsBillReview } from './bill-reviews.js';
 
 const short = date => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 const shortIso = iso => short(new Date(iso + 'T12:00:00'));
@@ -54,8 +55,7 @@ export function buildAlerts(h, sc, sim, cap, lastAction) {
   // This is NOT called a price change. It is a question for the user, and the forecast does not
   // move until they answer it.
   for (const bill of h.recurring.filter(r => r.unexplained)) {
-    const decided = sc.treatAsNewPrice && bill.id in sc.treatAsNewPrice;
-    if (decided) continue;
+    if (!needsBillReview(bill, sc)) continue;
     const usual = bill.usual ?? bill.amount;
     const gap = bill.lastPosted - usual;
     // What it would cost if this turns out to be the new price, every month from here.

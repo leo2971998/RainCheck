@@ -169,6 +169,8 @@ export function detectPostedChanges(household, snap, { tolerance = 0.10 } = {}) 
       ...r,
       lastPosted: latest.amount,
       lastPostedDate: latest.purchase_date,
+      lastPostedId: latest._id,
+      recentCharges: posted.slice(0, 4).map(p => ({ date: p.purchase_date, amount: p.amount })),
       // Rounded once, here. Every Nessie amount is whole dollars anyway, and rounding the average
       // in two places made the alert say "$21 higher" while the detail said "usually $108".
       usual: earlier.length ? Math.round(earlier.reduce((a, p) => a + p.amount, 0) / earlier.length) : r.amount,

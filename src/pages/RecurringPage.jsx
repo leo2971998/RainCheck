@@ -2,6 +2,7 @@ import { Icon, Kpi, money, prettyIso, listOf } from '../components/ui.jsx';
 import { amountFor, capacity, hypothetical, nextChargeDate, monthlyEquivalent } from '../engine/forecast.js';
 import Discovered from '../components/Discovered.jsx';
 import { budgetMoney } from '../components/BudgetImpact.jsx';
+import { needsBillReview, reviewForBill, billReviewKey, createBillReview } from '../engine/bill-reviews.js';
 
 export default function RecurringPage({ h, sc, plan, change, cap, open, discovered = [], onAdopt, onDismiss }) {
   // Everything on this page is derived, so editing the increase or switching data sources can
@@ -21,10 +22,15 @@ export default function RecurringPage({ h, sc, plan, change, cap, open, discover
   const soonCutoff = new Date(new Date(h.today + 'T12:00:00').getTime() + 7 * 864e5).toISOString().slice(0, 10);
   const soon = withDates.filter(r => !r.cancelled && r.next <= soonCutoff);
   const changed = withDates.filter(r => r.change);
-  const unexplained = withDates.filter(r => r.unexplained);
+  const unexplained = withDates.filter(r => needsBillReview(r, sc));
   const pending = withDates.filter(r => r.pending);
 
-  const setNewPrice = (id, isNew) => change({ treatAsNewPrice: { [id]: isNew } }, `${id} marked ${isNew ? 'new price' : 'one-time'}`);
+  const setNewPrice = (id, isNew) => {
+    const r = withDates.find(b => b.id === id);
+    change({ billReviews: { [billReviewKey(r)]: createBillReview(r, {
+      forecastAmount: isNew ? r.lastPosted : r.amount_now, nextStep: 'watch',
+    }) } }, `${r.label} charge reviewed`);
+  };
   const confirmCancelled = id => change({ cancelled: { [id]: true } }, 'Cancellation confirmed');
   const dropPending = id => change({ pendingCancel: { [id]: undefined } }, 'Cancellation withdrawn');
   const restore = id => change({ cancelled: { [id]: undefined } }, 'Commitment restored');
@@ -41,10 +47,10 @@ export default function RecurringPage({ h, sc, plan, change, cap, open, discover
         <Kpi label="Due in the next 7 days" value={money(soon.reduce((a, r) => a + r.amount_now, 0))}
           sub={soon.length ? listOf(soon.map(r => `${r.label} ${prettyIso(r.next)}`)) : 'Nothing due this week'} />
         <Kpi label="Changes detected" value={String(changed.length)}
-          sub={changed.length ? `${listOf(changed.map(r => r.label))} · confirmed from a notice` : 'No provider notices'}
+          sub={changed.length ? `${listOf(changed.map(r => r.label))} · from information you entered` : 'No user-entered price changes'}
           pill={changed.length ? <span className="pill warn"><Icon n="up" s={11} />{money(changed.reduce((a, r) => a + (r.change.increase ?? sc.increase), 0))}</span> : <span className="pill good">None</span>} />
-        <Kpi label="Unexplained" value={String(unexplained.length)}
-          sub={unexplained.length ? listOf(unexplained.map(r => `${r.label} posted ${money(r.lastPosted)}, usually ${money(r.usual ?? r.amount)}`)) : 'Every charge matched its usual amount'}
+        <Kpi label="Charges to review" value={String(unexplained.length)}
+          sub={unexplained.length ? listOf(unexplained.map(r => `${r.label} posted ${money(r.lastPosted)}, usually ${money(r.usual ?? r.amount)}`)) : 'No unreviewed charge differences'}
           pill={unexplained.length ? <span className="pill neutral">Needs a decision</span> : <span className="pill good">Clear</span>} />
       </div>
 
@@ -75,7 +81,7 @@ export default function RecurringPage({ h, sc, plan, change, cap, open, discover
             <thead><tr><th>Commitment</th><th>Next</th><th>Frequency</th><th className="r">Amount</th><th>Status</th><th></th></tr></thead>
             <tbody>
               {withDates.filter(r => !r.budgetOnly).map(r => {
-                const isNewPrice = !!sc.treatAsNewPrice?.[r.id];
+                const isNewPrice = reviewForBill(r, sc)?.forecastAmount === r.lastPosted || !!sc.treatAsNewPrice?.[r.id];
                 return (
                   <tr key={r.id} className="hover" style={{ opacity: r.cancelled ? 0.55 : 1 }}>
                     <td><div className="cat"><i className="rec"><Icon n="repeat" s={14} /></i><span style={{ fontWeight: 500 }}>{r.label}</span></div></td>
@@ -90,7 +96,7 @@ export default function RecurringPage({ h, sc, plan, change, cap, open, discover
                       r.cancelled ? <span className="pill good"><Icon n="check" s={11} />Cancelled</span>
                       : r.pending ? <span className="pill warn">Cancellation pending · still counted</span>
                       : r.change ? <span className="pill warn"><Icon n="up" s={11} />Increase from notice</span>
-                      : r.unexplained ? <span className="pill neutral">Posted {money(r.lastPosted)} {r.lastPostedDate ? `on ${prettyIso(r.lastPostedDate)} ` : ''}· not confirmed why</span>
+                      : r.unexplained ? <span className={'pill ' + (needsBillReview(r, sc) ? 'warn' : 'good')}>{needsBillReview(r, sc) ? `Posted ${money(r.lastPosted)} · needs review` : 'Charge reviewed'}</span>
                       : r.renews ? <span className="pill neutral">Renews {prettyIso(r.renews)}</span>
                       : <span className="pill good">Steady</span>
                     }</td>
@@ -101,7 +107,7 @@ export default function RecurringPage({ h, sc, plan, change, cap, open, discover
                         <button className="btn ghost sm" onClick={() => dropPending(r.id)}>Never mind</button>
                       </div>}
                       {r.cancelled && <button className="btn ghost sm" onClick={() => restore(r.id)}>Restore</button>}
-                      {r.unexplained && !r.cancelled && <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
+                      {needsBillReview(r, sc) && <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
                         <button className={'btn sm' + (isNewPrice ? ' ghost' : '')} aria-pressed={!isNewPrice} onClick={() => setNewPrice(r.id, false)}>One-time</button>
                         <button className={'btn sm' + (isNewPrice ? '' : ' ghost')} aria-pressed={isNewPrice} onClick={() => setNewPrice(r.id, true)}>New price</button>
                       </div>}
