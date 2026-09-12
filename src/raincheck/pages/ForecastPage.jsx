@@ -2,11 +2,19 @@ import { STATE, money, prettyDate } from '../components/ui.jsx';
 import { AreaChart } from '../components/charts.jsx';
 import IncomeList from '../components/IncomeList.jsx';
 
+<<<<<<< Updated upstream
 export default function ForecastPage({ h, sc, setSc, sim, cap }) {
   const [st, tone] = STATE[sim.worst];
   return (
     <>
       <div className="topbar"><div><h1>Forecast</h1><div className="sub">Day by day through Oct 31 · lowest {money(sim.low.balance)} on {prettyDate(sim.low.date)} · <span className={'pill ' + tone}>{st}</span></div></div></div>
+=======
+export default function ForecastPage({ h, sc, plan, change, sim, cap }) {
+  const [st, tone] = STATE[sim.worst];
+  return (
+    <>
+      <div className="topbar"><div><h1>Forecast</h1><div className="sub">Day by day through {prettyDate(sim.days[sim.days.length - 1].date)} · lowest {money(sim.low.balance)} on {prettyDate(sim.low.date)} · <span className={'pill ' + tone}>{st}</span></div></div></div>
+>>>>>>> Stashed changes
       <div className="grid g32">
         <div className="grid" style={{ gap: 18 }}>
           <div className="card"><div className="hd"><h2>Projected checking balance</h2><span className="fine">Hover for the day's events</span></div><AreaChart h={h} sim={sim} id="fc" height={300} /></div>
@@ -16,8 +24,13 @@ export default function ForecastPage({ h, sc, setSc, sim, cap }) {
             </tbody></table></div>
         </div>
         <div className="grid" style={{ gap: 18 }}>
+<<<<<<< Updated upstream
           <div className="card"><h2>Assumptions</h2><div className="kv"><span className="k">Cushion</span><span className="v">{money(h.cushion)}</span><span className="k">Everyday spending</span><span className="v">{money(sim.dailySpend)}/day</span><span className="k">Savings contribution</span><span className="v">{money(sc.contribution)} on Oct 2</span><span className="k">Supported contribution</span><span className="v">{money(cap)}</span></div><div className="fine">Supported = the largest contribution that keeps every day at or above the cushion.</div></div>
           <IncomeList h={h} sc={sc} setSc={setSc} />
+=======
+          <div className="card"><h2>Assumptions</h2><div className="kv"><span className="k">Cushion</span><span className="v">{money(h.cushion)}</span><span className="k">Everyday spending</span><span className="v">{money(sim.dailySpend)}/day</span><span className="k">Savings contribution</span><span className="v">{money(sc.contribution)}{sim.contributionDate ? ` on ${prettyDate(new Date(sim.contributionDate + 'T12:00:00'))}` : ''}</span><span className="k">Supported contribution</span><span className="v">{money(cap)}</span></div><div className="fine">Supported = the largest contribution that keeps every day at or above the cushion.</div></div>
+          <IncomeList h={h} plan={plan} change={change} />
+>>>>>>> Stashed changes
         </div>
       </div>
     </>

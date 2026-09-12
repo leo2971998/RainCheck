@@ -1,10 +1,33 @@
+<<<<<<< Updated upstream
+=======
+import { useCountUp } from '../hooks/useMotion.js';
+>>>>>>> Stashed changes
 export const money = n => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
 export const moneyPrecise = n => (n < 0 ? '−$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const prettyDate = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 export const longDate = d => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+<<<<<<< Updated upstream
 export const STATE = { ok: ['On track', 'good'], tight: ['Tight', 'warn'], below: ['Below cushion', 'bad'], over: ['Overdrawn', 'bad'] };
 const MONTHS = ['October 2026', 'November 2026', 'December 2026', 'January 2027', 'February 2027', 'March 2027', 'April 2027', 'May 2027', 'June 2027', 'July 2027'];
 export const monthLabel = n => MONTHS[Math.min(MONTHS.length, Math.max(1, n)) - 1];
+=======
+export const asDate = iso => new Date(iso + 'T12:00:00');
+export const prettyIso = iso => prettyDate(asDate(iso));
+export const weekdayIso = iso => asDate(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+/** The next time a day-of-month falls, on or after `todayIso`. */
+export const nextOccurrence = (todayIso, day) => {
+  const d = asDate(todayIso), here = new Date(d.getFullYear(), d.getMonth(), day, 12);
+  return (here >= d ? here : new Date(d.getFullYear(), d.getMonth() + 1, day, 12)).toISOString().slice(0, 10);
+};
+/** An inclusive list of items as a sentence: "a, b and c". */
+export const listOf = xs => xs.length < 2 ? (xs[0] || '') : xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1];
+export const STATE = { ok: ['On track', 'good'], tight: ['Tight', 'warn'], below: ['Below cushion', 'bad'], over: ['Overdrawn', 'bad'] };
+/** The month a date falls in. The old version was a fixed list that ran out in July 2027, so a
+ *  sixteen-contribution goal was silently clamped to the wrong headline. */
+export const monthOf = iso => iso
+  ? new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  : '—';
+>>>>>>> Stashed changes
 
 export const Icon = ({ n, s = 18, c = 'currentColor' }) => {
   const p = { width: s, height: s, viewBox: '0 0 24 24', fill: 'none', stroke: c, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' };
@@ -21,5 +44,19 @@ export const Icon = ({ n, s = 18, c = 'currentColor' }) => {
   return <svg {...p}>{d}</svg>;
 };
 
+<<<<<<< Updated upstream
+=======
+/**
+ * A number that travels to its new value instead of teleporting.
+ *
+ * `format` receives a partway number during the tween, so anything rounded stays readable the
+ * whole way across rather than flickering through decimals.
+ */
+export function Num({ v, format = money }) {
+  const shown = useCountUp(v);
+  return <>{format(Math.round(shown))}</>;
+}
+
+>>>>>>> Stashed changes
 export function Kpi({ label, value, sub, pill }) { return <div className="card kpi" style={{ gap: 6 }}><div className="row between"><span className="l">{label}</span>{pill}</div><div className="v">{value}</div><div className="s">{sub}</div></div>; }
 export function Toggle({ on, onChange, children }) { return <label className={'toggle' + (on ? ' on' : '')}><input type="checkbox" checked={on} onChange={e => onChange(e.target.checked)} style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }} /><i></i>{children}</label>; }
