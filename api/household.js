@@ -1,15 +1,18 @@
 import { readFile } from 'node:fs/promises';
-import { loadSnapshotLike } from './_nessie.js';
+import { readDataset, datasetConfig } from './_dataset.js';
 import { buildHousehold, detectPostedChanges, applyNotice } from '../src/engine/household.js';
 import { parseNotice } from '../src/engine/changes.js';
 import { discoverCommitments } from '../src/engine/discover.js';
+import { transactionRecords } from '../src/engine/records.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
   if (req.method !== 'GET') return res.status(405).json({ message: 'Use GET to read the household.' });
+  try { datasetConfig(req.query?.dataset); }
+  catch (err) { return res.status(400).json({ message: err.message }); }
   try {
-    const snap = await loadSnapshotLike();
-    const today = process.env.VITE_DEMO_DATE || new Date().toISOString().slice(0, 10);
+    const snap = await readDataset(req.query?.dataset, { allowSnapshot: true });
+    const today = snap.asOf;
 
     const household = buildHousehold(snap, today);
     const notice = await readFile(new URL('../data/notice-internet.txt', import.meta.url), 'utf8');
@@ -37,7 +40,7 @@ export default async function handler(req, res) {
     }] : [];
 
     return res.status(200).json({
-      source: snap.source, household, notice, discovered, pendingNotices,
+      source: snap.source, dataset: snap.dataset, asOf: today, household, notice, discovered, pendingNotices,
       transactions: recentTransactions(snap, household),
     });
   } catch (err) {
@@ -47,24 +50,16 @@ export default async function handler(req, res) {
 
 /** Recent activity for the Transactions page, with the three correctness rules made visible. */
 function recentTransactions(snap, household) {
-  const merchant = Object.fromEntries((snap.merchants || []).map(m => [m._id, m]));
-  const payees = new Set(household.recurring.map(r => r.payee?.toLowerCase()).filter(Boolean));
   const billFor = name => household.recurring.find(r => r.payee?.toLowerCase() === name?.toLowerCase());
-
-  const rows = [
-    ...(snap.purchases || []).map(p => {
-      const m = merchant[p.merchant_id];
-      const name = m?.name || p.description;
-      const bill = payees.has(name?.toLowerCase()) ? billFor(name) : null;
-      const row = { d: p.purchase_date, what: name, amt: -p.amount, cat: bill ? bill.label : (m?.category || 'Other'), k: bill ? 'rec' : 'ev' };
-      // Rule: a bill and its posting are one expense. Say so where the user can see it.
-      if (bill && bill.unexplained && p.amount === bill.lastPosted)
-        row.note = `Higher than usual (${fmt(bill.usual ?? bill.amount)}). Not confirmed why.`;
-      return row;
-    }),
-    ...(snap.deposits || []).map(d => ({ d: d.transaction_date, what: d.description, amt: d.amount, cat: 'Income', k: 'in' })),
-    ...(snap.withdrawals || []).map(w => ({ d: w.transaction_date, what: w.description, amt: -w.amount, cat: 'Transfer', k: 'tr', note: 'Your own savings account. Not counted as spending.' })),
-  ];
+  const rows = transactionRecords(snap, household.today).map(t => {
+    const bill = t.kind === 'bill' ? billFor(t.description) : null;
+    const row = { ...t, d: t.date, what: t.description, amt: t.amount, cat: t.category,
+      k: { bill: 'rec', income: 'in', transfer: 'tr' }[t.kind] || 'ev' };
+    if (bill?.unexplained && -t.amount === bill.lastPosted)
+      row.note = `Higher than usual (${fmt(bill.usual ?? bill.amount)}). Not confirmed why.`;
+    if (t.kind === 'transfer') row.note = 'Labeled as a transfer by the bank description. Not counted as income or spending.';
+    return row;
+  });
 
   // Rule: repeat purchases are not a subscription. Count only the last 30 days, and say it once
   // per merchant on its most recent charge — a note on every row is noise, not information.

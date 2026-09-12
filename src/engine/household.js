@@ -1,5 +1,6 @@
 // src/engine/household.js
 // Turns raw Nessie records into the household shape the forecast engine expects.
+import { postedSnapshot, depositKind, withdrawalKind } from './records.js';
 
 const groupBy = (xs, f) => xs.reduce((m, x) => { const k = f(x); (m[k] ||= []).push(x); return m; }, {});
 const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -12,7 +13,7 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
  * Build the household from a Nessie snapshot.
  *
  * Three correctness rules are enforced here, because this is the only place they can be:
- *   1. Transfers are not income. We read /deposits only.
+ *   1. Transfers/refunds are not payroll, including ones recorded as deposits.
  *   2. A bill and its posted charge are ONE expense, not two. Every bill also lands as a purchase,
  *      so purchases from a bill payee are excluded from spending categories. Without this the rent
  *      appears both as a $1,150 bill and a $1,150/month "Rent" allowance, which doubles daily
@@ -21,11 +22,12 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
  *      becomes "recurring" only when the bank says it is a bill.
  */
 export function buildHousehold(snap, today, opts = {}) {
+  snap = postedSnapshot(snap, today);
   const { cushion = 200, windowDays = 34, goalTarget = 2000, goalLeft = 4, goalPlanned = 300, lookbackDays = 90 } = opts;
 
   const accounts = snap.accounts || [];
-  const checking = accounts.find(a => a.type === 'Checking');
-  const savings = accounts.find(a => a.type === 'Savings');
+  const checking = accounts.find(a => snap.checkingId ? a._id === snap.checkingId : a.type === 'Checking');
+  const savings = accounts.find(a => snap.savingsId ? a._id === snap.savingsId : a.type === 'Savings');
   if (!checking) throw new Error('No Checking account in the snapshot.');
 
   // --- Recurring commitments: the bank's bills are the source of truth. ---
@@ -34,6 +36,8 @@ export function buildHousehold(snap, today, opts = {}) {
     const cancellable = /gym|fitness|streaming|subscription|membership/i.test(`${b.nickname} ${b.payee}`);
     return {
       id: slug(b.nickname || b.payee),
+      sourceId: b._id,
+      sourceAccountId: checking._id,
       label: b.nickname || b.payee,
       payee: b.payee,
       amount: b.payment_amount,
@@ -47,14 +51,15 @@ export function buildHousehold(snap, today, opts = {}) {
   }).sort((a, b) => a.day - b.day);
 
   // --- Expected income: find the deposit description that repeats, measure its cadence, project. ---
-  const deposits = [...(snap.deposits || [])].sort((a, b) => a.transaction_date.localeCompare(b.transaction_date));
-  const series = Object.values(groupBy(deposits, d => d.description)).sort((a, b) => b.length - a.length)[0] || [];
+  const deposits = (snap.deposits || []).filter(d => depositKind(d) === 'income').sort((a, b) => a.transaction_date.localeCompare(b.transaction_date));
+  const series = Object.values(groupBy(deposits, d => d.description.trim().toLowerCase()))
+    .sort((a, b) => b.length - a.length)[0] || [];
   const cadence = series.length >= 2
     ? Math.round(series.slice(1).reduce((a, d, i) => a + daysBetween(series[i].transaction_date, d.transaction_date), 0) / (series.length - 1))
-    : 14;
+    : 0;
   const last = series[series.length - 1];
   const income = [];
-  if (last) {
+  if (last && cadence >= 1 && cadence <= 35) {
     let date = last.transaction_date;
     while (income.length < 3) {
       date = addIso(date, cadence);
@@ -64,6 +69,9 @@ export function buildHousehold(snap, today, opts = {}) {
         label: last.description || 'Paycheck',
         date,
         amount: last.amount,
+        cadenceDays: cadence,
+        sourceAccountId: checking._id,
+        sourceTransactionIds: series.map(d => `deposit:${d._id}`),
         // Estimated, all of them. Being next in an inferred sequence is not confirmation, and
         // labelling it 'confirmed' made the forecast look more certain than the evidence allows.
         // Only the user editing a figure marks it as something they stand behind.
@@ -84,6 +92,9 @@ export function buildHousehold(snap, today, opts = {}) {
   const allowances = Object.entries(groupBy(spending, p => merchant[p.merchant_id]?.category || 'Other'))
     .map(([label, list]) => ({ id: slug(label), label, monthly: Math.round(list.reduce((a, p) => a + p.amount, 0) / monthsCovered) }))
     .sort((a, b) => b.monthly - a.monthly);
+  const cash = (snap.withdrawals || []).filter(w => withdrawalKind(w) !== 'transfer' && daysBetween(w.transaction_date, today) <= lookbackDays);
+  if (cash.length) allowances.push({ id: 'cash-withdrawals', label: 'Cash withdrawals',
+    monthly: Math.round(cash.reduce((sum, w) => sum + w.amount, 0) / monthsCovered) });
 
   // --- History for the cash-flow chart: real money in and out, per calendar month. ---
   const history = monthlyHistory(snap, today, monthsCovered);
@@ -130,9 +141,9 @@ function monthlyHistory(snap, today, n = 3) {
   for (let i = n - 1; i >= 0; i--) {      // includes the current month, which is nearly complete
     const m = new Date(start.getFullYear(), start.getMonth() - i, 1);
     const key = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}`;
-    const inc = (snap.deposits || []).filter(d => d.transaction_date.startsWith(key)).reduce((a, d) => a + d.amount, 0);
+    const inc = (snap.deposits || []).filter(d => d.transaction_date.startsWith(key) && depositKind(d) === 'income').reduce((a, d) => a + d.amount, 0);
     const spent = (snap.purchases || []).filter(p => p.purchase_date.startsWith(key)).reduce((a, p) => a + p.amount, 0)
-      + (snap.withdrawals || []).filter(w => w.transaction_date.startsWith(key)).reduce((a, w) => a + w.amount, 0);
+      + (snap.withdrawals || []).filter(w => w.transaction_date.startsWith(key) && withdrawalKind(w) !== 'transfer').reduce((a, w) => a + w.amount, 0);
     if (inc || spent) out.push({ m: MONTH_NAMES[m.getMonth()], inc: round2(inc), out: round2(spent) });
   }
   return out;
@@ -144,6 +155,7 @@ function monthlyHistory(snap, today, n = 3) {
  * that. The forecast does not move until the user chooses "one-time" or "new price".
  */
 export function detectPostedChanges(household, snap, { tolerance = 0.10 } = {}) {
+  snap = postedSnapshot(snap, household.today);
   const merchant = Object.fromEntries((snap.merchants || []).map(m => [m._id, m]));
   return household.recurring.map(r => {
     if (!r.payee) return r;

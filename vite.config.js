@@ -24,7 +24,8 @@ function apiRoutes(env) {
         try {
           const body = await readJson(req);
           const { default: handler } = await server.ssrLoadModule(`/api/${name}.js`);
-          await handler({ ...req, method: req.method, body, query: {} }, shim(res));
+          await handler({ ...req, method: req.method, body,
+            query: Object.fromEntries(new URL(req.url, 'http://localhost').searchParams) }, shim(res));
         } catch (err) {
           console.error(`[api/${name}]`, err);
           res.statusCode = 500;

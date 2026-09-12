@@ -7,6 +7,7 @@
 // amount, steady interval — and PROPOSES it. It never adds anything on its own, because a
 // repeated purchase is not a subscription, and treating one as a commitment would put money in
 // the forecast that the user never committed to.
+import { postedSnapshot } from './records.js';
 
 const daysBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5);
 const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -16,6 +17,7 @@ const median = xs => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
  * @returns candidates the user can confirm, each with the evidence that suggested it.
  */
 export function discoverCommitments(snap, household, { minCharges = 3, tolerance = 0.06, monthsCovered = 3 } = {}) {
+  snap = postedSnapshot(snap, household.today);
   const merchant = Object.fromEntries((snap.merchants || []).map(m => [m._id, m]));
   const knownPayees = new Set(household.recurring.map(r => r.payee?.toLowerCase()).filter(Boolean));
 
@@ -49,7 +51,8 @@ export function discoverCommitments(snap, household, { minCharges = 3, tolerance
     // Which spending category these charges are currently counted in, and how much of it they are.
     // Adopting the commitment has to take that share back out, or the money is counted twice.
     const category = merchant[sorted[0].merchant_id]?.category || 'Other';
-    const monthlyShare = Math.round(sorted.reduce((a, c) => a + c.amount, 0) / monthsCovered);
+    const recent = sorted.filter(c => daysBetween(c.purchase_date, household.today) <= monthsCovered * 30);
+    const monthlyShare = Math.round(recent.reduce((a, c) => a + c.amount, 0) / monthsCovered);
     found.push({
       category,
       categoryId: slug(category),
