@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { loadLocalEnv, openSetupDatabase } from './supabase-db.mjs';
 
 export async function verifyDatabase(client, { requireData = true } = {}) {
-  const tables = ['datasets', 'snapshots', 'accounts', 'merchants', 'bills', 'transactions', 'documents'];
+  const tables = ['datasets', 'snapshots', 'accounts', 'merchants', 'bills', 'transactions', 'documents', 'planned_purchases'];
   for (const table of tables) {
     const name = `public.raincheck_${table}`;
     const { rows: [r] } = await client.query(`select c.relrowsecurity as rls,
@@ -41,8 +41,8 @@ export async function verifyDatabase(client, { requireData = true } = {}) {
     has_function_privilege('authenticated',p.oid,'EXECUTE') as user_exec,
     has_function_privilege('service_role',p.oid,'EXECUTE') as server_exec
     from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.proname in ('raincheck_search','raincheck_activity_totals')`);
-  assert.equal(roles.length, 2);
+    where n.nspname='public' and p.proname in ('raincheck_search','raincheck_activity_totals','raincheck_save_purchase')`);
+  assert.equal(roles.length, 3);
   assert.ok(roles.every(r => !r.anon_exec && !r.user_exec && r.server_exec));
   return { tables: tables.length, accessChecks: 'passed', searchAndTotals: datasets.length ? 'passed' : 'not run (no data yet)', datasets };
 }

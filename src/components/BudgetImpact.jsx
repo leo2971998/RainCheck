@@ -7,15 +7,17 @@ export const budgetMoney = n => Number.isFinite(n)
 export default function BudgetImpact({ impact }) {
   const { before: a, after: b, cushion } = impact;
   const safe = b.low >= cushion && b.fits;
+  const status = budgetStatus(b, cushion);
   const rows = [
     ['Monthly bills', a.monthlyBills, b.monthlyBills],
+    ...((a.plannedPurchases || b.plannedPurchases) ? [[`Planned purchases · ${impact.windowDays} days`, a.plannedPurchases, b.plannedPurchases]] : []),
     ['Planned monthly saving', a.contribution, b.contribution],
     [`Lowest checking · next ${impact.windowDays} days`, a.low, b.low],
-    ['Savings at each goal deadline', a.projected, b.projected],
+    ['Goal savings if contributions are made', a.projected, b.projected],
   ];
   return <section className="budget-impact" aria-label="Budget preview" aria-live="polite">
     <span className="pill teal">Preview · not applied</span>
-    <h3>{b.gap ? 'This plan falls short of the goal' : !safe ? 'The goal fits, but checking needs attention' : 'This fits the current estimates'}</h3>
+    <h3>{status.label}</h3>
     <p>{b.goalLabel}: {budgetMoney(b.target)} by {budgetDate(b.targetDate)}.
       {b.gap > 0 && ` The projected shortfall is ${budgetMoney(b.gap)}.`}
       {!safe && ` Keep an eye on your ${budgetMoney(cushion)} checking cushion.`}</p>
@@ -29,3 +31,4 @@ export default function BudgetImpact({ impact }) {
       Expected income and everyday spending are estimates, not guarantees.</p>
   </section>;
 }
+import { budgetStatus } from '../engine/review-status.js';

@@ -77,6 +77,40 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaises(ValueError): validate_result(response, data)
 
 
+class ConversationTests(unittest.TestCase):
+    def test_one_time_purchase_week_is_bounded_and_distinct_from_monthly_bills(self):
+        data = self.chat(); data.update(version=3, kind='purchase', purchaseWeek={
+            'startsOn': '2026-10-05', 'endsOn': '2026-10-11', 'beforeLowCents': 30000, 'afterLowCents': 10000})
+        for side in ('before', 'after'): data[side]['plannedPurchasesCents'] = 20000
+        self.assertEqual(validate_brief(data), data)
+        answer = result(); answer['observations'][0]['facts'] = ['purchaseWeek.afterLowCents', 'after.plannedPurchasesCents']
+        self.assertEqual(validate_result(answer, data), answer)
+        data['purchaseWeek']['endsOn'] = '2026-11-30'
+        with self.assertRaises(ValueError): validate_brief(data)
+
+    def chat(self):
+        return {**brief(), 'version': 2, 'kind': 'plan', 'question': 'Why is my cushion at risk?',
+                'evidence': [{'title': 'Expected paychecks', 'text': 'Estimated payroll USD 1700.00.', 'asOf': '2026-09-28'}]}
+
+    def test_bounded_conversation_and_dated_evidence(self):
+        data = self.chat()
+        self.assertEqual(validate_brief(data), data)
+        answer = result(); answer['observations'][0]['facts'] = ['evidence.0']
+        self.assertEqual(validate_result(answer, data), answer)
+
+    def test_rejects_mismatched_dates_unknown_tools_and_unbounded_context(self):
+        for mutate in [lambda b: b.update(question='x' * 501), lambda b: b.update(tools=['transfer']),
+                       lambda b: b['evidence'][0].update(asOf='2026-09-27'),
+                       lambda b: b['evidence'][0].update(text='<script>bad</script>'),
+                       lambda b: b.update(evidence=b['evidence'] * 5)]:
+            data = self.chat(); mutate(data)
+            with self.assertRaises(ValueError): validate_brief(data)
+
+    def test_cannot_cite_nonexistent_evidence(self):
+        data = self.chat(); answer = result(); answer['observations'][0]['facts'] = ['evidence.9']
+        with self.assertRaises(ValueError): validate_result(answer, data)
+
+
 class EndpointTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

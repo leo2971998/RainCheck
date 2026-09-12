@@ -54,6 +54,7 @@ function outcome(base, plan) {
   const sim = simulate(h, sc);
   const g = goalPlan(h, sc, { ...h.goal, contribution: sc.contribution });
   return { low: sim.low.balance, lowDate: sim.low.key, state: sim.worst,
+    plannedPurchases: round2(sim.days.flatMap(d => d.events).filter(e => e.purchase).reduce((s, e) => s - e.amt, 0)),
     monthlyBills: round2(h.recurring.filter(r => !sc.cancelled?.[r.id]).reduce((s, r) => s + monthlyEquivalent(r, amountFor(r, nextChargeDate(r, h.today), sc)), 0)),
     goalLabel: h.goal.label, target: g.target, saved: g.saved, targetDate: g.targetDate, projected: g.projected,
     gap: g.gap, supported: g.supported, contribution: g.contribution, required: g.required,

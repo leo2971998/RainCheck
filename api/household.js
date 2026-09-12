@@ -1,9 +1,11 @@
 import { readFile } from 'node:fs/promises';
-import { readDataset, datasetConfig } from './_dataset.js';
-import { buildHousehold, detectPostedChanges, applyNotice } from '../src/engine/household.js';
+import { datasetConfig } from './_dataset.js';
+import { loadHouseholdContext } from './_household-context.js';
+import { localReviewAllowed } from './_local-workspace.js';
 import { parseNotice } from '../src/engine/changes.js';
 import { discoverCommitments } from '../src/engine/discover.js';
 import { transactionRecords } from '../src/engine/records.js';
+import { householdVersion } from './_review.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
@@ -11,10 +13,10 @@ export default async function handler(req, res) {
   try { datasetConfig(req.query?.dataset); }
   catch (err) { return res.status(400).json({ message: err.message }); }
   try {
-    const snap = await readDataset(req.query?.dataset, { allowSnapshot: true });
+    const purchasesAvailable = localReviewAllowed(req) && (!req.query?.dataset || req.query.dataset === 'demo');
+    const { snapshot: snap, base: household } = await loadHouseholdContext({ dataset: req.query?.dataset, purchases: purchasesAvailable });
     const today = snap.asOf;
 
-    const household = buildHousehold(snap, today);
     const notice = await readFile(new URL('../data/notice-internet.txt', import.meta.url), 'utf8');
 
     // A charge that came in higher than expected is something the BANK told us, so it belongs to
@@ -24,7 +26,6 @@ export default async function handler(req, res) {
     // So the bundled notice is NOT applied here. It is offered as an example waiting to be
     // reviewed, and it only reaches the forecast once the user accepts it — by the same path a
     // notice they pasted themselves would take.
-    household.recurring = detectPostedChanges(household, snap);
 
     // Computed HERE, from the same snapshot the household was built from. The client used to run
     // this against the bundled sample, which meant live balances could be shown beside proposals
@@ -40,11 +41,13 @@ export default async function handler(req, res) {
     }] : [];
 
     return res.status(200).json({
-      source: snap.source, dataset: snap.dataset, asOf: today, household, notice, discovered, pendingNotices,
+      source: snap.source, dataset: snap.dataset, asOf: today, purchasesAvailable, baseVersion: householdVersion(household), household, notice, discovered, pendingNotices,
       transactions: recentTransactions(snap, household),
     });
   } catch (err) {
-    return res.status(503).json({ message: 'Sandbox data is not available yet. You can still use the sample workspace.', detail: String(err?.message || err) });
+    return res.status(503).json({ message: err.code === 'PURCHASES_UNAVAILABLE'
+      ? 'Your saved purchases couldn’t load. We have paused the forecast so it won’t leave them out. Please try again.'
+      : 'Your household couldn’t load. Please try again before using the forecast.' });
   }
 }
 

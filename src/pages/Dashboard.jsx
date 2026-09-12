@@ -2,6 +2,7 @@ import { Icon, Kpi, Num, STATE, money, prettyDate, longDate, prettyIso, weekdayI
 import { AreaChart } from '../components/charts.jsx';
 import { Sky, Outlook, timeOfDay } from '../components/Weather.jsx';
 import { GoalRing } from '../components/GoalRing.jsx';
+import { budgetStatus } from '../engine/review-status.js';
 
 export default function Dashboard({ h, source, dark = false, plan, sc, change, sim, previewSim, preview, cap, goal, alerts, waiting = [], onReviewNotice, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
   // The scenario, not the raw plan: an unaccepted plan has no contribution of its own and falls back
@@ -22,7 +23,8 @@ export default function Dashboard({ h, source, dark = false, plan, sc, change, s
   const tod = dark ? 'night' : timeOfDay();
   const attention = alerts.filter(a => a.tone !== 'good').length + reminders.length + waiting.length;
   const night = tod === 'night';
-  const headline = sim.worst === 'over' ? 'Your balance would go below zero before payday.' : sim.worst === 'below' ? 'Bills are covered, but your savings plan dips below your cushion.' : goal.gap > 0 ? 'Bills are covered, but your goal needs an adjustment.' : 'Bills are covered and your goal is on track.';
+  const goalStatus = budgetStatus({ ...goal, low: sim.low.balance }, h.cushion);
+  const headline = sim.worst === 'over' ? 'Your balance would go below zero before payday.' : sim.worst === 'below' ? 'Bills are covered, but your savings plan dips below your cushion.' : !goal.fits || goal.gap > 0 ? 'Bills are covered, but your goal needs an adjustment.' : 'Bills are covered and your goal is on track.';
   return (
     <>
       <div className={'weather-hero sky-' + tod}>
@@ -34,12 +36,12 @@ export default function Dashboard({ h, source, dark = false, plan, sc, change, s
         <div className="hero-weather"><Sky state={sim.worst} night={night} /></div>
       </div>
       <Outlook sim={sim} h={h} />
-      <div className="top-actions"><span className="pill teal"><Icon n="bank" s={13} />{sourceLabel}</span></div>
+      <div className="top-actions"><span className="pill teal"><Icon n="bank" s={13} />{sourceLabel}</span><button className="btn ghost sm" onClick={() => open('page:purchases')}>Plan a purchase</button><button className="btn ghost sm" onClick={() => open('assistant')}>Talk through my plan</button></div>
       <div className="grid g4" style={{ marginBottom: 18 }}>
         <Kpi label="Checking balance" value={<Num v={h.checking} />} sub="Everyday Checking" />
         <Kpi label="Lowest projected balance" value={<Num v={sim.low.balance} />} sub={`${prettyDate(sim.low.date)} · cushion ${money(h.cushion)}`} pill={<span className={'pill ' + tone}>{st}</span>} />
         <Kpi label={`Supported saving · next ${h.windowDays} days`} value={<><Num v={cap} />/mo</>} sub={`Planned ${money(sc.contribution)} · ${cap < sc.contribution ? 'above estimated capacity' : 'within estimated capacity'}`} pill={cap < sc.contribution ? <span className="pill warn"><Icon n="down" s={11} />{money(sc.contribution - cap)}</span> : <span className="pill good">OK</span>} />
-        <Kpi label={h.goal.label} value={<Num v={goal.projected} />} sub={`Projected of ${money(h.goal.target)} by ${goal.targetLabel}`} pill={goal.gap ? <span className="pill bad">{money(goal.gap)} short</span> : <span className="pill good">On track</span>} />
+        <Kpi label={h.goal.label} value={<Num v={goal.projected} />} sub={`Projected of ${money(h.goal.target)} by ${goal.targetLabel}`} pill={<span className={'pill ' + goalStatus.tone}>{goalStatus.tone === 'good' ? 'Within estimates' : 'Needs adjustment'}</span>} />
       </div>
       {/* A glance at what lives on the other pages, and a way there. Each line is the same figure
           that page shows, so a peek never promises something the page then contradicts. */}
@@ -59,7 +61,7 @@ export default function Dashboard({ h, source, dark = false, plan, sc, change, s
         <button className="peek" onClick={() => open('page:cashflow')}>
           <i className="pk-ic"><Icon n="bars" s={15} /></i>
           <span className="pk-l">Cash flow</span>
-          <b className="pk-v">{lastDay.date.toLocaleDateString('en-US', { month: 'long' })} · {money(sim.cash.income - sim.cash.bills - sim.cash.everyday - sim.cash.savings)} left over</b>
+          <b className="pk-v">{lastDay.date.toLocaleDateString('en-US', { month: 'long' })} · {money(sim.cash.income - sim.cash.bills - sim.cash.everyday - sim.cash.purchases - sim.cash.savings)} left over</b>
           <i className="pk-go"><Icon n="arrow" s={14} /></i>
         </button>
         <button className="peek" onClick={() => open('page:forecast')}>
@@ -122,7 +124,7 @@ export default function Dashboard({ h, source, dark = false, plan, sc, change, s
               </div>
             </div>
             <div className="card">
-              <div className="hd"><h2>{h.goal.label}</h2><span className={'pill ' + (goal.gap ? 'bad' : 'good')}>{goal.gap ? `${money(goal.gap)} short` : 'On track'}</span></div>
+              <div className="hd"><h2>{h.goal.label}</h2><span className={'pill ' + goalStatus.tone}>{goalStatus.tone === 'good' ? 'Within estimates' : 'Needs adjustment'}</span></div>
               <div className="row" style={{ gap: 16, alignItems: 'center' }}>
                 <GoalRing saved={h.goal.saved} target={h.goal.target} projected={goal.projected} />
                 <div className="grid" style={{ gap: 6 }}>

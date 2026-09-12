@@ -1,5 +1,6 @@
 // src/engine/forecast.js
 // The forecast engine. Pure functions, no React, no wall-clock dates.
+import { purchaseSchedule } from './purchases.js';
 
 export const iso = d => d.toISOString().slice(0, 10);
 export const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
@@ -71,6 +72,7 @@ export function simulate(h, sc = {}, { days: dayCount } = {}) {
   const contributionOn = new Set(sc.contributionDates ?? (firstPayday ? [firstPayday] : []));
   const monthlySpend = h.allowances.reduce((a, x) => a + x.monthly - (sc.cuts?.[x.id] || 0), 0);
   const dailySpend = monthlySpend / 30;
+  const purchases = purchaseSchedule(h, sc);
 
   const days = [];
   let balance = h.checking;
@@ -96,8 +98,13 @@ export function simulate(h, sc = {}, { days: dayCount } = {}) {
       events.push({ label: 'Savings contribution', amt: -sc.contribution, transfer: true });
     }
 
-    balance -= dailySpend;
-    events.push({ label: 'Everyday spending', amt: -dailySpend });
+    for (const p of purchases.dates[key] || []) {
+      balance -= p.amount;
+      events.push({ label: p.label, amt: -p.amount, purchase: true, id: p.id, estimated: true });
+    }
+    const everyday = Math.max(0, dailySpend - (purchases.reductions[key.slice(0, 7)] || 0));
+    balance -= everyday;
+    events.push({ label: 'Everyday spending', amt: -everyday, everyday: true });
 
     days.push({ date, key, balance: round2(balance), events, state: stateOf(balance, h.cushion) });
   }
@@ -111,7 +118,8 @@ export function simulate(h, sc = {}, { days: dayCount } = {}) {
     month: lastMonth,
     income: round2(month.reduce((a, d) => a + d.events.filter(e => e.pay).reduce((s, e) => s + e.amt, 0), 0)),
     bills: round2(month.reduce((a, d) => a + d.events.filter(e => e.bill).reduce((s, e) => s - e.amt, 0), 0)),
-    everyday: Math.round(month.length * dailySpend),
+    everyday: round2(month.reduce((a, d) => a + d.events.filter(e => e.everyday).reduce((s, e) => s - e.amt, 0), 0)),
+    purchases: round2(month.reduce((a, d) => a + d.events.filter(e => e.purchase).reduce((s, e) => s - e.amt, 0), 0)),
     savings: sc.contribution,
   };
 

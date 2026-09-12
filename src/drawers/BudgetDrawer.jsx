@@ -3,8 +3,9 @@ import Drawer, { DrawerHeader } from '../components/Drawer.jsx';
 import BudgetImpact, { budgetMoney, budgetDate } from '../components/BudgetImpact.jsx';
 import { BASE_GOAL, readGoal, readSubscription, goalChoices, goalPatch, removeGoalPatch, subscriptionPatch, budgetImpact, planningLimit } from '../engine/budget.js';
 import { householdFor } from '../engine/plan.js';
+import ReviewPanel from '../components/ReviewPanel.jsx';
 
-export default function BudgetDrawer({ kind, id, base, plan, change, onClose }) {
+export default function BudgetDrawer({ kind, id, base, baseVersion, plan, change, onClose }) {
   const isGoal = kind === 'goal';
   const current = householdFor(base, plan);
   const activeId = plan.goalId || BASE_GOAL;
@@ -65,6 +66,9 @@ export default function BudgetDrawer({ kind, id, base, plan, change, onClose }) 
         ? `Your active goal returns to ${preview.impact.after.goalLabel}. Savings stay in the account.`
         : 'This removes the saved budget item only. No provider or bank records change.'}</p></div>}
       <BudgetImpact impact={preview.impact} />
+      <details className="budget-ai-review"><summary>Ask AI about this preview</summary>
+        <ReviewPanel key={baseVersion + JSON.stringify(plan) + JSON.stringify(preview.patch)} baseVersion={baseVersion} plan={plan} patch={preview.patch} kind={kind} />
+      </details>
       <div className="row wrap budget-actions">
         <button className="btn" onClick={apply}>{preview.removing ? 'Confirm removal' : isGoal ? 'Use this goal' : 'Apply to my budget'}</button>
         {isGoal && !preview.removing && itemId !== activeId && <button className="btn ghost" onClick={saveIdea}>Save for later instead</button>}

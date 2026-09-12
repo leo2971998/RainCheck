@@ -153,7 +153,45 @@
 /* Budget changes: ordinary labelled forms, then an explicit before/after decision. */
 .budget-form { display: grid; gap: 16px; }
 .budget-form label { display: grid; gap: 7px; font-weight: 600; font-size: 14px; }
-.budget-form input { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: var(--field); color: var(--ink); }
+.budget-form input, .budget-form select { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: var(--field); color: var(--ink); }
+.purchase-intro { display: flex; flex-wrap: wrap; gap: 12px 24px; color: var(--ink-2); font-size: 14px; margin: 20px 0; }
+.purchase-card, .purchase-history { margin-bottom: 20px; }
+.purchase-list { list-style: none; margin: 0; padding: 0; }
+.purchase-list li { display: flex; align-items: center; gap: 20px; padding: 22px 0; border-top: 1px solid var(--line); }
+.purchase-main { display: grid; gap: 6px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.purchase-main > span, .purchase-footer .fine { color: var(--ink-2); font-size: 13px; line-height: 1.6; }
+.purchase-amount { font-size: 22px; font-variant-numeric: tabular-nums; }
+.purchase-main .purchase-overdue { color: var(--ink); border-left: 3px solid var(--warn); padding-left: 10px; }
+.purchase-empty { padding: 36px 0; max-width: 480px; }
+.purchase-empty h3 { font-size: 23px; margin-bottom: 12px; }
+.purchase-empty p { color: var(--ink-2); margin-bottom: 22px; line-height: 1.7; }
+.purchase-history summary, .budget-form summary { cursor: pointer; min-height: 44px; padding-block: 12px; font-weight: 600; }
+.purchase-footer { display: flex; gap: 20px; align-items: center; justify-content: space-between; }
+.purchase-form-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.purchase-secondary { display: grid; gap: 12px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+.purchase-week { padding: 20px; margin-block: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--teal-bg); }
+.purchase-week > div { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.purchase-week b { display: block; margin-top: 6px; font-size: 24px; font-variant-numeric: tabular-nums; }
+.purchase-week h3 { margin-block: 12px; }
+.purchase-drawer > p { margin: 0; line-height: 1.6; }
+.purchase-drawer .purchase-week { margin-block: 4px; padding: 16px; }
+.purchase-drawer > h3 { margin-top: 8px; }
+.purchase-week .fine, .purchase-coverage { color: var(--ink-2); line-height: 1.6; }
+.purchase-week .review-eyebrow { color: var(--ink-2); }
+.purchase-matches { border: 0; padding: 0; margin-block: 20px; }
+.purchase-matches legend { font-weight: 600; margin-bottom: 12px; }
+.purchase-matches label { display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
+.purchase-matches input { width: 20px; height: 20px; flex-shrink: 0; accent-color: var(--accent); }
+.purchase-matches small { display: block; margin-top: 6px; color: var(--ink-2); }
+.purchase-list .btn { min-height: 44px; }
+@media (max-width: 600px) {
+  .purchase-list li { flex-wrap: wrap; gap: 12px; }
+  .purchase-main { flex-basis: 70%; }
+  .purchase-list li > .btn { margin-left: auto; }
+  .purchase-footer { display: grid; gap: 8px; }
+  .purchase-form-pair { grid-template-columns: 1fr; }
+  .purchase-intro { display: grid; gap: 8px; }
+}
 .budget-form input::placeholder { color: var(--muted); }
 .budget-form p, .budget-impact p, .budget-library p { margin: 0; line-height: 1.6; }
 .budget-impact { display: grid; gap: 14px; padding: 18px 0; border-block: 1px solid var(--line); }
@@ -492,15 +530,14 @@
     .pk-ic { width: 28px; height: 28px; }
     .pk-v { font-size: 12px; }
 
-    /* Seven sections do not wrap into three rows of tabs on a phone; they become a bottom bar,
-       icon over label, the way every phone app the reader already uses does it. */
-    main { padding-bottom: 100px; }
+    /* Eight sections use two balanced rows with touch-sized targets. Reserve their full height. */
+    main { padding-bottom: 148px; }
     .tabs { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 40; margin: 0; padding: 6px; gap: 2px;
-      display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
       background: color-mix(in oklab, var(--surface) 90%, transparent); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4);
       border: 1px solid color-mix(in oklab, var(--rain) 14%, var(--line)); border-radius: 16px; box-shadow: 0 10px 30px oklch(.25 .05 240 / .18); }
     .tabs .nav { flex: none; width: auto; min-width: 0; min-height: 52px; padding: 6px 2px 5px; gap: 3px; flex-direction: column; justify-content: center;
-      font-size: 9.5px; font-weight: 600; letter-spacing: -.1px; border-radius: 10px; position: relative; }
+      font-size: 11px; font-weight: 600; letter-spacing: -.1px; border-radius: 10px; position: relative; }
     .tabs .nav svg { width: 18px; height: 18px; }
     .tabs .nav.on { background: var(--side-hi); color: var(--ink); box-shadow: none; }
     .tabs .nav:hover { transform: none; }
@@ -659,3 +696,38 @@
     .ambient.raining .amb-r1 { opacity: .10; } .ambient.raining .amb-r2, .ambient.raining .amb-r3 { opacity: 0; }
     .amb-glow, .amb-rain { transition: none; }
   }
+/* A quiet, readable conversation inside the existing weather workspace. */
+.review-panel { display: grid; gap: 16px; padding-block: 12px; }
+.review-panel p { margin: 0; line-height: 1.6; }
+.review-layers { list-style: none; margin: 0; padding: 10px 0; display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: 12px; counter-reset: layer; }
+.review-layers li { counter-increment: layer; }
+.review-layers li::before { content: counter(layer) ' · '; color: var(--ink); font-weight: 700; }
+.review-answer { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; margin-block: 12px 22px; }
+.review-calculation { padding: 20px; background: var(--field); border-bottom: 1px solid var(--line); }
+.review-calculation h3 { margin: 9px 0 18px; font-size: 20px; line-height: 1.3; }
+.review-eyebrow { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.review-numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 12px; margin: 0 0 16px; }
+.review-numbers dt { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.review-numbers dd { font-size: 24px; font-variant-numeric: tabular-nums; letter-spacing: -.03em; margin: 2px 0 0; font-weight: 600; }
+.review-reading { padding: 20px; display: grid; gap: 14px; }
+.review-reading ul { padding-left: 20px; margin: 0; display: grid; gap: 14px; line-height: 1.6; }
+.review-reading li small { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; }
+.review-reading > div b { display: block; margin-bottom: 10px; }
+.review-sources { padding: 16px 20px; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.6; }
+.review-sources > p, .review-sources > div { margin-top: 16px; }
+.review-sources small { color: var(--muted); }
+.review-answer > .fine { padding: 16px 20px; border-top: 1px solid var(--line); }
+.review-question { display: grid; gap: 4px; background: var(--field); border-left: 3px solid var(--rain); padding: 14px 18px; border-radius: 4px 12px 12px 4px; overflow-wrap: anywhere; }
+.review-question b { color: var(--muted); font-size: 12px; }
+.review-compose { display: grid; gap: 12px; }
+.review-compose textarea { width: 100%; resize: vertical; min-height: 92px; max-height: 240px; font: inherit; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.review-compose textarea:focus-visible { outline: 2px solid var(--rain); outline-offset: 2px; }
+.review-compose > label { font-weight: 600; font-size: 14px; }
+.review-compose .review-consent { display: flex; align-items: flex-start; gap: 10px; font-weight: 400; line-height: 1.5; }
+.review-consent input { margin-top: 4px; width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--rain); }
+.review-suggestions { display: flex; flex-wrap: wrap; gap: 8px; }
+.review-suggestions button { font: inherit; font-size: 12px; text-align: left; border: 1px solid var(--line); background: var(--field); color: var(--ink); border-radius: 20px; padding: 9px 12px; cursor: pointer; }
+.review-progress { border-left: 3px solid var(--rain); padding-left: 14px; color: var(--muted); font-size: 14px; }
+.budget-ai-review { margin-block: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; }
+.budget-ai-review > summary, .review-sources summary { cursor: pointer; font-weight: 600; }
+@media (max-width: 480px) { .review-calculation, .review-reading { padding: 16px; } .budget-ai-review { padding: 12px; } .review-numbers dd { font-size: 22px; } }

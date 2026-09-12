@@ -8,10 +8,37 @@ Installed on `10.0.0.141` at `/home/leo29798/raincheck-review`, listening **only
 - Dedicated agent and server-local authentication are installed and running.
 - Cloud review with the existing Codex login was tested against an engine-calculated
   synthetic Nessie subscription preview. No real account data was submitted.
-- **The new public HTTPS paths are NOT activated yet**: administrator access is
-  required. The original Nginx configuration and application routes are unchanged.
-- This does **not** enable a website AI button or deploy anything to Vercel.
-  There is no anonymous paid-model route in RainCheck.
+- Public HTTPS paths were activated by the administrator and tested through the
+  public IP with verified TLS/SNI. Existing application routes are unchanged.
+- The local website now connects both **Talk through my plan** and **Ask AI about
+  this preview** to this adapter. Nothing has been deployed to Vercel.
+- `/api/review` fails closed on Vercel/production and non-loopback clients. This
+  is a single-user local prototype, not a public authentication system.
+
+## Website workflow
+
+1. Nessie supplies the synthetic bank snapshot. The browser receives its version.
+2. `/api/review` validates consent, origin, bounded plan inputs and that version.
+   It reloads the bank data and refuses a stale browser snapshot.
+3. The shared RainCheck engine recomputes before/after outcomes. Browser-supplied
+   balances and forecast results are never accepted as calculated facts.
+4. Supabase full-text retrieval supplies at most four dated excerpts. Its import
+   fingerprint must match the bank snapshot; stale/missing evidence is excluded.
+   Search hits are never summed to produce historical totals.
+5. Only aggregate calculator facts, the question and selected excerpts go to the
+   isolated tool-free ZeroClaw profile. It explains, not calculates or applies.
+6. Both adapters validate structured output. Calculator warnings are shown first,
+   even if AI is unavailable. Missing evidence and forecast assumptions stay visible.
+7. Apply, remove, cancel and transfer remain separate explicit user actions.
+
+Each question is grounded in the current plan/preview. Earlier model replies are
+not used as financial evidence. To explore a new amount/date, use the existing
+goal/subscription editors first; the chatbot does not execute free-form edits.
+
+For local use, set `RAINCHECK_AI_LOCAL=1` and either `ZEROCLAW_REVIEW_KEY` or an
+ignored `ZEROCLAW_REVIEW_KEY_FILE` in `.env.local`. Neither may use a `VITE_`
+prefix. Restart the dev server on `127.0.0.1:5176` after adding routes/env values.
+Completed reviews reopen at `/?review=<id>` and are explicitly marked historical.
 
 ## Activate HTTPS
 
@@ -49,11 +76,12 @@ through SSH stdin. It never changes the plan or writes Nessie records.
   a URL, Git, or chat.** The website backend must authenticate, not the browser.
 - POST and result retrieval require bearer authentication. Browser-origin requests
   are rejected. The unauthenticated health check does not call the model.
-- Strict, bounded JSON accepts only synthetic source labels, dates, amounts in
-  integer cents, and calculator affordability results. No arbitrary prompt,
-  merchant names, account identifiers, transactions, bank credentials or URLs.
-- The future website adapter must rebuild the brief from a trusted dataset and
-  validated plan inputs. Do not relay arbitrary browser-supplied financial facts.
+- Strict, bounded JSON accepts synthetic source labels, dates, integer cents,
+  affordability checks, a question of up to 500 characters and up to four dated
+  evidence excerpts. Input text is untrusted data, never tool instructions.
+  No bank credentials, account identifiers or full transaction history are sent.
+- The website adapter rebuilds the brief from a trusted dataset and validated
+  plan inputs. It does not relay arbitrary browser-supplied financial facts.
   The service interprets supplied calculator facts; it cannot attest their origin.
 - Tool-free ZeroClaw profile: no shell tools, delegates, skills, MCP, persistent
   agent memory, response cache or content traces. Plain model explanations remain
@@ -81,7 +109,9 @@ and model. Failure details are generic and never contain provider output or keys
 The records are local to this isolated service, not a new source of bank facts.
 Supabase's existing retrieval mirror and Nessie's data are unchanged. Before
 supporting real users, add user-scoped authorization, a retention policy, and
-Supabase-backed app review history. Do not expose the shared service key to users.
+Supabase-backed app review history. Also align the hosted API duration (currently
+30 seconds) with the bounded review request or use asynchronous polling. Do not
+expose the shared service key to users or simply remove the local-only gate.
 
 ## Operate and test
 

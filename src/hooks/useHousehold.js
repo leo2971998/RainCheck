@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { household as sampleHousehold, transactions as sampleTx, notice as sampleNotice } from '../../data/household.sample.js';
 import sampleSnapshot from '../../data/nessie-snapshot.json';
 import { discoverCommitments } from '../engine/discover.js';
@@ -32,25 +32,24 @@ const SAMPLE = {
 
 export function useHousehold() {
   const [state, set] = useState({ loading: import.meta.env.VITE_DATA_MODE === 'nessie', ...SAMPLE });
-
-  useEffect(() => {
-    if (import.meta.env.VITE_DATA_MODE !== 'nessie') return;
-    let active = true;
-
-    fetch('/api/household')
-      .then(r => { if (!r.ok) throw new Error('Household unavailable'); return r.json(); })
-      .then(d => {
-        if (!d.household) throw new Error('Household unavailable');
-        // `discovered` comes from the server, computed against the same records as the household.
-        if (active) set({ loading: false, discovered: [], pendingNotices: [], ...d });
-      })
-      .catch(() => {
-        // Falling back means falling back completely: the sample household AND its own proposals.
-        if (active) set({ loading: false, ...SAMPLE });
-      });
-
-    return () => { active = false; };
+  const active = useRef(null);
+  const refresh = useCallback(async () => {
+    if (import.meta.env.VITE_DATA_MODE !== 'nessie') return false;
+    active.current?.abort(); const controller = new AbortController(); active.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    try {
+      const response = await fetch('/api/household', { cache: 'no-store', signal: controller.signal });
+      const data = await response.json();
+      if (!response.ok || !data.household) throw new Error('Household unavailable');
+      if (active.current === controller) set({ loading: false, error: '', discovered: [], pendingNotices: [], ...data });
+      return true;
+    } catch {
+      // Never silently swap to a sample that leaves out the person's saved plans.
+      if (active.current === controller) set(s => ({ ...s, loading: false,
+        error: 'Your household or saved purchases couldn’t load. The forecast is paused so it won’t leave anything out.' }));
+      return false;
+    } finally { clearTimeout(timeout); }
   }, []);
-
-  return state;
+  useEffect(() => { refresh(); return () => { const previous = active.current; active.current = null; previous?.abort(); }; }, [refresh]);
+  return { ...state, refresh };
 }

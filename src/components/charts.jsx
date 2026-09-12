@@ -96,7 +96,7 @@ export function GoalChart({ h, cap, goal }) {
 }
 
 export function CashBars({ h, sim }) {
-  const data = [...h.history, { m: 'Oct', inc: sim.cash.income, out: sim.cash.bills + sim.cash.everyday + sim.cash.savings, proj: true }];
+  const data = [...h.history, { m: 'Oct', inc: sim.cash.income, out: sim.cash.bills + sim.cash.everyday + sim.cash.purchases + sim.cash.savings, proj: true }];
   const max = Math.max(...data.flatMap(d => [d.inc, d.out]));
   return (
     <div className="grid g32" style={{ gap: 24 }}>
@@ -105,8 +105,9 @@ export function CashBars({ h, sim }) {
         <span className="k"><span className="dot" style={{ background: 'var(--teal)', marginRight: 6 }}></span>Income in October</span><span className="v">{money(sim.cash.income)}</span>
         <span className="k">Recurring bills</span><span className="v">{money(sim.cash.bills)}</span>
         <span className="k">Everyday spending</span><span className="v">{money(sim.cash.everyday)}</span>
+        <span className="k">Planned purchases</span><span className="v">{money(sim.cash.purchases)}</span>
         <span className="k">To savings</span><span className="v">{money(sim.cash.savings)}</span>
-        <span className="k" style={{ fontWeight: 600, color: 'var(--ink)' }}>Left over</span><span className="v" style={{ fontWeight: 700 }}>{money(sim.cash.income - sim.cash.bills - sim.cash.everyday - sim.cash.savings)}</span>
+        <span className="k" style={{ fontWeight: 600, color: 'var(--ink)' }}>Left over</span><span className="v" style={{ fontWeight: 700 }}>{money(sim.cash.income - sim.cash.bills - sim.cash.everyday - sim.cash.purchases - sim.cash.savings)}</span>
       </div>
     </div>
   );

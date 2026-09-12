@@ -24,7 +24,7 @@ function apiRoutes(env) {
         try {
           const body = await readJson(req);
           const { default: handler } = await server.ssrLoadModule(`/api/${name}.js`);
-          await handler({ ...req, method: req.method, body,
+          await handler({ ...req, method: req.method, headers: req.headers, socket: req.socket, body,
             query: Object.fromEntries(new URL(req.url, 'http://localhost').searchParams) }, shim(res));
         } catch (err) {
           console.error(`[api/${name}]`, err);
@@ -43,11 +43,11 @@ function apiRoutes(env) {
 }
 
 function readJson(req) {
-  if (req.method !== 'POST' && req.method !== 'PUT') return Promise.resolve(undefined);
+  if (!['POST', 'PUT', 'DELETE'].includes(req.method)) return Promise.resolve(undefined);
   return new Promise(resolve => {
-    let raw = '';
-    req.on('data', chunk => { raw += chunk; });
-    req.on('end', () => { try { resolve(raw ? JSON.parse(raw) : {}); } catch { resolve({}); } });
+    let raw = '', tooLarge = false;
+    req.on('data', chunk => { if (!tooLarge) raw += chunk; if (Buffer.byteLength(raw) > 65536) { tooLarge = true; raw = ''; } });
+    req.on('end', () => { try { resolve(tooLarge ? null : raw ? JSON.parse(raw) : {}); } catch { resolve(null); } });
   });
 }
 

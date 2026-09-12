@@ -8,9 +8,11 @@ import { Icon } from './ui.jsx';
  * Without this, a keyboard user opened the panel and was left on the button behind it, then had
  * to tab through the whole page to reach the content that had just appeared.
  */
-export default function Drawer({ label, onClose, children }) {
+export default function Drawer({ label, onClose, children, className = '' }) {
   const panel = useRef(null);
   const opener = useRef(null);
+  const close = useRef(onClose);
+  close.current = onClose;
 
   useEffect(() => {
     opener.current = document.activeElement;
@@ -21,7 +23,7 @@ export default function Drawer({ label, onClose, children }) {
     panel.current?.querySelector('button, [href], input, select, textarea')?.focus();
 
     const onKey = e => {
-      if (e.key === 'Escape') { e.stopPropagation(); onClose(); return; }
+      if (e.key === 'Escape') { e.stopPropagation(); close.current(); return; }
       if (e.key !== 'Tab') return;
       const focusable = panel.current?.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])');
       if (!focusable?.length) return;
@@ -37,11 +39,11 @@ export default function Drawer({ label, onClose, children }) {
       document.body.style.overflow = overflow;
       if (opener.current instanceof HTMLElement) opener.current.focus();
     };
-  }, [onClose]);
+  }, []); // Opening/closing manages focus; changing a form field must never steal it.
 
   return (
     <div className="drawer-bg" onClick={onClose}>
-      <div className="drawer" ref={panel} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={label}>
+      <div className={`drawer ${className}`} ref={panel} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={label}>
         {children}
       </div>
     </div>

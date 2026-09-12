@@ -24,8 +24,11 @@ import BillDrawer from './drawers/BillDrawer.jsx';
 import CompareDrawer from './drawers/CompareDrawer.jsx';
 import NoticeDrawer from './drawers/NoticeDrawer.jsx';
 import BudgetDrawer from './drawers/BudgetDrawer.jsx';
+import AssistantDrawer from './drawers/AssistantDrawer.jsx';
+import PurchaseDrawer from './drawers/PurchaseDrawer.jsx';
+import PurchasesPage from './pages/PurchasesPage.jsx';
 
-const NAV = [['dashboard', 'Today', 'dash'], ['alerts', 'Alerts', 'bell'], ['forecast', 'Forecast', 'trend'], ['transactions', 'Transactions', 'list', 'Activity'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Cash flow', 'bars'], ['goals', 'Goals', 'target']];
+const NAV = [['dashboard', 'Today', 'dash'], ['alerts', 'Alerts', 'bell'], ['forecast', 'Forecast', 'trend'], ['purchases', 'Purchases', 'cart'], ['transactions', 'Transactions', 'list', 'Activity'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Cash flow', 'bars'], ['goals', 'Goals', 'target']];
 
 function Navigation({ page, setPage, badges = {} }) {
   return NAV.map(([id, label, icon, short = label]) => (
@@ -47,10 +50,11 @@ function ThemeSwitch({ theme }) {
 export default function App() {
   const data = useHousehold();
   if (data.loading) return <main className="workspace"><h1>RainCheck</h1><p role="status">Loading your household…</p></main>;
+  if (data.error) return <main className="workspace"><h1>Let’s reconnect your plan</h1><p role="alert">{data.error}</p><button className="btn" onClick={data.refresh}>Try again</button></main>;
   return <Workspace key={data.source} {...data} />;
 }
 
-function Workspace({ household: base, transactions, notice, source, discovered: candidates = [], pendingNotices = [] }) {
+function Workspace({ household: base, baseVersion, transactions, notice, source, purchasesAvailable = false, refresh, discovered: candidates = [], pendingNotices = [] }) {
   const [page, setPageRaw] = useState('dashboard');
   const reducedMotion = useReducedMotion();
   const theme = useTheme();
@@ -84,7 +88,7 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
   }, [reducedMotion]);
   const [backTo, setBackTo] = useState(null);
   const navigate = useCallback(id => { setBackTo(null); setPage(id); }, [setPage]);
-  const [drawer, setDrawer] = useState(null);
+  const [drawer, setDrawer] = useState(() => new URLSearchParams(window.location.search).has('review') ? 'assistant' : null);
   const [confirm, setConfirm] = useState(null);
   const [previewId, setPreviewId] = useState(null);      // an option's identity, not a snapshot of it
   const [billId, setBillId] = useState(null);            // which bill a drawer was opened for
@@ -242,6 +246,7 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
         {page === 'dashboard' && <Dashboard h={h} source={source} dark={theme.dark} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
         {page === 'alerts' && <AlertsPage h={h} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} found={found} setFound={setFound} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
+        {page === 'purchases' && <PurchasesPage h={h} available={purchasesAvailable} open={open} refresh={refresh} />}
         {page === 'transactions' && <TransactionsPage transactions={transactions} allowances={h.allowances} corrections={corrections} setCorrections={setCorrections} />}
         {page === 'recurring' && <RecurringPage h={h} sc={sc} plan={plan} change={change} cap={cap} open={open} discovered={discovered} onAdopt={adopt} onDismiss={dismiss} />}
         {page === 'cashflow' && <CashFlowPage h={h} sc={sc} sim={sim} />}
@@ -250,7 +255,9 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
 
       <Ambient state={sim.worst} />
       <Toasts />
-      {(drawer === 'goal' || drawer === 'subscription') && <BudgetDrawer key={`${drawer}:${billId}`} kind={drawer} id={billId} base={base} plan={plan} change={change} onClose={() => setDrawer(null)} />}
+      {drawer === 'assistant' && <AssistantDrawer baseVersion={baseVersion} plan={plan} savedId={new URLSearchParams(window.location.search).get('review')} onClose={() => setDrawer(null)} />}
+      {drawer === 'purchase' && purchasesAvailable && <PurchaseDrawer key={`${billId}:${baseVersion}:${JSON.stringify(plan)}`} id={billId} base={base} baseVersion={baseVersion} plan={plan} refresh={refresh} onClose={() => setDrawer(null)} />}
+      {(drawer === 'goal' || drawer === 'subscription') && <BudgetDrawer key={`${drawer}:${billId}`} kind={drawer} id={billId} base={base} baseVersion={baseVersion} plan={plan} change={change} onClose={() => setDrawer(null)} />}
       {drawer === 'bill' && <BillDrawer h={h} notice={notice} billId={billId} plan={plan} change={change} cap={cap} onCompare={() => setDrawer('compare')} onClose={() => setDrawer(null)} />}
       {drawer === 'notice' && <NoticeDrawer h={h} base={base} plan={plan} cap={cap} change={change}
         initialText={noticeText} origin={waiting.find(n => n.id === billId)}
