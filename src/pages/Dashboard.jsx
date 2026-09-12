@@ -24,11 +24,26 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
   const nextPay = (sc.income || h.income)[0];
   const lastDay = sim.days[sim.days.length - 1];
   const reviewCount = h.recurring.filter(r => r.unexplained).length;
+  // The weather picture reports the same status as everything else. Decoration that always showed
+  // sunshine would be the one part of the page that could not deliver bad news.
+  const sky = { over: { sun: false, drops: '····' }, below: { sun: false, drops: '···' },
+                tight: { sun: true, drops: '··' }, ok: { sun: true, drops: null } }[sim.worst];
   const headline = sim.worst === 'over' ? 'Your balance would go below zero before payday.' : sim.worst === 'below' ? 'Bills are covered, but your savings plan dips below your cushion.' : goal.gap > 0 ? 'Bills are covered, but your goal needs an adjustment.' : 'Bills are covered and your goal is on track.';
   return (
     <>
-      <div className="topbar"><div><h1>{headline}</h1><div className="sub">{longDate(today)}{nextPay ? ` · Next paycheck ${weekdayIso(nextPay.date)}` : ''} · Forecast through {prettyDate(lastDay.date)}</div></div>
-        <div className="row"><span className="pill teal"><Icon n="bank" s={13} />{sourceLabel}</span><span className="pill neutral" title="Items needing attention"><Icon n="bell" s={13} />{alerts.filter(a => a.tone !== 'good').length}</span></div></div>
+      <div className="weather-hero">
+        <div className="weather-copy">
+          <span className="weather-kicker">TODAY’S FINANCIAL FORECAST</span>
+          <h1>{headline}</h1>
+          <div className="sub">{longDate(today)}{nextPay ? ` · Next paycheck ${weekdayIso(nextPay.date)}` : ''} · Forecast through {prettyDate(lastDay.date)}</div>
+        </div>
+        <div className="hero-weather" aria-hidden="true">
+          {sky.sun && <span className="sun">☀</span>}
+          <span className="cloud">☁</span>
+          {sky.drops && <span className="drops">{sky.drops}</span>}
+        </div>
+      </div>
+      <div className="top-actions"><span className="pill teal"><Icon n="bank" s={13} />{sourceLabel}</span><span className="pill neutral" title="Items needing attention"><Icon n="bell" s={13} />{alerts.filter(a => a.tone !== 'good').length}</span></div>
       <div className="grid g4" style={{ marginBottom: 18 }}>
         <Kpi label="Checking balance" value={money(h.checking)} sub="Everyday Checking" />
         <Kpi label="Lowest projected balance" value={money(sim.low.balance)} sub={`${prettyDate(sim.low.date)} · cushion ${money(h.cushion)}`} pill={<span className={'pill ' + tone}>{st}</span>} />

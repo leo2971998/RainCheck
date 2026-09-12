@@ -18,7 +18,7 @@ import BillDrawer from './drawers/BillDrawer.jsx';
 import CompareDrawer from './drawers/CompareDrawer.jsx';
 import NoticeDrawer from './drawers/NoticeDrawer.jsx';
 
-const NAV = [['dashboard', 'Dashboard', 'dash'], ['forecast', 'Forecast', 'trend'], ['transactions', 'Transactions', 'list'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Cash flow', 'bars'], ['goals', 'Goals', 'target']];
+const NAV = [['dashboard', 'Today', 'dash'], ['forecast', 'Forecast', 'trend'], ['transactions', 'Transactions', 'list'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Cash flow', 'bars'], ['goals', 'Goals', 'target']];
 
 function Navigation({ page, setPage, badges = {} }) {
   return NAV.map(([id, label, icon]) => (
@@ -31,7 +31,7 @@ function Navigation({ page, setPage, badges = {} }) {
 
 export default function App() {
   const data = useHousehold();
-  if (data.loading) return <main><h1>RainCheck</h1><p role="status">Loading your household…</p></main>;
+  if (data.loading) return <main className="workspace"><h1>RainCheck</h1><p role="status">Loading your household…</p></main>;
   return <Workspace key={data.source} {...data} />;
 }
 
@@ -137,16 +137,16 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
   return (
     <div className="app">
       <aside>
-        <div className="brand"><span className="mark"><Icon n="spark" s={16} c="#fff" /></span><b>RainCheck</b></div>
+        <div className="brand"><span className="mark"><span className="weather-mark" aria-hidden="true">☂</span></span><div><b>RainCheck</b><small>Financial forecast</small></div></div>
         <nav aria-label="Main navigation"><Navigation page={page} setPage={setPage} badges={badges} /></nav>
         <div className="side-foot">
-          <div className="acct"><span className="avatar">A</span>Alex Rivera</div>
+          <div className="acct"><span className="avatar">AR</span><span>Alex Rivera</span></div>
           Everyday Checking · Savings<br />{sourceLabel}
           {hasPersisted() && <><br /><button className="link" style={{ fontSize: 12, marginTop: 6 }} onClick={resetAll}>Reset my decisions</button></>}
         </div>
       </aside>
 
-      <main>
+      <main className="workspace">
         <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={setPage} badges={badges} /></nav>
         {page === 'dashboard' && <Dashboard h={h} source={source} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
