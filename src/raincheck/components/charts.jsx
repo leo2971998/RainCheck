@@ -20,7 +20,7 @@ export function AreaChart({ h, sim, id = 'a', height = 250 }) {
       <line x1={L} x2={W - R} y1={y(h.cushion)} y2={y(h.cushion)} stroke="var(--sun-deep)" strokeDasharray="5 5" strokeWidth="1.2" />
       <text x={W - R} y={y(h.cushion) - 6} textAnchor="end" fontSize="11" fill="var(--sun-deep)" fontWeight="600">Cushion {money(h.cushion)}</text>
       {minV < 0 && <line x1={L} x2={W - R} y1={y(0)} y2={y(0)} stroke="var(--storm)" strokeWidth="1" opacity=".6" />}
-      <path d={area} fill={`url(#g${id})`} /><path d={line} fill="none" stroke="var(--rain)" strokeWidth="2.4" strokeLinejoin="round" />
+      <path className="chart-area" d={area} fill={`url(#g${id})`} /><path className="chart-line" d={line} fill="none" stroke="var(--rain)" strokeWidth="2.4" strokeLinejoin="round" pathLength="1" />
       {days.map((d, i) => d.events.some(e => e.pay) ? <circle key={'p' + i} cx={x(i)} cy={y(d.balance)} r="4" fill="var(--mint)" stroke="var(--surface)" strokeWidth="1.5" /> : d.events.some(e => e.big) ? <circle key={'b' + i} cx={x(i)} cy={y(d.balance)} r="3.5" fill="var(--surface)" stroke="var(--rain)" strokeWidth="1.8" /> : null)}
       <circle cx={x(lowI)} cy={y(sim.low.balance)} r="5" fill={sim.low.state === 'ok' ? 'var(--good)' : sim.low.state === 'tight' ? 'var(--sun-deep)' : 'var(--storm)'} stroke="var(--surface)" strokeWidth="2" />
       <text x={x(lowI)} y={y(sim.low.balance) + 18} textAnchor={lowI > n * 0.8 ? 'end' : 'middle'} fontSize="11.5" fontWeight="600" fill="var(--ink-soft)">Low {money(sim.low.balance)} · {prettyDate(sim.low.date)}</text>
@@ -43,7 +43,7 @@ export function GoalChart({ h, cap, goal }) {
     <svg viewBox={`0 0 ${W} ${Hh}`} width="100%" role="img" aria-label="Goal projection, original plan versus updated plan">
       {[0, 1000, 2000].map(t => <g key={t}><line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke="var(--line-soft)" /><text x={L - 6} y={y(t) + 4} textAnchor="end" fontSize="10.5" fill="var(--muted-ink)">{money(t)}</text></g>)}
       <line x1={L} x2={W - R} y1={y(h.goal.target)} y2={y(h.goal.target)} stroke="var(--good)" strokeDasharray="4 4" />
-      <path d={pl(orig)} fill="none" stroke="var(--cloud-deep)" strokeWidth="2.2" strokeDasharray="6 4" /><path d={pl(upd)} fill="none" stroke="var(--rain)" strokeWidth="2.6" />
+      <path className="chart-line-muted" d={pl(orig)} fill="none" stroke="var(--cloud-deep)" strokeWidth="2.2" strokeDasharray="6 4" /><path className="chart-line" d={pl(upd)} fill="none" stroke="var(--rain)" strokeWidth="2.6" pathLength="1" />
       {upd.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r="3.5" fill="var(--rain)" stroke="var(--surface)" strokeWidth="1.5" />)}
       {months.map((m, i) => <text key={m} x={x(i)} y={Hh - 8} textAnchor="middle" fontSize="11" fill="var(--muted-ink)">{m}</text>)}
       <text x={W - R} y={y(h.goal.target) - 5} textAnchor="end" fontSize="10.5" fill="var(--good-deep)" fontWeight="600">Target {money(h.goal.target)}</text>
