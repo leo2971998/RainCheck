@@ -4,6 +4,7 @@ The original config is backed up; failed validation/reload restores it. No
 certificate, upstream application, DNS record or firewall rule is changed.
 """
 from datetime import datetime, timezone
+import argparse
 import os
 from pathlib import Path
 import shutil
@@ -29,7 +30,9 @@ BLOCK = MARKER + '''    location = /raincheck/health {
 def render_nginx(original):
     if MARKER in original: return original
     anchor = '    location / {'
-    if (original.count('server_name zeroclaw.leo-photoserver.com;') != 1
+    # Certbot repeats server_name in its HTTP redirect block. This does not
+    # create another upstream route; still require exactly one insertion point.
+    if (original.count('server_name zeroclaw.leo-photoserver.com;') not in (1, 2)
             or original.count(anchor) != 1 or 'listen 443 ssl' not in original
             or '/raincheck/' in original):
         raise ValueError('Unexpected Nginx config. Nothing changed; manual review is needed.')
@@ -37,13 +40,18 @@ def render_nginx(original):
 
 
 def main():
-    if os.geteuid() != 0: raise SystemExit('Run this HTTPS activation with sudo.')
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true', help='Check the current config without changing files or reloading Nginx.')
+    options = parser.parse_args()
+    if not options.check and os.geteuid() != 0: raise SystemExit('Run this HTTPS activation with sudo.')
     path = Path('/etc/nginx/sites-available/zeroclaw.conf')
     enabled = Path('/etc/nginx/sites-enabled/zeroclaw.conf')
     if path.resolve() != path or enabled.resolve() != path:
         raise SystemExit('Unexpected config target; nothing changed.')
     original = path.read_text()
     updated = render_nginx(original)
+    if options.check:
+        print('RainCheck HTTPS config check passed. No files changed and Nginx was not reloaded.'); return
     if updated == original:
         print('RainCheck HTTPS routes are already installed.'); return
     backup = Path('/etc/nginx') / ('raincheck-original-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f') + '.conf')

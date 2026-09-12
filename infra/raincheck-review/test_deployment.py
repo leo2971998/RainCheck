@@ -4,7 +4,7 @@ import tempfile
 import tomllib
 import unittest
 
-from activate_https import render_nginx
+from activate_https import BLOCK, render_nginx
 from import_auth import copy_access_token
 
 
@@ -56,6 +56,32 @@ server { listen 80; return 404; }
         self.assertFalse(config['runtime_profiles']['review']['agentic'])
         self.assertEqual(config['observability']['log_persistence'], 'none')
         self.assertEqual(config['memory']['backend'], 'none')
+
+    def test_certbot_repeated_hostname_keeps_http_redirect_unchanged(self):
+        https = '''server {
+    server_name zeroclaw.leo-photoserver.com;
+    client_max_body_size 2m;
+    location / {
+        proxy_pass http://127.0.0.1:43100;
+        proxy_set_header Host $host;
+    }
+    listen 443 ssl; # managed by Certbot
+}'''
+        redirect = '''server {
+    if ($host = zeroclaw.leo-photoserver.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+    listen 80;
+    server_name zeroclaw.leo-photoserver.com;
+    return 404; # managed by Certbot
+}'''
+        original = https + redirect
+        changed = render_nginx(original)
+        self.assertEqual(changed.replace(BLOCK, '', 1), original)
+        self.assertEqual(changed.count(BLOCK), 1)
+        self.assertTrue(changed.endswith(redirect))
+        self.assertEqual(render_nginx(changed), changed)
+        with self.assertRaises(ValueError): render_nginx(original + redirect)
 
 
 if __name__ == '__main__':
