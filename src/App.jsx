@@ -49,9 +49,21 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
    * falls through to an ordinary state change.
    */
   const setPage = useCallback(next => {
-    const go = () => setPageRaw(next);
+    let ran = false;
+    const go = () => { if (ran) return; ran = true; setPageRaw(next); };
     if (reducedMotion || typeof document.startViewTransition !== 'function') return go();
-    try { document.startViewTransition(() => flushSync(go)); } catch { go(); }
+
+    // startViewTransition defers its callback until the browser has a rendering opportunity to
+    // snapshot from. When one is slow to arrive — a throttled tab, a screen-share, an embedded
+    // view — that callback can be seconds late or never run, and the page simply does not change.
+    // Observed in the wild: one navigation stranded for over six seconds. The cross-fade is worth
+    // far less than a section that always opens, so a watchdog commits the change regardless and
+    // drops the transition rather than letting it arrive on top of a page that already moved.
+    let vt = null;
+    const watchdog = setTimeout(() => { go(); vt?.skipTransition?.(); }, 120);
+    try {
+      vt = document.startViewTransition(() => { clearTimeout(watchdog); flushSync(go); });
+    } catch { clearTimeout(watchdog); go(); }
   }, [reducedMotion]);
   const [drawer, setDrawer] = useState(null);
   const [confirm, setConfirm] = useState(null);
