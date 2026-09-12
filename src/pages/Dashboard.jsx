@@ -1,17 +1,7 @@
 import { Icon, Kpi, Num, STATE, money, prettyDate, longDate, prettyIso, weekdayIso } from '../components/ui.jsx';
-import { AreaChart, CashBars } from '../components/charts.jsx';
+import { AreaChart } from '../components/charts.jsx';
 import { Sky, Outlook, timeOfDay } from '../components/Weather.jsx';
 import { GoalRing } from '../components/GoalRing.jsx';
-import IncomeList from '../components/IncomeList.jsx';
-import Alerts from '../components/Alerts.jsx';
-import Reminders from '../components/Reminders.jsx';
-
-/** Describes the gap between the first two expected paychecks in words, rather than assuming it. */
-function cadenceWords(income) {
-  if (income.length < 2) return 'month';
-  const days = Math.round((new Date(income[1].date) - new Date(income[0].date)) / 864e5);
-  return days <= 8 ? 'week' : days <= 16 ? 'two weeks' : days <= 24 ? 'three weeks' : 'month';
-}
 
 export default function Dashboard({ h, source, plan, sc, change, sim, previewSim, preview, cap, goal, alerts, waiting = [], onReviewNotice, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
   // The scenario, not the raw plan: an unaccepted plan has no contribution of its own and falls back
@@ -25,11 +15,11 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
   const sourceLabel = { sample: 'Sample data', nessie: 'Nessie sandbox', snapshot: 'Saved sandbox snapshot' }[source];
   const nextPay = (sc.income || h.income)[0];
   const lastDay = sim.days[sim.days.length - 1];
-  const reviewCount = h.recurring.filter(r => r.unexplained).length;
   // The weather picture reports the same status as everything else. Decoration that always showed
   // sunshine would be the one part of the page that could not deliver bad news. The clock picks
   // only the sky behind it, so an evening never looks like a bad forecast.
   const tod = timeOfDay();
+  const attention = alerts.filter(a => a.tone !== 'good').length + reminders.length + waiting.length;
   const night = tod === 'night';
   const headline = sim.worst === 'over' ? 'Your balance would go below zero before payday.' : sim.worst === 'below' ? 'Bills are covered, but your savings plan dips below your cushion.' : goal.gap > 0 ? 'Bills are covered, but your goal needs an adjustment.' : 'Bills are covered and your goal is on track.';
   return (
@@ -43,14 +33,42 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
         <div className="hero-weather"><Sky state={sim.worst} night={night} /></div>
       </div>
       <Outlook sim={sim} h={h} />
-      <div className="top-actions"><span className="pill teal"><Icon n="bank" s={13} />{sourceLabel}</span><span className="pill neutral" title="Items needing attention"><Icon n="bell" s={13} />{alerts.filter(a => a.tone !== 'good').length}</span></div>
+      <div className="top-actions"><span className="pill teal"><Icon n="bank" s={13} />{sourceLabel}</span></div>
       <div className="grid g4" style={{ marginBottom: 18 }}>
         <Kpi label="Checking balance" value={<Num v={h.checking} />} sub="Everyday Checking" />
         <Kpi label="Lowest projected balance" value={<Num v={sim.low.balance} />} sub={`${prettyDate(sim.low.date)} · cushion ${money(h.cushion)}`} pill={<span className={'pill ' + tone}>{st}</span>} />
         <Kpi label="Contribution the plan supports" value={<><Num v={cap} />/mo</>} sub={`Planned ${money(h.goal.planned)} · ${cap < h.goal.planned ? `${money(h.goal.planned - cap)} less after the bill change` : 'unchanged'}`} pill={cap < h.goal.planned ? <span className="pill warn"><Icon n="down" s={11} />{money(h.goal.planned - cap)}</span> : <span className="pill good">OK</span>} />
         <Kpi label={h.goal.label} value={<Num v={goal.projected} />} sub={`Projected of ${money(h.goal.target)} by ${goal.targetLabel}`} pill={goal.gap ? <span className="pill bad">{money(goal.gap)} short</span> : <span className="pill good">On track</span>} />
       </div>
-      <div className="grid g32">
+      {/* A glance at what lives on the other pages, and a way there. Each line is the same figure
+          that page shows, so a peek never promises something the page then contradicts. */}
+      <div className="peeks" aria-label="More on other pages">
+        <button className="peek" onClick={() => open('page:alerts')}>
+          <i className="pk-ic"><Icon n="bell" s={15} /></i>
+          <span className="pk-l">Alerts</span>
+          <b className="pk-v">{attention ? `${attention} need${attention === 1 ? 's' : ''} your attention` : 'All clear'}</b>
+          <i className="pk-go"><Icon n="arrow" s={14} /></i>
+        </button>
+        <button className="peek" onClick={() => open('page:alerts')}>
+          <i className="pk-ic"><Icon n="repeat" s={15} /></i>
+          <span className="pk-l">Coming up</span>
+          <b className="pk-v">{reminders[0] ? `${reminders[0].label} ${reminders[0].when} · ${money(reminders[0].amount)}` : 'No bills due soon'}</b>
+          <i className="pk-go"><Icon n="arrow" s={14} /></i>
+        </button>
+        <button className="peek" onClick={() => open('page:cashflow')}>
+          <i className="pk-ic"><Icon n="bars" s={15} /></i>
+          <span className="pk-l">Cash flow</span>
+          <b className="pk-v">{lastDay.date.toLocaleDateString('en-US', { month: 'long' })} · {money(sim.cash.income - sim.cash.bills - sim.cash.everyday - sim.cash.savings)} left over</b>
+          <i className="pk-go"><Icon n="arrow" s={14} /></i>
+        </button>
+        <button className="peek" onClick={() => open('page:forecast')}>
+          <i className="pk-ic"><Icon n="trend" s={15} /></i>
+          <span className="pk-l">Expected income</span>
+          <b className="pk-v">{nextPay ? `${weekdayIso(nextPay.date)} · +${money(nextPay.amount)}` : 'No paycheck found'}</b>
+          <i className="pk-go"><Icon n="arrow" s={14} /></i>
+        </button>
+      </div>
+      <div className="grid" style={{ gap: 18 }}>
         <div className="grid" style={{ gap: 18 }}>
           <div className="card">
             <div className="hd"><div><h2>Projected checking balance</h2><div className="fine">{preview ? `Dashed line: ${preview.title.toLowerCase()}. Solid line: your current plan.` : `Next ${h.windowDays} days · scheduled bills, expected income, everyday spending and your ${money(sc.contribution)} contribution`}</div></div>
@@ -116,18 +134,6 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
               {lastAction && <span className="row" style={{ gap: 6 }}><span className="pill good"><Icon n="check" s={11} />{lastAction.label}</span><button className="link" style={{ fontSize: 13 }} onClick={onUndo}>Undo</button></span>}
             </div>
           </div>
-          <div className="card">
-            <div className="hd"><h2>Cash flow</h2><span className="fine">{lastDay.date.toLocaleDateString('en-US', { month: 'long' })} is projected from the forecast</span></div>
-            <CashBars h={h} sim={sim} />
-          </div>
-        </div>
-        <div className="grid" style={{ gap: 18 }}>
-          {found && <div className="card" style={{ background: 'var(--insight-bg)' }}><div className="hd"><h2>Here is what we found</h2><button className="link" onClick={() => setFound(false)}>Dismiss</button></div>
-            <div className="row wrap" style={{ gap: 6 }}><span className="pill good"><Icon n="check" s={11} />Paycheck about every {cadenceWords(h.income)}</span><span className="pill good"><Icon n="check" s={11} />{h.recurring.length} recurring commitments</span>{reviewCount > 0 && <span className="pill warn">{reviewCount} charge{reviewCount === 1 ? ' needs' : 's need'} review</span>}</div>
-            <div><button className="btn ghost sm" onClick={() => open('page:transactions')}>Review my plan</button></div></div>}
-          <Alerts alerts={alerts} open={open} />
-          <Reminders reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={onPaid} />
-          <IncomeList h={h} plan={plan} change={change} compact />
         </div>
       </div>
     </>

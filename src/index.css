@@ -416,3 +416,79 @@
     .wx-rays, .wx-cloud, .wx-drop, .wx-bolt, .wx-star, .ol-week, .tl-node, .toast { animation: none; }
     .sky-icon, .weather-hero { transition: none; }
   }
+
+  /* ===== Phone layout for the new pieces ===================================================== */
+  /* The bell on Today is a button that looks like a pill. */
+  .as-btn { border: 0; cursor: pointer; font: inherit; }
+  .as-btn:hover { filter: brightness(.96); }
+  @media (max-width: 560px) {
+    /* Five weeks in two columns made three rows; a phone reads a forecast strip sideways. */
+    .outlook { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(122px, 1fr); grid-template-columns: none;
+      overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+    .ol-week { scroll-snap-align: start; }
+    .weather-hero { padding: 20px 18px 22px; min-height: 0; }
+    .weather-hero h1 { font-size: 24px; padding-right: 0; }
+    .hero-weather { position: absolute; right: -18px; bottom: -14px; width: 120px; min-width: 0; height: 90px; opacity: .8; }
+    .weather-copy { padding-right: 60px; }
+    .tabs { gap: 5px; }
+    .tabs .nav { flex: 1 1 28%; justify-content: center; padding: 8px 6px; font-size: 13px; }
+    .tabs .badge { margin-left: 4px; }
+    .top-actions { flex-wrap: wrap; justify-content: flex-start; }
+    .timeline { min-width: max(100%, calc(var(--n, 4) * 96px)); }
+  }
+
+  /* ===== Peeks, back link, phone tab bar ===================================================== */
+  .peeks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0 0 18px; }
+  .peek { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; column-gap: 10px; row-gap: 1px;
+    text-align: left; padding: 10px 12px; border-radius: 12px; cursor: pointer; font: inherit; color: var(--ink);
+    background: color-mix(in oklab, var(--surface) 80%, transparent); border: 1px solid color-mix(in oklab, var(--rain) 10%, var(--line));
+    box-shadow: 0 1px 2px oklch(.35 .06 240 / .04), 0 6px 16px oklch(.45 .08 230 / .05);
+    transition: transform .22s var(--ease-soft), box-shadow .22s var(--ease-soft), border-color .22s; }
+  .peek:hover { transform: translateY(-2px); border-color: color-mix(in oklab, var(--rain) 30%, var(--line)); box-shadow: 0 2px 6px oklch(.35 .06 240 / .06), 0 14px 30px oklch(.45 .08 230 / .11); }
+  .peek:active { transform: translateY(0) scale(.985); }
+  .pk-ic { grid-row: 1 / span 2; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-bg); color: var(--accent-2); }
+  .pk-l { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .pk-v { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .pk-go { grid-row: 1 / span 2; color: var(--faint); display: grid; place-items: center; transition: transform .22s var(--ease-soft), color .22s; }
+  .peek:hover .pk-go { transform: translateX(3px); color: var(--accent); }
+
+  .back-link { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 12px; padding: 7px 12px 7px 9px; border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--rain) 14%, var(--line)); background: color-mix(in oklab, var(--surface) 82%, transparent);
+    color: var(--ink-2); font: 600 13px var(--body); cursor: pointer; animation: card-rise .3s var(--ease-out) backwards; }
+  .back-link:hover { color: var(--ink); border-color: color-mix(in oklab, var(--rain) 34%, var(--line)); }
+  .back-ic { display: grid; place-items: center; } .back-ic svg { transform: rotate(180deg); }
+
+  .nav-short { display: none; }
+
+  @media (max-width: 1100px) { .peeks { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  @media (max-width: 560px) {
+    .peeks { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .peek { padding: 9px 10px; column-gap: 8px; }
+    .pk-ic { width: 28px; height: 28px; }
+    .pk-v { font-size: 12px; }
+
+    /* Seven sections do not wrap into three rows of tabs on a phone; they become a bottom bar,
+       icon over label, the way every phone app the reader already uses does it. */
+    main { padding-bottom: 100px; }
+    .tabs { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 40; margin: 0; padding: 6px; gap: 2px;
+      display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+      background: color-mix(in oklab, var(--surface) 90%, transparent); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4);
+      border: 1px solid color-mix(in oklab, var(--rain) 14%, var(--line)); border-radius: 16px; box-shadow: 0 10px 30px oklch(.25 .05 240 / .18); }
+    .tabs .nav { flex: none; width: auto; min-width: 0; min-height: 52px; padding: 6px 2px 5px; gap: 3px; flex-direction: column; justify-content: center;
+      font-size: 9.5px; font-weight: 600; letter-spacing: -.1px; border-radius: 10px; position: relative; }
+    .tabs .nav svg { width: 18px; height: 18px; }
+    .tabs .nav.on { background: var(--side-hi); color: var(--ink); box-shadow: none; }
+    .tabs .nav:hover { transform: none; }
+    .tabs .badge { position: absolute; top: 3px; right: 5px; margin: 0; font-size: 9px; padding: 1px 4px; min-width: 15px; line-height: 12px; }
+    .nav-long { display: none; } .nav-short { display: inline; }
+    .back-link { margin-bottom: 10px; }
+  }
+
+  /* On a phone the weather sits inside the hero, scaled to fit, instead of hanging off its
+     corner: measured at 375px it overhung by 35px and ran into the subtitle. */
+  @media (max-width: 560px) {
+    .hero-weather { position: absolute; right: 12px; bottom: 12px; width: 84px; height: 84px; min-width: 0; opacity: 1; }
+    .hero-weather svg.wx { width: 100%; height: 100%; }
+    .weather-copy { padding-right: 96px; }
+  }

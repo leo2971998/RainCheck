@@ -13,6 +13,7 @@ import { buildReminders } from './engine/reminders.js';
 import { Icon, money, monthOf } from './components/ui.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import ForecastPage from './pages/ForecastPage.jsx';
+import AlertsPage from './pages/AlertsPage.jsx';
 import TransactionsPage from './pages/TransactionsPage.jsx';
 import RecurringPage from './pages/RecurringPage.jsx';
 import CashFlowPage from './pages/CashFlowPage.jsx';
@@ -21,12 +22,12 @@ import BillDrawer from './drawers/BillDrawer.jsx';
 import CompareDrawer from './drawers/CompareDrawer.jsx';
 import NoticeDrawer from './drawers/NoticeDrawer.jsx';
 
-const NAV = [['dashboard', 'Today', 'dash'], ['forecast', 'Forecast', 'trend'], ['transactions', 'Transactions', 'list'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Cash flow', 'bars'], ['goals', 'Goals', 'target']];
+const NAV = [['dashboard', 'Today', 'dash'], ['alerts', 'Alerts', 'bell'], ['forecast', 'Forecast', 'trend'], ['transactions', 'Transactions', 'list', 'Activity'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Cash flow', 'bars'], ['goals', 'Goals', 'target']];
 
 function Navigation({ page, setPage, badges = {} }) {
-  return NAV.map(([id, label, icon]) => (
+  return NAV.map(([id, label, icon, short = label]) => (
     <button key={id} className={`nav${page === id ? ' on' : ''}`} aria-current={page === id ? 'page' : undefined} onClick={() => setPage(id)}>
-      <Icon n={icon} s={17} />{label}
+      <Icon n={icon} s={17} /><span className="nav-l nav-long">{label}</span><span className="nav-l nav-short" aria-hidden="true">{short}</span>
       {badges[id] > 0 && <span className="badge" aria-label={`${badges[id]} need attention`}>{badges[id]}</span>}
     </button>
   ));
@@ -69,6 +70,8 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
       for (const p of [vt.ready, vt.finished, vt.updateCallbackDone]) p?.catch?.(() => {});
     } catch { clearTimeout(watchdog); go(); }
   }, [reducedMotion]);
+  const [backTo, setBackTo] = useState(null);
+  const navigate = useCallback(id => { setBackTo(null); setPage(id); }, [setPage]);
   const [drawer, setDrawer] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [previewId, setPreviewId] = useState(null);      // an option's identity, not a snapshot of it
@@ -132,9 +135,10 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
   const transfer = useTransfer(source);
   const [reviewedNotices, setReviewedNotices] = usePersistentState('reviewedNotices', {});
   const waiting = pendingNotices.filter(n => !reviewedNotices[n.id]);
+  const navBadges = { ...badges, alerts: alerts.filter(a => a.tone !== 'good').length + reminders.length + waiting.length };
 
   const open = (what, id = null) => {
-    if (what.startsWith('page:')) { setDrawer(null); setPage(what.slice(5)); return; }
+    if (what.startsWith('page:')) { setDrawer(null); setBackTo(page === 'dashboard' ? 'dashboard' : null); setPage(what.slice(5)); return; }
     setBillId(id); setDrawer(what);
   };
   const reviewNoticeItem = item => { setNoticeText(item?.text || ''); setBillId(item?.id || null); setDrawer('notice'); };
@@ -200,7 +204,7 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
     <div className="app">
       <aside>
         <div className="brand"><span className="mark"><span className="weather-mark" aria-hidden="true">☂</span></span><div><b>RainCheck</b><small>Financial forecast</small></div></div>
-        <nav aria-label="Main navigation"><Navigation page={page} setPage={setPage} badges={badges} /></nav>
+        <nav aria-label="Main navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
         <div className="side-foot">
           <div className="acct"><span className="avatar">AR</span><span>Alex Rivera</span></div>
           Everyday Checking · Savings<br />{sourceLabel}
@@ -209,8 +213,10 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
       </aside>
 
       <main className="workspace">
-        <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={setPage} badges={badges} /></nav>
+        <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
+        {backTo && page !== backTo && <button className="back-link" onClick={() => navigate(backTo)}><i className="back-ic"><Icon n="arrow" s={14} /></i>Back to Today</button>}
         {page === 'dashboard' && <Dashboard h={h} source={source} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
+        {page === 'alerts' && <AlertsPage h={h} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} found={found} setFound={setFound} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
         {page === 'transactions' && <TransactionsPage transactions={transactions} allowances={h.allowances} corrections={corrections} setCorrections={setCorrections} />}
         {page === 'recurring' && <RecurringPage h={h} sc={sc} plan={plan} change={change} cap={cap} open={open} discovered={discovered} onAdopt={adopt} onDismiss={dismiss} />}
