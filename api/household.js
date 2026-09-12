@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { loadSnapshotLike } from './_nessie.js';
 import { buildHousehold, detectPostedChanges, applyNotice } from '../src/engine/household.js';
 import { parseNotice } from '../src/engine/changes.js';
+import { discoverCommitments } from '../src/engine/discover.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
@@ -22,7 +23,15 @@ export default async function handler(req, res) {
       parseNotice(notice, new Date(today).getFullYear()),
     );
 
-    return res.status(200).json({ source: snap.source, household, notice, transactions: recentTransactions(snap, household) });
+    // Computed HERE, from the same snapshot the household was built from. The client used to run
+    // this against the bundled sample, which meant live balances could be shown beside proposals
+    // drawn from a different household's spending.
+    const discovered = discoverCommitments(snap, household);
+
+    return res.status(200).json({
+      source: snap.source, household, notice, discovered,
+      transactions: recentTransactions(snap, household),
+    });
   } catch (err) {
     return res.status(503).json({ message: 'Sandbox data is not available yet. You can still use the sample workspace.', detail: String(err?.message || err) });
   }

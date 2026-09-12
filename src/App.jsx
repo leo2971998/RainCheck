@@ -7,7 +7,6 @@ import { emptyPlan, applyPatch, revert, scenarioFor, householdFor } from './engi
 import { buildOptions, currentOutcome } from './engine/options.js';
 import { buildAlerts } from './engine/alerts.js';
 import { buildReminders } from './engine/reminders.js';
-import { discoverCommitments } from './engine/discover.js';
 import { Icon, money, monthOf } from './components/ui.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import ForecastPage from './pages/ForecastPage.jsx';
@@ -36,7 +35,7 @@ export default function App() {
   return <Workspace key={data.source} {...data} />;
 }
 
-function Workspace({ household: base, transactions, notice, source, snapshot }) {
+function Workspace({ household: base, transactions, notice, source, discovered: candidates = [] }) {
   const [page, setPage] = useState('dashboard');
   const [drawer, setDrawer] = useState(null);
   const [confirm, setConfirm] = useState(null);
@@ -70,11 +69,11 @@ function Workspace({ household: base, transactions, notice, source, snapshot }) 
   const current = useMemo(() => currentOutcome(h, sc), [h, sc]);
   const reminders = useMemo(() => buildReminders(h, sc, leadDays), [h, sc, leadDays]);
 
-  // Proposals only. Anything the user has already adopted or rejected drops out of the list.
-  const discovered = useMemo(() => {
-    if (!snapshot) return [];
-    return discoverCommitments(snapshot, h).filter(f => !plan.adopted?.[f.id] && !plan.dismissed?.[f.id]);
-  }, [snapshot, h, plan]);
+  // Proposals only, and always from whichever records built this household. Anything the user has
+  // already adopted or rejected drops out of the list.
+  const discovered = useMemo(
+    () => candidates.filter(f => !plan.adopted?.[f.id] && !plan.dismissed?.[f.id] && !h.recurring.some(r => r.id === f.id)),
+    [candidates, plan, h]);
 
   // The preview always describes the option as it stands NOW. Protecting an allowance can replace
   // the trim option with a different category; the preview must follow, not describe the old one.

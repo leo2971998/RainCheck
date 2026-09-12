@@ -9,16 +9,20 @@ export function useTransfer(source) {
   const [state, setState] = useState({ pending: false, status: null, error: null, result: null });
 
   const request = useCallback(async amount => {
+    const operationId = `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
     setState({ pending: true, status: 'requested', error: null, result: null });
     try {
       const res = await fetch('/api/transfer', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        // Stable for this attempt, so a retry cannot become a second contribution.
+        body: JSON.stringify({ amount, operationId }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.message || 'The transfer could not be confirmed.');
+      // A half-completed pair is not a plain failure: money has already left checking.
+      if (!res.ok) { setState({ pending: false, status: null, error: body.message || 'The transfer could not be confirmed.', result: body, halfCompleted: !!body.halfCompleted }); return; }
       setState({ pending: false, status: body.status, error: null, result: body });
     } catch (err) {
-      setState({ pending: false, status: null, error: String(err.message || err), result: null });
+      setState({ pending: false, status: null, error: String(err.message || err), result: null, halfCompleted: false });
     }
   }, []);
 

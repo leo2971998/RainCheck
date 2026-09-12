@@ -23,6 +23,11 @@ export default async function handler(req, res) {
     return res.status(503).json({ message: 'The sandbox is not configured, so no transfer was attempted.' });
 
   const amount = Number(req.body?.amount);
+  // The caller names the operation, so a retry after a slow or lost response is recognised as the
+  // SAME contribution rather than a second one. An amount-and-date check alone cannot tell a
+  // deliberate second contribution from a duplicated first.
+  const opId = String(req.body?.operationId || '').slice(0, 64).replace(/[^A-Za-z0-9_-]/g, '');
+  if (!opId) return res.status(400).json({ message: 'An operationId is required so a retry is not treated as a second contribution.' });
   if (!Number.isFinite(amount) || amount <= 0 || amount > 5000)
     return res.status(400).json({ message: 'Enter an amount between $1 and $5,000.' });
 
@@ -31,13 +36,12 @@ export default async function handler(req, res) {
   // One contribution per amount per day. A double-tap or a retry after a slow response must not
   // move the money twice; the caller gets the record that already exists.
   const existing = await nessie(`/accounts/${savings}/deposits`).catch(() => []);
-  const already = Array.isArray(existing) && existing.find(d =>
-    d.transaction_date === date && Math.round(d.amount) === Math.round(amount) && /RainCheck/.test(d.description || ''));
+  const already = Array.isArray(existing) && existing.find(d => (d.description || '').includes(`#${opId}`));
   if (already) return res.status(200).json({
     status: already.status ?? 'completed', amount: Math.round(amount), date, depositId: already._id,
     duplicate: true, message: 'A contribution for this amount was already recorded today.',
   });
-  const body = (description) => ({ medium: 'balance', transaction_date: date, status: 'completed', amount: Math.round(amount), description });
+  const body = (description) => ({ medium: 'balance', transaction_date: date, status: 'completed', amount: Math.round(amount), description: `${description} #${opId}` });
 
   try {
     // Leave checking first. If the deposit fails we would rather owe the user an explanation

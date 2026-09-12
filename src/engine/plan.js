@@ -10,6 +10,11 @@
 // Now the plan holds every decision, each change records only the fields it touched, and Undo
 // reverses exactly those fields.
 
+// "this key did not exist before" has to be representable in JSON. `undefined` is dropped by
+// JSON.stringify, so a reloaded history entry forgot that Undo should REMOVE a newly added key —
+// a first cancellation or imported change survived its own undo.
+const ABSENT = '__raincheck_absent__';
+
 const MERGED = ['cuts', 'cancelled', 'pendingCancel', 'treatAsNewPrice', 'whatIf', 'billChanges', 'paid', 'adopted', 'dismissed'];
 
 /** A plan with nothing decided yet. `null` means "use the affordable/default value". */
@@ -39,10 +44,10 @@ export function applyPatch(plan, patch, label = '') {
   for (const [key, value] of Object.entries(patch)) {
     if (key === 'label') continue;
     if (MERGED.includes(key)) {
-      before[key] = Object.fromEntries(Object.keys(value).map(k => [k, plan[key]?.[k]]));
+      before[key] = Object.fromEntries(Object.keys(value).map(k => [k, k in (plan[key] || {}) ? plan[key][k] : ABSENT]));
       next[key] = { ...plan[key], ...value };
     } else {
-      before[key] = plan[key];
+      before[key] = key in plan ? plan[key] : ABSENT;
       next[key] = value;
     }
   }
@@ -57,11 +62,11 @@ export function revert(plan, entry) {
     if (MERGED.includes(key)) {
       const merged = { ...plan[key] };
       for (const [k, v] of Object.entries(value)) {
-        if (v === undefined) delete merged[k]; else merged[k] = v;
+        if (v === ABSENT || v === undefined) delete merged[k]; else merged[k] = v;
       }
       next[key] = merged;
     } else {
-      next[key] = value;
+      if (value === ABSENT) delete next[key]; else next[key] = value;
     }
   }
   return next;
@@ -94,12 +99,24 @@ export function householdFor(base, plan) {
   // Commitments the user confirmed from their spending history join the bill list. Nothing
   // reaches the forecast until they say so; a proposal on its own changes nothing.
   const adopted = Object.values(plan.adopted || {});
-  const withAdopted = adopted.length
-    ? [...recurring, ...adopted.filter(a => !recurring.some(r => r.id === a.id))].sort((a, b) => a.day - b.day)
+  const newlyAdopted = adopted.filter(a => !recurring.some(r => r.id === a.id));
+  const withAdopted = newlyAdopted.length
+    ? [...recurring, ...newlyAdopted].sort((a, b) => a.day - b.day)
     : recurring;
 
+  // Those charges were ALREADY inside a spending category, because they were purchases. Adding the
+  // commitment without taking them out counts the same money twice and invents an expense the user
+  // never incurred. Take the share back out of the category it came from.
+  let allowances = base.allowances;
+  if (newlyAdopted.length) {
+    const reclaim = {};
+    for (const a of newlyAdopted) if (a.categoryId) reclaim[a.categoryId] = (reclaim[a.categoryId] || 0) + (a.monthlyShare ?? a.amount);
+    allowances = base.allowances.map(x =>
+      reclaim[x.id] ? { ...x, monthly: Math.max(0, Math.round(x.monthly - reclaim[x.id])), reclaimed: reclaim[x.id] } : x);
+  }
+
   const unchanged = target === base.goal.target && left === base.goal.left
-    && income === base.income && withAdopted === base.recurring;
+    && income === base.income && withAdopted === base.recurring && allowances === base.allowances;
   if (unchanged) return base;
-  return { ...base, income, recurring: withAdopted, goal: { ...base.goal, target, left } };
+  return { ...base, income, recurring: withAdopted, allowances, goal: { ...base.goal, target, left } };
 }

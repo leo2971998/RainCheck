@@ -10,6 +10,7 @@ import { simulate, capacity, goalAt, cutNeeded, nextChargeDate, monthlyEquivalen
 import { buildOptions } from './options.js';
 import { buildAlerts } from './alerts.js';
 import { emptyPlan, applyPatch, revert, scenarioFor, householdFor } from './plan.js';
+import { discoverCommitments } from './discover.js';
 
 const TODAY = '2026-09-28';
 const snap = JSON.parse(readFileSync(new URL('../../data/nessie-snapshot.json', import.meta.url), 'utf8'));
@@ -402,5 +403,61 @@ describe('importing a notice the user pasted', () => {
     const day = simulate(after, scenarioFor(after, plan)).days.find(d => d.key === '2026-10-01');
     expect(day.events.find(e => e.id === 'internet').amt).toBe(-150);
     expect(day.events.find(e => e.id === 'streaming')).toBeUndefined();   // not due that day
+  });
+});
+
+describe('decisions survive a reload', () => {
+  const { h } = load();
+
+  // JSON.stringify drops keys whose value is undefined, so a history entry saying "this key did
+  // not exist before" came back from localStorage saying nothing at all — and Undo then left a
+  // first cancellation or imported change in place.
+  it('reverses a newly added key after the history has been through JSON', () => {
+    const step = applyPatch(emptyPlan(), { pendingCancel: { gym: true } }, 'pending');
+    const reloaded = JSON.parse(JSON.stringify(step.entry));
+    expect(revert(step.plan, reloaded).pendingCancel).toEqual({});
+  });
+
+  it('restores a previous value, rather than deleting it, when one existed', () => {
+    const first = applyPatch(emptyPlan(), { cuts: { 'dining-takeout': 45 } }, 'a');
+    const second = applyPatch(first.plan, { cuts: { 'dining-takeout': 80 } }, 'b');
+    const reloaded = JSON.parse(JSON.stringify(second.entry));
+    expect(revert(second.plan, reloaded).cuts).toEqual({ 'dining-takeout': 45 });
+  });
+
+  it('reverses a scalar that had no earlier value', () => {
+    const step = applyPatch(emptyPlan(), { goalTarget: 5000 }, 'goal');
+    const reloaded = JSON.parse(JSON.stringify(step.entry));
+    expect(revert(step.plan, reloaded).goalTarget).toBeNull();
+  });
+});
+
+describe('adopting a discovered commitment', () => {
+  const { h } = load();
+  const found = discoverCommitments(snap, h)[0];
+
+  it('says which spending category the charges are currently counted in', () => {
+    expect(found.categoryId).toBeTruthy();
+    expect(h.allowances.some(a => a.id === found.categoryId)).toBe(true);
+    expect(found.monthlyShare).toBeGreaterThan(0);
+  });
+
+  // The charges were already inside an allowance, because they were purchases. Adding the
+  // commitment without taking them back out invents an expense the user never incurred.
+  it('takes its share back out of that allowance, so nothing is counted twice', () => {
+    const plan = applyPatch(emptyPlan(), { adopted: { [found.id]: found } }, 'adopt').plan;
+    const after = householdFor(h, plan);
+    const before = h.allowances.find(a => a.id === found.categoryId).monthly;
+    const now = after.allowances.find(a => a.id === found.categoryId).monthly;
+    expect(now).toBe(before - found.monthlyShare);
+    expect(after.recurring.some(r => r.id === found.id)).toBe(true);
+  });
+
+  it('leaves the total monthly outgoing unchanged by the adoption itself', () => {
+    const plan = applyPatch(emptyPlan(), { adopted: { [found.id]: found } }, 'adopt').plan;
+    const after = householdFor(h, plan);
+    const spendBefore = h.allowances.reduce((a, x) => a + x.monthly, 0);
+    const spendAfter = after.allowances.reduce((a, x) => a + x.monthly, 0) + found.amount;
+    expect(Math.abs(spendAfter - spendBefore)).toBeLessThanOrEqual(1);   // rounding only
   });
 });

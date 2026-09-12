@@ -14,7 +14,7 @@ npm run dev          # http://127.0.0.1:5176
 It starts on sample data with no setup. `npm run dev` also serves the `api/` folder the way Vercel does, so the live path can be tested locally.
 
 ```bash
-npm test             # 42 tests, locked against the real sandbox snapshot
+npm test             # 54 tests, locked against the real sandbox snapshot
 npm run build
 ```
 

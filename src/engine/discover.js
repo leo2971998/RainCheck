@@ -15,7 +15,7 @@ const median = xs => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 /**
  * @returns candidates the user can confirm, each with the evidence that suggested it.
  */
-export function discoverCommitments(snap, household, { minCharges = 3, tolerance = 0.06 } = {}) {
+export function discoverCommitments(snap, household, { minCharges = 3, tolerance = 0.06, monthsCovered = 3 } = {}) {
   const merchant = Object.fromEntries((snap.merchants || []).map(m => [m._id, m]));
   const knownPayees = new Set(household.recurring.map(r => r.payee?.toLowerCase()).filter(Boolean));
 
@@ -46,7 +46,14 @@ export function discoverCommitments(snap, household, { minCharges = 3, tolerance
     if (!steadyInterval) continue;
 
     const last = sorted[sorted.length - 1];
+    // Which spending category these charges are currently counted in, and how much of it they are.
+    // Adopting the commitment has to take that share back out, or the money is counted twice.
+    const category = merchant[sorted[0].merchant_id]?.category || 'Other';
+    const monthlyShare = Math.round(sorted.reduce((a, c) => a + c.amount, 0) / monthsCovered);
     found.push({
+      category,
+      categoryId: slug(category),
+      monthlyShare,
       id: slug(name),
       label: name,
       payee: name,
@@ -58,7 +65,7 @@ export function discoverCommitments(snap, household, { minCharges = 3, tolerance
       cancellable: true,
       discovered: true,
       evidence: sorted.map(c => ({ date: c.purchase_date, amount: c.amount })),
-      why: `${sorted.length} charges of about $${Math.round(typical)}, roughly every ${cycle} days.`,
+      why: `${sorted.length} charges of about $${Math.round(typical)}, roughly every ${cycle} days. Currently counted inside your ${category.toLowerCase()} spending.`,
     });
   }
   return found.sort((a, b) => b.amount - a.amount);
