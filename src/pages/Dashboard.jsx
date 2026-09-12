@@ -51,7 +51,7 @@ export default function Dashboard({ h, source, plan, change, sim, previewSim, pr
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600 }}>{bill.label}</div>
                     <div className="fine">{money(bill.amount)} → <b className="num" style={{ color: 'var(--ink)' }}>{money(bill.amount + sc.increase)}</b> per month · takes effect {prettyIso(bill.change.effective)}</div>
-                    <div className="fine">{bill.change.why}, per the notice{sc.increase !== bill.change.increase ? ' · amount edited for the demo' : ''}</div>
+                    <div className="fine">{sc.increase !== bill.change.increase ? `What-if scenario · the notice says ${money(bill.change.increase)}` : `${bill.change.why}, per the notice`}</div>
                   </div>
                 </div>
               ))}

@@ -13,6 +13,9 @@ export default function BillDrawer({ h, notice, plan, change, cap, onCompare, on
   const billChange = bill.change;
   const increase = plan.increase;
   const goal = goalAt(h, cap);
+  // An amount the user typed is an assumption. The notice establishes its own figure, and the
+  // app must not keep claiming the provider confirmed a number they never wrote.
+  const isWhatIf = increase !== billChange.increase;
   const question = questionFor(bill, billChange);
 
   const copy = async () => {
@@ -28,13 +31,25 @@ export default function BillDrawer({ h, notice, plan, change, cap, onCompare, on
 
         <div className="row wrap" style={{ gap: 6 }}>
           <span className="pill warn"><Icon n="up" s={11} />Upcoming increase</span>
-          <span className="pill good"><Icon n="check" s={11} />Confirmed from a notice</span>
+          {isWhatIf
+            ? <span className="pill accent">What-if scenario · not what the notice says</span>
+            : <span className="pill good"><Icon n="check" s={11} />Confirmed from a notice</span>}
         </div>
+
+        {isWhatIf && (
+          <div className="alert">
+            <b>You are exploring {money(increase)} a month.</b>
+            <p>The notice itself says {money(billChange.increase)}, taking the bill to {money(bill.amount + billChange.increase)}.
+               The evidence below still shows what the provider actually wrote.
+               <button className="link" style={{ fontSize: 13, marginLeft: 6 }}
+                 onClick={() => change({ increase: billChange.increase }, 'Back to the notice amount')}>Use the notice amount</button></p>
+          </div>
+        )}
 
         <div className="kv">
           <span className="k">Previous recurring amount</span><span className="v">{money(bill.amount)}/month</span>
           <span className="k">New recurring amount</span><span className="v">{money(bill.amount + increase)}/month</span>
-          <span className="k">Increase</span><span className="v" style={{ fontWeight: 700 }}>{money(increase)}/month</span>
+          <span className="k">Increase</span><span className="v" style={{ fontWeight: 700 }}>{money(increase)}/month{isWhatIf && <div className="fine">notice says {money(billChange.increase)}</div>}</span>
           <span className="k">Explanation</span><span className="v">{billChange.why}</span>
           <span className="k">Next affected payment</span><span className="v">{prettyIso(billChange.effective)}</span>
         </div>
@@ -53,7 +68,7 @@ export default function BillDrawer({ h, notice, plan, change, cap, onCompare, on
             <span className="fine">{goal.gap ? `${money(goal.gap)} short of ${money(h.goal.target)}` : 'on target'}</span></div>
         </div>
 
-        <h3>For the judges: change the increase</h3>
+        <h3>Try a different amount</h3>
         <div className="row">
           <span className="muted">Increase of</span>
           <input type="number" min="0" step="5" value={increase} aria-label="Increase amount"

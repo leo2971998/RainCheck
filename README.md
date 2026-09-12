@@ -14,14 +14,14 @@ npm run dev          # http://127.0.0.1:5176
 It starts on sample data with no setup. `npm run dev` also serves the `api/` folder the way Vercel does, so the live path can be tested locally.
 
 ```bash
-npm test             # 22 tests, locked against the real sandbox snapshot
+npm test             # 42 tests, locked against the real sandbox snapshot
 npm run build
 ```
 
 ## Connect the Capital One sandbox
 
 1. Sign in at https://nessieisreal.com with GitHub and copy your key.
-2. Seed a household and capture a snapshot: `node scripts/seed-nessie.mjs` (the script lives in the sibling `raincheck` folder and prints the three account IDs it creates).
+2. Seed a household and capture a snapshot: `node scripts/seed-nessie.mjs`. It prints the three account IDs it creates, and verifies that the seeded data reproduces the numbers the demo depends on. `node scripts/check-nessie.mjs` reports what a key can see without printing it.
 3. Copy `.env.example` to `.env.local` and fill it in, then set `VITE_DATA_MODE=nessie`.
 
 The base URL is `https://api.nessieisreal.com`. The `http://` address in Nessie's own docs times out.
@@ -40,7 +40,8 @@ Everything on every screen comes from one simulation. A household (facts from th
 | `src/engine/options.js` | Builds each response and previews it by simulation, not by rule of thumb |
 | `src/engine/alerts.js` | One event, one alert |
 | `api/household.js` | Nessie proxy, with the snapshot as fallback |
-| `api/transfer.js` | Sandbox contribution, status read back before anything is called done |
+| `api/transfer.js` | Sandbox contribution: one per amount per day, status read back, half-completed pairs reported as such |
+| `src/engine/plan.js` | One accepted plan plus per-change history, so Undo reverses one decision and nothing else |
 
 ## Three plans, kept apart
 
@@ -61,6 +62,16 @@ leaving unrelated decisions alone. "Reset my decisions" in the sidebar clears ev
 1. **Transfers are not income.** Money moved between your own accounts never reaches the paycheck detector.
 2. **A bill and its posted charge are one expense.** Every bill also lands as a purchase. Counting both doubled everyday spending and sent the forecast hundreds of dollars under.
 3. **Repeat purchases are not a subscription.** Purchases only ever feed spending categories. Something becomes recurring only when the bank says it is a bill.
+
+## What is not built
+
+Said plainly so nothing here is mistaken for finished work:
+
+- **Importing your own notice.** The bundled notice demonstrates the flow; there is no paste-and-confirm path yet, and the parser matches one documented sentence pattern.
+- **Reminders outside the app.** In-app alerts exist. There is no push delivery, no due-date reminder, and no lead-time preference.
+- **Discovering subscriptions from spending.** Commitments come from the bank's bill records only.
+- **Checking the whole goal horizon.** The contribution is proven across the forecast window and then assumed to continue; every screen showing the goal total says so.
+- **Identity verification and voice.** Neither sponsor integration is wired up.
 
 ## What the app will not claim
 

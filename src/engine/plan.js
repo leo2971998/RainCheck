@@ -69,10 +69,17 @@ export function scenarioFor(h, plan) {
   return { ...plan, contribution: plan.contribution ?? h.goal.planned };
 }
 
-/** The household with the user's own goal applied. The goal belongs to them, not to the bank. */
-export function householdWithGoal(base, plan) {
+/**
+ * The household as the user has told us it is: their goal, and any paycheck they have corrected.
+ *
+ * Edited income has to live HERE rather than only in the scenario. When it did not, the forecast
+ * moved the contribution to the corrected payday while the goal schedule still listed the old one,
+ * so two screens disagreed about the same date.
+ */
+export function householdFor(base, plan) {
   const target = plan.goalTarget ?? base.goal.target;
   const left = plan.goalLeft ?? base.goal.left;
-  if (target === base.goal.target && left === base.goal.left) return base;
-  return { ...base, goal: { ...base.goal, target, left } };
+  const income = plan.income ?? base.income;
+  if (target === base.goal.target && left === base.goal.left && income === base.income) return base;
+  return { ...base, income, goal: { ...base.goal, target, left } };
 }

@@ -27,16 +27,38 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Enter an amount between $1 and $5,000.' });
 
   const date = process.env.VITE_DEMO_DATE || new Date().toISOString().slice(0, 10);
+
+  // One contribution per amount per day. A double-tap or a retry after a slow response must not
+  // move the money twice; the caller gets the record that already exists.
+  const existing = await nessie(`/accounts/${savings}/deposits`).catch(() => []);
+  const already = Array.isArray(existing) && existing.find(d =>
+    d.transaction_date === date && Math.round(d.amount) === Math.round(amount) && /RainCheck/.test(d.description || ''));
+  if (already) return res.status(200).json({
+    status: already.status ?? 'completed', amount: Math.round(amount), date, depositId: already._id,
+    duplicate: true, message: 'A contribution for this amount was already recorded today.',
+  });
   const body = (description) => ({ medium: 'balance', transaction_date: date, status: 'completed', amount: Math.round(amount), description });
 
   try {
     // Leave checking first. If the deposit fails we would rather owe the user an explanation
     // about a missing credit than invent one that never happened.
     const out = await nessie(`/accounts/${checking}/withdrawals`, { method: 'POST', body: JSON.stringify(body('Transfer to savings · RainCheck')) });
-    const inn = await nessie(`/accounts/${savings}/deposits`, { method: 'POST', body: JSON.stringify(body('Transfer from checking · RainCheck')) });
+    const withdrawalId = out?.objectCreated?._id ?? null;
+
+    let inn;
+    try {
+      inn = await nessie(`/accounts/${savings}/deposits`, { method: 'POST', body: JSON.stringify(body('Transfer from checking · RainCheck')) });
+    } catch (depositError) {
+      // The money left checking but never arrived. Say exactly that, rather than reporting a
+      // failure that hides a completed withdrawal the user needs to know about.
+      return res.status(502).json({
+        message: 'The money left checking but the deposit into savings was not recorded. Check both accounts before trying again.',
+        withdrawalId, halfCompleted: true, detail: String(depositError?.message || depositError),
+      });
+    }
 
     const depositId = inn?.objectCreated?._id;
-    if (!depositId) return res.status(502).json({ message: 'The sandbox accepted the request but returned no record to confirm.' });
+    if (!depositId) return res.status(502).json({ message: 'The sandbox accepted the request but returned no record to confirm.', withdrawalId, halfCompleted: true });
 
     // Read it back. Nothing is reported as done on the strength of our own request.
     const confirmed = await nessie(`/deposits/${depositId}`);
@@ -46,7 +68,7 @@ export default async function handler(req, res) {
       status: confirmed?.status ?? 'unknown',
       amount: Math.round(amount),
       date,
-      withdrawalId: out?.objectCreated?._id ?? null,
+      withdrawalId,
       depositId,
       savingsBalance: account?.balance ?? null,
       // Say plainly that the sandbox does not re-total balances, so nobody reads the

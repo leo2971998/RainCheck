@@ -3,7 +3,7 @@ import { useHousehold } from './hooks/useHousehold.js';
 import { useTransfer } from './hooks/useTransfer.js';
 import { usePersistentState, clearPersisted, hasPersisted } from './hooks/usePersistentState.js';
 import { simulate, capacity, goalAt, hypothetical } from './engine/forecast.js';
-import { emptyPlan, applyPatch, revert, scenarioFor, householdWithGoal } from './engine/plan.js';
+import { emptyPlan, applyPatch, revert, scenarioFor, householdFor } from './engine/plan.js';
 import { buildOptions, currentOutcome } from './engine/options.js';
 import { buildAlerts } from './engine/alerts.js';
 import { Icon, money, monthOf } from './components/ui.jsx';
@@ -47,7 +47,7 @@ function Workspace({ household: base, transactions, notice, source }) {
   const [found, setFound] = usePersistentState('found', true);
 
   const plan = planSaved ?? emptyPlan(base);
-  const h = useMemo(() => householdWithGoal(base, plan), [base, plan]);
+  const h = useMemo(() => householdFor(base, plan), [base, plan]);
   const sc = useMemo(() => scenarioFor(h, plan), [h, plan]);
 
   const sim = useMemo(() => simulate(h, sc), [h, sc]);
