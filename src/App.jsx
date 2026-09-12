@@ -64,6 +64,9 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
     const watchdog = setTimeout(() => { go(); vt?.skipTransition?.(); }, 120);
     try {
       vt = document.startViewTransition(() => { clearTimeout(watchdog); flushSync(go); });
+      // A skipped or superseded transition rejects all three of its promises. Skipping is the
+      // intended outcome here, not a failure, so it must not surface as an uncaught rejection.
+      for (const p of [vt.ready, vt.finished, vt.updateCallbackDone]) p?.catch?.(() => {});
     } catch { clearTimeout(watchdog); go(); }
   }, [reducedMotion]);
   const [drawer, setDrawer] = useState(null);
