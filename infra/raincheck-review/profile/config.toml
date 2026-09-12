@@ -1,0 +1,65 @@
+schema_version = 3
+
+[agents.raincheck]
+enabled = true
+model_provider = "openai.codex"
+risk_profile = "review"
+runtime_profile = "review"
+channels = []
+delegates = []
+skill_bundles = []
+mcp_bundles = []
+knowledge_bundles = []
+acp_enable_mcp = false
+[agents.raincheck.memory]
+backend = "none"
+
+[providers.models.openai.codex]
+model = "gpt-5.5"
+requires_openai_auth = true
+wire_api = "responses"
+timeout_secs = 60
+max_tokens = 1800
+
+[risk_profiles.review]
+level = "readonly"
+workspace_only = true
+allowed_commands = []
+allowed_roots = []
+# In this installed ZeroClaw build an empty tool list is unrestricted. A
+# deliberately non-existent tool gates every real tool instead.
+allowed_tools = ["raincheck_no_tools"]
+auto_approve = []
+[risk_profiles.review.delegation_policy]
+mode = "forbidden"
+
+[runtime_profiles.review]
+agentic = false
+max_tool_iterations = 1
+max_history_messages = 4
+parallel_tools = false
+max_actions_per_hour = 0
+[runtime_profiles.review.context_compression]
+enabled = false
+[runtime_profiles.review.thinking]
+default_level = "low"
+native_thinking = false
+
+[memory]
+backend = "none"
+auto_save = false
+auto_hydrate = false
+snapshot_enabled = false
+snapshot_on_hygiene = false
+hygiene_enabled = false
+response_cache_enabled = false
+embedding_provider = "none"
+audit_enabled = false
+
+[observability]
+backend = "none"
+log_persistence = "none"
+log_llm_request_payload = "off"
+log_tool_io = "off"
+otel_genai_content = "off"
+otel_tool_io = "off"

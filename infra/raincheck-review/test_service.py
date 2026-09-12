@@ -5,7 +5,7 @@ import tempfile
 import threading
 import unittest
 
-from service import ReviewService, create_server, validate_brief, validate_result
+from service import LimitReached, ReviewService, create_server, validate_brief, validate_result
 
 
 def brief():
@@ -14,17 +14,21 @@ def brief():
         'kind': 'subscription', 'windowDays': 34, 'cushionCents': 20000,
         'before': {'lowCents': 20000, 'monthlyBillsCents': 180000,
                    'goalTargetCents': 500000, 'goalProjectedCents': 480000,
-                   'contributionCents': 10000, 'goalDate': '2027-03-28'},
+                   'contributionCents': 10000, 'goalDate': '2027-03-28',
+                   'contributionFits': True, 'goalFeasible': False, 'checkedThrough': '2027-03-28'},
         'after': {'lowCents': 12500, 'monthlyBillsCents': 187500,
                   'goalTargetCents': 500000, 'goalProjectedCents': 435000,
-                  'contributionCents': 10000, 'goalDate': '2027-03-28'},
+                  'contributionCents': 10000, 'goalDate': '2027-03-28',
+                  'contributionFits': False, 'goalFeasible': False, 'checkedThrough': '2027-03-28'},
     }
 
 
 def result():
     return {'summary': 'This change leaves less room for unexpected expenses.',
             'observations': [{'text': 'The preview falls below your checking cushion.',
-                              'facts': ['after.lowCents', 'cushionCents']}],
+                              'facts': ['after.lowCents', 'cushionCents']},
+                             {'text': 'The planned savings contributions do not fit the checking budget.',
+                              'facts': ['after.contributionFits']}],
             'questions': ['Could this expense wait until your checking balance improves?']}
 
 
@@ -56,6 +60,21 @@ class ValidationTests(unittest.TestCase):
                        lambda r: r.update(questions=['https://example.com/pay'])]:
             bad = result(); mutate(bad)
             with self.assertRaises(ValueError): validate_result(bad, brief())
+
+    def test_accepts_paired_goal_evidence_returned_by_live_model(self):
+        response = result()
+        response['observations'][0]['facts'] = [
+            'after.goalProjectedCents', 'before.goalProjectedCents',
+            'after.contributionCents', 'before.contributionCents',
+            'after.goalDate', 'before.goalDate']
+        self.assertEqual(validate_result(response, brief()), response)
+        response['observations'][0]['facts'] = ['after.lowCents'] * 9
+        with self.assertRaises(ValueError): validate_result(response, brief())
+
+    def test_affordability_cannot_be_omitted_when_goal_arithmetic_looks_positive(self):
+        data = brief(); data['after']['goalProjectedCents'] = 600000
+        response = result(); response['observations'] = response['observations'][:1]
+        with self.assertRaises(ValueError): validate_result(response, data)
 
 
 class EndpointTests(unittest.TestCase):
@@ -135,9 +154,10 @@ class EndpointTests(unittest.TestCase):
 
     def test_rate_limit_survives_process_restart(self):
         self.request('POST', body=brief())
-        self.service.hourly_limit = 1
+        restarted = ReviewService(self.service.database, self.token, self.service.provider)
+        restarted.hourly_limit = 1
         changed = brief(); changed['after']['lowCents'] -= 1
-        self.assertEqual(self.request('POST', body=changed)[0], 429)
+        with self.assertRaises(LimitReached): restarted.review(changed)
         self.assertEqual(self.calls, 1)
 
     def test_empty_or_short_secret_fails_closed(self):

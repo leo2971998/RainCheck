@@ -21,7 +21,7 @@ import time
 import uuid
 
 MODEL = 'gpt-5.5'
-CONTRACT = 'raincheck-review-v1'
+CONTRACT = 'raincheck-review-v2'
 MAX_BODY = 16384
 MAX_OUTPUT = 32768
 ROOT = Path(__file__).resolve().parent
@@ -54,11 +54,15 @@ def validate_brief(data):
     for side in ('before', 'after'):
         values = data[side]
         exact(values, ['lowCents', 'monthlyBillsCents', 'goalTargetCents', 'goalProjectedCents',
-                       'contributionCents', 'goalDate'])
+                       'contributionCents', 'goalDate', 'contributionFits', 'goalFeasible', 'checkedThrough'])
         for name, value in values.items():
-            if name != 'goalDate': integer(value, -100000000 if name == 'lowCents' else 0, 100000000)
+            if name.endswith('Cents'): integer(value, -100000000 if name == 'lowCents' else 0, 100000000)
+        for name in ['contributionFits', 'goalFeasible']:
+            if type(values[name]) is not bool: raise ValueError('Missing affordability check.')
         if not 0 <= (day(values['goalDate']) - as_of).days <= 732:
             raise ValueError('Goal date outside the planning period.')
+        if values['checkedThrough'] is not None and not as_of <= day(values['checkedThrough']) <= day(values['goalDate']):
+            raise ValueError('Invalid affordability horizon.')
     return data
 
 
@@ -84,9 +88,11 @@ def validate_result(result, data):
     for item in observations:
         exact(item, ['text', 'facts']); prose(item['text'], 300)
         facts = item['facts']
-        if not isinstance(facts, list) or not 1 <= len(facts) <= 4 or any(type(f) is not str or f not in known for f in facts):
+        if not isinstance(facts, list) or not 1 <= len(facts) <= 8 or any(type(f) is not str or f not in known for f in facts):
             raise ValueError('Unknown evidence.')
     for question in questions: prose(question, 200)
+    if not data['after']['contributionFits'] and not any('after.contributionFits' in item['facts'] for item in observations):
+        raise ValueError('The explanation must address unaffordable contributions.')
     return result
 
 
@@ -101,9 +107,18 @@ def run_agent(data):
         'or perform actions. Explain only the before/after tradeoffs supported by the facts. '
         'Mention that projections depend on expected income and expenses continuing. '
         'This is a short checking projection and a separate longer goal projection. '
-        'Return only JSON with summary (one short paragraph), observations (one to four '
-        '{text,facts} objects), and questions (zero to two short questions). '
-        'facts must cite input paths such as after.lowCents, before.monthlyBillsCents or cushionCents. '
+        'goalProjectedCents is ONLY contribution arithmetic: it assumes contributions are made. '
+        'contributionFits is the calculator check that planned contributions leave the cushion intact '
+        'through checkedThrough. goalFeasible is whether required contributions fit the calculator budget. '
+        'If after.contributionFits is false, your summary MUST say the contributions do not fit '
+        'the checking budget, and an observation MUST cite after.contributionFits. Never call that '
+        'goal on track or affordable even when projected savings meet the target. '
+        'A null checkedThrough means there is no complete dated affordability check. '
+        'Return only JSON with summary (one paragraph, at most four hundred characters), '
+        'observations (one to four {text,facts} objects; text at most three hundred characters), '
+        'and questions (zero to two strings, at most two hundred characters each). '
+        'Each facts array must have one to eight exact input paths from before or after, '
+        'or cushionCents, windowDays, asOf. For example after.lowCents or before.monthlyBillsCents. '
         'Use plain words in prose: no digits, money amounts, percentages, markup or links. '
         'Exact figures are displayed separately by the calculator. Do not state an expense '
         'has been accepted or a transfer made. No commands, recommendations to invest, or certainty. '
@@ -204,6 +219,8 @@ class ReviewService:
                         'createdAt': datetime.now(timezone.utc).isoformat(), 'model': MODEL,
                         'actor': 'raincheck-service', 'contract': CONTRACT, 'facts': data,
                         'assessment': 'overdrawn' if low < 0 else 'below-cushion' if low < data['cushionCents'] else 'at-or-above-cushion',
+                        'goalAssessment': 'contribution-does-not-fit' if not data['after']['contributionFits'] else
+                            'shortfall' if data['after']['goalProjectedCents'] < data['after']['goalTargetCents'] else 'projected-to-reach',
                         'tokenUsage': None, 'estimatedCost': None,
                         'notice': 'AI explanation of a synthetic calculation, not a verified financial prediction. No changes were made.'}
                 db.execute('INSERT INTO reviews VALUES (?,?,?,?,?)', (identifier, fingerprint, now, 'pending', json.dumps(item)))

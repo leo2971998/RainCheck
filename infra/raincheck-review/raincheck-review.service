@@ -1,0 +1,22 @@
+[Unit]
+Description=RainCheck isolated read-only budget review
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/leo29798/raincheck-review
+ExecStart=/usr/bin/python3 /home/leo29798/raincheck-review/service.py
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+RestrictSUIDSGID=true
+LimitNOFILE=128
+MemoryMax=384M
+TasksMax=64
+KillMode=control-group
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=default.target
