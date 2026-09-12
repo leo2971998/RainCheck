@@ -11,8 +11,10 @@ function cadenceWords(income) {
   return days <= 8 ? 'week' : days <= 16 ? 'two weeks' : days <= 24 ? 'three weeks' : 'month';
 }
 
-export default function Dashboard({ h, source, plan, change, sim, previewSim, preview, cap, goal, alerts, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
-  const sc = plan;
+export default function Dashboard({ h, source, plan, sc, change, sim, previewSim, preview, cap, goal, alerts, waiting = [], onReviewNotice, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
+  // The scenario, not the raw plan: an unaccepted plan has no contribution of its own and falls back
+  // to the planned figure. Reading the plan here made the chart caption say "$0 contribution" beside
+  // a line that was simulated at $300.
   const lastAction = history?.[history.length - 1];
   const [st, tone] = STATE[sim.worst];
   const changedBills = h.recurring.filter(r => r.change);
@@ -43,8 +45,8 @@ export default function Dashboard({ h, source, plan, change, sim, previewSim, pr
           <div className="grid g2">
             <div className="card">
               <div className="hd"><h2>What changed</h2>
-                {changedBills.length
-                  ? <span className="pill warn"><Icon n="up" s={11} />{changedBills.length} increase detected</span>
+                {changedBills.length ? <span className="pill warn"><Icon n="up" s={11} />{changedBills.length} accepted</span>
+                  : waiting.length ? <span className="pill accent">{waiting.length} waiting</span>
                   : <span className="pill good"><Icon n="check" s={11} />No increases</span>}</div>
               {changedBills.map(bill => (
                 <div className="row" style={{ alignItems: 'flex-start' }} key={bill.id}>
@@ -66,7 +68,18 @@ export default function Dashboard({ h, source, plan, change, sim, previewSim, pr
                   </div>
                 </div>
               ))}
-              {!changedBills.length && !unexplainedBills.length && <div className="fine">Every commitment posted the amount we expected.</div>}
+              {waiting.map(n => (
+                <div className="row" style={{ alignItems: 'flex-start' }} key={n.id}>
+                  <div className="cat"><i className="rev"><Icon n="mail" s={14} /></i></div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600 }}>A notice is waiting to be reviewed</div>
+                    <div className="fine">{n.originLabel}</div>
+                    <div className="fine">Not counted in your forecast until you accept it.</div>
+                  </div>
+                  <button className="btn sm" onClick={() => onReviewNotice(n)}>Review it</button>
+                </div>
+              ))}
+              {!changedBills.length && !unexplainedBills.length && !waiting.length && <div className="fine">Every commitment posted the amount we expected, and nothing is waiting to be reviewed.</div>}
               <div className="row wrap" style={{ gap: 8 }}>
                 {changedBills.map(b => <button key={b.id} className="btn sm" onClick={() => open('bill', b.id)}>See what changed{changedBills.length > 1 ? `: ${b.label.toLowerCase()}` : ''}</button>)}
                 <button className="btn ghost sm" onClick={() => open('compare')}>Compare options</button>

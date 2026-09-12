@@ -22,7 +22,7 @@ export function emptyPlan() {
   return {
     contribution: null,     // null → the contribution the forecast can carry
     goalTarget: null,       // null → the household's goal target
-    goalLeft: null,         // null → the household's number of contributions
+    goalDate: null,         // null → the household's target date
     cuts: {}, cancelled: {}, pendingCancel: {}, treatAsNewPrice: {},
     whatIf: {},             // billId → an amount the user typed, overriding that bill's notice
     billChanges: {},        // billId → a change imported from a notice the user pasted
@@ -86,7 +86,7 @@ export function scenarioFor(h, plan) {
  */
 export function householdFor(base, plan) {
   const target = plan.goalTarget ?? base.goal.target;
-  const left = plan.goalLeft ?? base.goal.left;
+  const targetDate = plan.goalDate ?? base.goal.targetDate;
   const income = plan.income ?? base.income;
   const imported = plan.billChanges || {};
 
@@ -115,8 +115,8 @@ export function householdFor(base, plan) {
       reclaim[x.id] ? { ...x, monthly: Math.max(0, Math.round(x.monthly - reclaim[x.id])), reclaimed: reclaim[x.id] } : x);
   }
 
-  const unchanged = target === base.goal.target && left === base.goal.left
+  const unchanged = target === base.goal.target && targetDate === base.goal.targetDate
     && income === base.income && withAdopted === base.recurring && allowances === base.allowances;
   if (unchanged) return base;
-  return { ...base, income, recurring: withAdopted, allowances, goal: { ...base.goal, target, left } };
+  return { ...base, income, recurring: withAdopted, allowances, goal: { ...base.goal, target, targetDate } };
 }

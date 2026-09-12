@@ -1,4 +1,4 @@
-import { simulate, capacity, goalAt, cutNeeded, hypothetical, nextChargeDate } from './forecast.js';
+import { simulate, capacity, goalPlan, dateToReach, cutNeeded, hypothetical, nextChargeDate } from './forecast.js';
 
 const prettyDate = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
@@ -18,7 +18,7 @@ const FLEX_ORDER = ['dining-takeout', 'fun-other', 'rides-transit', 'household',
 function outcomeOf(h, sc, changes) {
   const scenario = hypothetical(sc, changes);
   const sim = simulate(h, scenario);
-  const goal = goalAt(h, scenario.contribution ?? sc.contribution, changes.goalLeft ?? h.goal.left);
+  const goal = goalPlan(h, scenario, { target: h.goal.target, targetDate: changes.goalDate ?? h.goal.targetDate, saved: h.goal.saved, contribution: scenario.contribution ?? sc.contribution });
   return {
     contribution: scenario.contribution ?? sc.contribution,
     low: sim.low.balance,
@@ -27,7 +27,12 @@ function outcomeOf(h, sc, changes) {
     goalProjected: goal.projected,
     goalGap: goal.gap,
     goalLeft: goal.left,
+    goalDate: goal.targetDate,
     onTarget: goal.onTarget,
+    // The horizon the claim rests on, in machine-readable form. Prose that says how far a plan was
+    // checked should be verifiable, not taken on trust.
+    checkedThrough: goal.checkedThrough,
+    horizonDays: goal.horizonDays,
     assumption: goal.assumption,
   };
 }
@@ -83,16 +88,15 @@ export function buildOptions(h, sc, cap, protectedIds = {}) {
     });
   }
 
-  // D. Keep the supported contribution and move the date instead.
-  const base = goalAt(h, cap);
-  if (isFinite(base.monthsNeeded)) {
-    const later = base.monthsNeeded;
+  // D. Keep the spending, and let the goal take the time it actually needs.
+  const reach = dateToReach(h, sc, { target: h.goal.target, saved: h.goal.saved, contribution: cap });
+  if (reach.date && reach.date !== h.goal.targetDate) {
     options.push({
       id: 'date',
       title: 'Give the goal more time',
-      detail: `Keep $${cap} a month and reach $${h.goal.target} after ${later} contributions instead of ${h.goal.left}.`,
-      apply: { contribution: cap, goalLeft: later, label: `Goal extended to ${later} contributions` },
-      outcome: outcomeOf(h, sc, { contribution: cap, goalLeft: later }),
+      detail: `Keep $${cap} a month — which your plan already carries — and reach $${h.goal.target} by ${prettyDate(reach.date)} instead.`,
+      apply: { contribution: cap, goalDate: reach.date, label: `Target moved to ${prettyDate(reach.date)}` },
+      outcome: outcomeOf(h, sc, { contribution: cap, goalDate: reach.date }),
     });
   }
 

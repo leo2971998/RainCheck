@@ -95,13 +95,15 @@ export function buildHousehold(snap, today, opts = {}) {
     const d = new Date(first + 'T12:00:00');
     return new Date(d.getFullYear(), d.getMonth() + i, d.getDate(), 12).toISOString().slice(0, 10);
   });
+  // A goal is "this much, by this date" — the way a person says it. The number of contributions
+  // is a consequence of the date, not the way the user expresses the goal.
   const goal = {
     label: savings?.nickname || 'Savings goal',
     target: goalTarget,
     saved: savings?.balance ?? 0,
+    targetDate: months[months.length - 1],
     left: goalLeft,
     planned: goalPlanned,
-    months: months.map(d => { const x = new Date(d + 'T12:00:00'); return `${MONTH_NAMES[x.getMonth()]} ${x.getDate()}`; }),
   };
 
   return {

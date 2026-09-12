@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { buildHousehold, detectPostedChanges, applyNotice } from './household.js';
 import { parseNotice, reviewNotice } from './changes.js';
-import { simulate, capacity, goalAt, cutNeeded, nextChargeDate, monthlyEquivalent } from './forecast.js';
+import { simulate, capacity, goalAt, cutNeeded, nextChargeDate, monthlyEquivalent, goalPlan, scheduleUntil, validatePlan, dateToReach } from './forecast.js';
 import { buildOptions } from './options.js';
 import { buildAlerts } from './alerts.js';
 import { emptyPlan, applyPatch, revert, scenarioFor, householdFor } from './plan.js';
@@ -19,6 +19,16 @@ const notice = readFileSync(new URL('../../data/notice-internet.txt', import.met
 function load() {
   const h = buildHousehold(snap, TODAY);
   h.recurring = applyNotice(detectPostedChanges(h, snap), notice, parseNotice(notice, 2026));
+  return { h, sc: { contribution: h.goal.planned, cuts: {}, cancelled: {}, whatIf: {}, treatAsNewPrice: {}, income: null } };
+}
+
+/**
+ * The household as the app now presents it: the bank's records, with NO notice applied. A provider
+ * notice is not in a bank's transaction history, so it only exists once the user accepts it.
+ */
+function loadPlain() {
+  const h = buildHousehold(snap, TODAY);
+  h.recurring = detectPostedChanges(h, snap);
   return { h, sc: { contribution: h.goal.planned, cuts: {}, cancelled: {}, whatIf: {}, treatAsNewPrice: {}, income: null } };
 }
 
@@ -160,9 +170,14 @@ describe('the options offered', () => {
     }
   });
 
-  it('states the horizon assumption rather than presenting the goal total as checked', () => {
+  // This used to say only the next 34 days had been checked, because that was true: one window's
+  // affordable contribution was multiplied across later months. It is now checked to the goal date.
+  it('states how far the plan has actually been checked', () => {
     const keep = options.find(o => o.id === 'keep');
-    expect(keep.outcome.assumption).toMatch(/Only the next 34 days have been checked/);
+    // Stated as a person would say it, and it must name the horizon actually simulated, not a window.
+    expect(keep.outcome.assumption).toMatch(/Checked against every bill and paycheck through \w+ \d+, 202\d/);
+    expect(keep.outcome.checkedThrough <= h.goal.targetDate).toBe(true);    // the last contribution, not beyond
+    expect(keep.outcome.horizonDays).toBeGreaterThan(h.windowDays * 2);     // far past one window
   });
 });
 
@@ -459,5 +474,56 @@ describe('adopting a discovered commitment', () => {
     const spendBefore = h.allowances.reduce((a, x) => a + x.monthly, 0);
     const spendAfter = after.allowances.reduce((a, x) => a + x.monthly, 0) + found.amount;
     expect(Math.abs(spendAfter - spendBefore)).toBeLessThanOrEqual(1);   // rounding only
+  });
+});
+
+describe('a goal stated as an amount by a date', () => {
+  const { h, sc } = loadPlain();          // before any notice is accepted
+  const GOAL = { target: 2000, targetDate: '2027-01-31', saved: 800 };
+
+  it('turns the date into the contributions it implies', () => {
+    expect(scheduleUntil(h, '2027-01-31')).toEqual(['2026-10-02', '2026-11-02', '2026-12-02', '2027-01-02']);
+  });
+
+  it('separates what the date asks for from what the plan can carry', () => {
+    const g = goalPlan(h, sc, GOAL);
+    expect(g.required).toBe(300);          // (2000 - 800) / 4
+    expect(g.supported).toBe(300);         // and this household can carry it, before the increase
+    expect(g.feasible).toBe(true);
+  });
+
+  // The old capacity() proved one 34-day window and the goal total multiplied it across months.
+  // This checks every contribution against the bills and paychecks that actually fall around it.
+  it('checks the contribution across the whole goal, not one window', () => {
+    const g = goalPlan(h, sc, GOAL);
+    expect(g.horizonDays).toBeGreaterThan(h.windowDays * 2);
+    expect(g.checkedThrough).toBe('2027-01-02');
+    expect(validatePlan(h, sc, { contribution: g.supported, schedule: g.schedule }).ok).toBe(true);
+  });
+
+  it('reports a contribution the horizon cannot carry as not fitting', () => {
+    const g = goalPlan(h, sc, { ...GOAL, contribution: 600 });
+    expect(g.fits).toBe(false);
+    expect(g.low.balance).toBeLessThan(h.cushion);
+  });
+
+  it('offers the date the current spending actually reaches', () => {
+    const g = goalPlan(h, sc, GOAL);
+    const reach = dateToReach(h, sc, { target: 2000, saved: 800, contribution: g.supported });
+    expect(reach.months).toBe(4);
+    expect(reach.date).toBe('2027-01-02');
+  });
+
+  it('becomes infeasible once a bill increase is accepted, and says by how much', () => {
+    const change = parseNotice(notice, 2026);
+    const plan = applyPatch(emptyPlan(), { billChanges: { internet: { ...change, increase: 25 } } }, 'accept').plan;
+    // h here is the plain household, so accepting the notice is the ONLY change applied.
+    const after = householdFor(h, plan);
+    const g = goalPlan(after, scenarioFor(after, plan), GOAL);
+    expect(g.supported).toBe(275);
+    expect(g.feasible).toBe(false);
+    expect(g.gap).toBe(100);
+    // …and the other path: keep the spending, move the date.
+    expect(dateToReach(after, scenarioFor(after, plan), { target: 2000, saved: 800, contribution: 275 }).months).toBe(5);
   });
 });

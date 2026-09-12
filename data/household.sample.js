@@ -45,22 +45,7 @@ export const household = {
       "freq": "Monthly",
       "everyMonths": 1,
       "anchor": "2026-09-01",
-      "cancellable": false,
-      "change": {
-        "to": 90,
-        "effective": "2026-10-01",
-        "why": "Promotional credit ended",
-        "credit": 25,
-        "evidence": [
-          "renew at $90.00 starting with your October 1 bill",
-          "promotional credit of $25.00 ended"
-        ],
-        "support": "support.northline.example",
-        "account": "4417",
-        "sender": "Northline Internet",
-        "source": "notice",
-        "increase": 25
-      }
+      "cancellable": false
     },
     {
       "id": "streaming",
@@ -183,14 +168,9 @@ export const household = {
     "label": "Emergency fund",
     "target": 2000,
     "saved": 800,
+    "targetDate": "2027-01-02",
     "left": 4,
-    "planned": 300,
-    "months": [
-      "Oct 2",
-      "Nov 2",
-      "Dec 2",
-      "Jan 2"
-    ]
+    "planned": 300
   }
 };
 

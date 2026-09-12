@@ -50,10 +50,10 @@ export function GoalChart({ h, cap, goal }) {
   // Points and labels come from the goal itself, so extending it to five contributions extends
   // the chart too. These used to be a fixed Oct-Nov-Dec-Jan with four points, which meant the
   // chart quietly disagreed with the schedule beside it.
-  const left = goal?.left ?? h.goal.left;
+  const left = goal?.left ?? goal?.schedule?.length ?? 4;
   const schedule = goal?.schedule ?? [];
   const W = 420, Hh = 150, L = 44, R = 14, T = 14, B = 26;
-  const orig = Array.from({ length: left + 1 }, (_, i) => h.goal.saved + i * h.goal.planned);
+  const orig = Array.from({ length: left + 1 }, (_, i) => h.goal.saved + i * (goal?.required ?? h.goal.planned));
   const upd = Array.from({ length: left + 1 }, (_, i) => h.goal.saved + i * cap);
   const top = Math.max(h.goal.target * 1.1, ...upd, ...orig) * 1.02;
   const y = v => T + (1 - v / top) * (Hh - T - B);

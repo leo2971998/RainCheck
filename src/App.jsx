@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useHousehold } from './hooks/useHousehold.js';
 import { useTransfer } from './hooks/useTransfer.js';
 import { usePersistentState, clearPersisted, hasPersisted } from './hooks/usePersistentState.js';
-import { simulate, capacity, goalAt, hypothetical } from './engine/forecast.js';
+import { simulate, capacity, goalPlan, dateToReach, hypothetical } from './engine/forecast.js';
 import { emptyPlan, applyPatch, revert, scenarioFor, householdFor } from './engine/plan.js';
 import { buildOptions, currentOutcome } from './engine/options.js';
 import { buildAlerts } from './engine/alerts.js';
@@ -35,12 +35,13 @@ export default function App() {
   return <Workspace key={data.source} {...data} />;
 }
 
-function Workspace({ household: base, transactions, notice, source, discovered: candidates = [] }) {
+function Workspace({ household: base, transactions, notice, source, discovered: candidates = [], pendingNotices = [] }) {
   const [page, setPage] = useState('dashboard');
   const [drawer, setDrawer] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [previewId, setPreviewId] = useState(null);      // an option's identity, not a snapshot of it
   const [billId, setBillId] = useState(null);            // which bill a drawer was opened for
+  const [noticeText, setNoticeText] = useState('');       // a notice handed to the import drawer
 
   // One accepted plan, plus the history that built it. Everything the user decides persists.
   const [planSaved, setPlanSaved] = usePersistentState('plan', null);
@@ -57,12 +58,20 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
   const sim = useMemo(() => simulate(h, sc), [h, sc]);
   const cap = useMemo(() => capacity(h, sc), [h, sc]);
 
-  // The forecast shows what is scheduled. The goal shows what the plan can actually carry, unless
-  // the user has accepted a contribution of their own.
+  // One goal plan, expressed as an amount by a date, and checked against every bill and paycheck
+  // through that date rather than across one window and then multiplied.
   const goal = useMemo(() => {
-    const g = goalAt(h, plan.contribution ?? cap);
-    return { ...g, accepted: plan.contribution != null, targetLabel: monthOf(g.schedule[g.schedule.length - 1]) };
-  }, [h, cap, plan.contribution]);
+    const g = goalPlan(h, sc, {
+      target: h.goal.target, targetDate: h.goal.targetDate, saved: h.goal.saved,
+      contribution: plan.contribution,
+    });
+    return {
+      ...g,
+      accepted: plan.contribution != null,
+      targetLabel: monthOf(g.targetDate),
+      keepSpending: dateToReach(h, sc, { target: h.goal.target, saved: h.goal.saved, contribution: g.supported }),
+    };
+  }, [h, sc, plan.contribution]);
 
   const alerts = useMemo(() => buildAlerts(h, sc, sim, cap, lastAction(history)), [h, sc, sim, cap, history]);
   const options = useMemo(() => buildOptions(h, sc, cap, protectedIds), [h, sc, cap, protectedIds]);
@@ -81,7 +90,7 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
   useEffect(() => { if (previewId && !preview) setPreviewId(null); }, [previewId, preview]);
 
   const previewSim = useMemo(() => (preview ? simulate(h, hypothetical(sc, preview.apply)) : null), [h, sc, preview]);
-  const previewGoal = useMemo(() => (preview ? goalAt(h, preview.outcome.contribution, preview.outcome.goalLeft) : null), [h, preview]);
+  const previewGoal = useMemo(() => (preview ? goalPlan(h, sc, { target: h.goal.target, targetDate: h.goal.targetDate, saved: h.goal.saved, contribution: preview.outcome.contribution }) : null), [h, sc, preview]);
 
   const badges = useMemo(() => ({
     recurring: h.recurring.filter(r => r.change || (r.unexplained && !(r.id in (plan.treatAsNewPrice || {})))).length,
@@ -89,10 +98,15 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
   }), [h, transactions, plan]);
 
   const transfer = useTransfer(source);
+  const [reviewedNotices, setReviewedNotices] = usePersistentState('reviewedNotices', {});
+  const waiting = pendingNotices.filter(n => !reviewedNotices[n.id]);
+
   const open = (what, id = null) => {
     if (what.startsWith('page:')) { setDrawer(null); setPage(what.slice(5)); return; }
     setBillId(id); setDrawer(what);
   };
+  const reviewNoticeItem = item => { setNoticeText(item?.text || ''); setBillId(item?.id || null); setDrawer('notice'); };
+  const markNoticeReviewed = id => id && setReviewedNotices(r => ({ ...r, [id]: true }));
 
   /** Every change goes through here, so each one can be reversed on its own. */
   const change = (patch, label) => {
@@ -134,7 +148,7 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
 
       <main>
         <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={setPage} badges={badges} /></nav>
-        {page === 'dashboard' && <Dashboard h={h} source={source} plan={plan} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
+        {page === 'dashboard' && <Dashboard h={h} source={source} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
         {page === 'transactions' && <TransactionsPage transactions={transactions} allowances={h.allowances} corrections={corrections} setCorrections={setCorrections} />}
         {page === 'recurring' && <RecurringPage h={h} sc={sc} plan={plan} change={change} cap={cap} open={open} discovered={discovered} onAdopt={adopt} onDismiss={dismiss} />}
@@ -143,7 +157,9 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
       </main>
 
       {drawer === 'bill' && <BillDrawer h={h} notice={notice} billId={billId} plan={plan} change={change} cap={cap} onCompare={() => setDrawer('compare')} onClose={() => setDrawer(null)} />}
-      {drawer === 'notice' && <NoticeDrawer h={h} base={base} plan={plan} cap={cap} change={change} onClose={() => setDrawer(null)} />}
+      {drawer === 'notice' && <NoticeDrawer h={h} base={base} plan={plan} cap={cap} change={change}
+        initialText={noticeText} origin={waiting.find(n => n.id === billId)}
+        onDone={() => markNoticeReviewed(billId)} onClose={() => { setDrawer(null); setNoticeText(''); }} />}
       {drawer === 'compare' && (
         <CompareDrawer h={h} sc={sc} cap={cap} options={options} current={current}
           preview={preview} previewSim={previewSim} previewGoal={previewGoal} setPreviewId={setPreviewId}

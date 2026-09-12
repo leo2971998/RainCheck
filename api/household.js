@@ -14,22 +14,30 @@ export default async function handler(req, res) {
     const household = buildHousehold(snap, today);
     const notice = await readFile(new URL('../data/notice-internet.txt', import.meta.url), 'utf8');
 
-    // Two different things, kept apart on purpose:
-    //   detectPostedChanges  — a charge came in higher than expected. We do not know why.
-    //   applyNotice          — a provider says the price is changing. We can quote the sentence.
-    household.recurring = applyNotice(
-      detectPostedChanges(household, snap),
-      notice,
-      parseNotice(notice, new Date(today).getFullYear()),
-    );
+    // A charge that came in higher than expected is something the BANK told us, so it belongs to
+    // the household. A provider notice is not: RainCheck has no mailbox, and a bank's transaction
+    // history cannot contain a price that has not been charged yet.
+    //
+    // So the bundled notice is NOT applied here. It is offered as an example waiting to be
+    // reviewed, and it only reaches the forecast once the user accepts it — by the same path a
+    // notice they pasted themselves would take.
+    household.recurring = detectPostedChanges(household, snap);
 
     // Computed HERE, from the same snapshot the household was built from. The client used to run
     // this against the bundled sample, which meant live balances could be shown beside proposals
     // drawn from a different household's spending.
     const discovered = discoverCommitments(snap, household);
 
+    const change = parseNotice(notice, new Date(today).getFullYear());
+    const pendingNotices = change ? [{
+      id: 'example-internet',
+      text: notice,
+      origin: 'example',
+      originLabel: 'Example notice included with this demo',
+    }] : [];
+
     return res.status(200).json({
-      source: snap.source, household, notice, discovered,
+      source: snap.source, household, notice, discovered, pendingNotices,
       transactions: recentTransactions(snap, household),
     });
   } catch (err) {

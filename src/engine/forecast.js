@@ -5,6 +5,9 @@ export const iso = d => d.toISOString().slice(0, 10);
 export const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 export const round2 = n => Math.round(n * 100) / 100;
 
+/** A date a person would say out loud. The engine reports dates it checked, so it must say them plainly. */
+const longIso = key => new Date(key + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
 /** Four statuses, decided only by the projected balance against the user's cushion. Never a score. */
 export const stateOf = (b, cushion) => b < 0 ? 'over' : b < cushion ? 'below' : b < cushion + 100 ? 'tight' : 'ok';
 
@@ -56,17 +59,21 @@ export function changeOf(r, sc = {}) {
  * @param h  household — facts from the bank. Never mutated.
  * @param sc scenario  — what the user is considering. Never mutated.
  */
-export function simulate(h, sc = {}) {
+export function simulate(h, sc = {}, { days: dayCount } = {}) {
   const income = sc.income || h.income;
   const start = new Date(h.today + 'T12:00:00');
-  const contributionDate = income.map(p => p.date).filter(d => d >= h.today).sort()[0] ?? null;
+  const windowDays = dayCount ?? h.windowDays;
+  // A goal has SEVERAL contribution dates. Checking only the first one and multiplying the result
+  // across later months is an extrapolation, not a plan that has been checked.
+  const firstPayday = income.map(p => p.date).filter(d => d >= h.today).sort()[0] ?? null;
+  const contributionOn = new Set(sc.contributionDates ?? (firstPayday ? [firstPayday] : []));
   const monthlySpend = h.allowances.reduce((a, x) => a + x.monthly - (sc.cuts?.[x.id] || 0), 0);
   const dailySpend = monthlySpend / 30;
 
   const days = [];
   let balance = h.checking;
 
-  for (let i = 0; i < h.windowDays; i++) {
+  for (let i = 0; i < windowDays; i++) {
     const date = addDays(start, i), key = iso(date), events = [];
 
     for (const p of income) {
@@ -82,7 +89,7 @@ export function simulate(h, sc = {}) {
       events.push({ label: r.label, amt: -amt, bill: true, big: amt >= 100, id: r.id });
     }
 
-    if (key === contributionDate && sc.contribution > 0) {
+    if (contributionOn.has(key) && sc.contribution > 0) {
       balance -= sc.contribution;
       events.push({ label: 'Savings contribution', amt: -sc.contribution, transfer: true });
     }
@@ -106,7 +113,7 @@ export function simulate(h, sc = {}) {
     savings: sc.contribution,
   };
 
-  return { days, low, worst, dailySpend: round2(dailySpend), monthlySpend, cash, contributionDate };
+  return { days, low, worst, dailySpend: round2(dailySpend), monthlySpend, cash, contributionDate: firstPayday, contributionDates: [...contributionOn] };
 }
 
 /**
@@ -196,3 +203,93 @@ export function nextChargeDate(r, todayIso) {
 export const monthlyEquivalent = (r, amount = r.amount) => amount / (r.everyMonths || 1);
 
 const money = n => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
+
+
+/* ------------------------------------------------------------------ goals by date */
+
+const isoDaysBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5);
+const addMonths = (iso, n) => { const d = new Date(iso + 'T12:00:00'); return new Date(d.getFullYear(), d.getMonth() + n, d.getDate(), 12).toISOString().slice(0, 10); };
+
+/** Contribution dates from the first expected payday up to and including a target date. */
+export function scheduleUntil(h, targetDate) {
+  const first = h.income.map(p => p.date).filter(d => d >= h.today).sort()[0] || h.today;
+  const out = [];
+  for (let i = 0; i < 120; i++) {
+    const d = addMonths(first, i);
+    if (d > targetDate) break;
+    out.push(d);
+  }
+  return out;
+}
+
+/**
+ * Paychecks projected out to a date, by repeating the cadence already observed.
+ * Clearly an assumption, and labelled as one wherever it is shown.
+ */
+export function projectIncome(h, throughDate) {
+  const known = (h.income || []).filter(p => p.date >= h.today).sort((a, b) => a.date.localeCompare(b.date));
+  if (!known.length) return known;
+  const cadence = known.length >= 2 ? isoDaysBetween(known[0].date, known[1].date) : 14;
+  const out = [...known];
+  let date = known[known.length - 1].date;
+  const last = known[known.length - 1];
+  while (date < throughDate && out.length < 200) {
+    date = new Date(new Date(date + 'T12:00:00').getTime() + cadence * 864e5).toISOString().slice(0, 10);
+    out.push({ ...last, id: 'p' + out.length, date, status: 'projected' });
+  }
+  return out;
+}
+
+/**
+ * Run the forecast across the WHOLE goal, not just the next few weeks.
+ * This is what turns "this contribution fits next month" into "every contribution in this plan
+ * fits", which multiplying one month's affordable figure never established.
+ */
+export function validatePlan(h, sc, { contribution, schedule }) {
+  if (!schedule.length) return { ok: false, low: null, checkedThrough: null, horizonDays: 0 };
+  const last = schedule[schedule.length - 1];
+  const horizonDays = Math.max(h.windowDays, isoDaysBetween(h.today, last) + 3);
+  const income = projectIncome(h, last);
+  const sim = simulate(h, { ...sc, income, contribution, contributionDates: schedule }, { days: horizonDays });
+  return { ...sim, ok: sim.low.balance >= h.cushion, checkedThrough: last, horizonDays };
+}
+
+/** The largest contribution that clears the cushion on EVERY day of the whole schedule. */
+export function affordableOver(h, sc, schedule, max = 600, step = 5) {
+  for (let c = max; c >= 0; c -= step)
+    if (validatePlan(h, sc, { contribution: c, schedule }).ok) return c;
+  return 0;
+}
+
+/**
+ * A goal expressed the way a person expresses one: an amount, by a date.
+ * Contribution counts are a consequence of that, not the way the user states it.
+ */
+export function goalPlan(h, sc, { target, targetDate, saved, contribution = null }) {
+  const schedule = scheduleUntil(h, targetDate);
+  const left = schedule.length;
+  const required = left ? round2((target - saved) / left) : Infinity;
+  const supported = affordableOver(h, sc, schedule);
+  const using = contribution ?? supported;
+  const projected = round2(saved + left * using);
+  const gap = round2(Math.max(0, target - projected));
+  const check = validatePlan(h, sc, { contribution: using, schedule });
+
+  return {
+    target, targetDate, saved, schedule, left,
+    required, supported, contribution: using,
+    projected, gap, onTarget: gap === 0,
+    feasible: left > 0 && required <= supported,
+    fits: check.ok,                       // does THIS contribution clear the cushion throughout?
+    low: check.low, checkedThrough: check.checkedThrough, horizonDays: check.horizonDays,
+    assumption: `Checked against every bill and paycheck through ${longIso(check.checkedThrough)}. Paychecks beyond the next three repeat your current cadence.`,
+  };
+}
+
+/** Keeping the current spending plan: when would the goal actually be reached? */
+export function dateToReach(h, sc, { target, saved, contribution }) {
+  if (!(contribution > 0) || saved >= target) return { date: null, months: 0 };
+  const first = h.income.map(p => p.date).filter(d => d >= h.today).sort()[0] || h.today;
+  const months = Math.ceil((target - saved) / contribution);
+  return { date: addMonths(first, months - 1), months };
+}

@@ -12,10 +12,10 @@ import { householdFor } from '../engine/plan.js';
  * sentence they came from, the user picks which commitment it belongs to, and the consequence is
  * previewed before anything is added. A notice that cannot be read says so rather than guessing.
  */
-export default function NoticeDrawer({ h, base, plan, cap, change, onClose }) {
-  const [text, setText] = useState('');
+export default function NoticeDrawer({ h, base, plan, cap, change, initialText = '', origin = null, onDone, onClose }) {
+  const [text, setText] = useState(initialText);
   const [billId, setBillId] = useState(null);
-  const [touched, setTouched] = useState(false);
+  const [touched, setTouched] = useState(!!initialText);
 
   const year = Number(h.today.slice(0, 4));
   const review = useMemo(() => (text.trim() ? reviewNotice(text, h.recurring, year) : null), [text, h.recurring, year]);
@@ -35,7 +35,8 @@ export default function NoticeDrawer({ h, base, plan, cap, change, onClose }) {
   }, [review, bill, base, plan, h, text]);
 
   const add = () => {
-    change({ billChanges: { [bill.id]: outcome.record } }, `${bill.label} change imported from a notice`);
+    change({ billChanges: { [bill.id]: outcome.record } }, `${bill.label} change accepted from a notice`);
+    onDone?.();
     onClose();
   };
 
@@ -46,10 +47,15 @@ export default function NoticeDrawer({ h, base, plan, cap, change, onClose }) {
         <button className="btn ghost sm" onClick={onClose} aria-label="Close"><Icon n="x" s={16} /></button>
       </div>
 
-      <p style={{ margin: 0, color: 'var(--ink-2)' }}>
-        Paste an email or letter about a price change or renewal. RainCheck reads the amount and the date,
-        shows you the sentence it took them from, and asks which commitment it belongs to.
-      </p>
+      {origin
+        ? <div className="alert"><b>{origin.originLabel}</b>
+            <p>Nothing here has reached your forecast. RainCheck has no mailbox and cannot see a price
+               change in your bank records, so a notice only counts once you accept it below.</p></div>
+        : <p style={{ margin: 0, color: 'var(--ink-2)' }}>
+            Paste an email or letter about a price change or renewal. RainCheck reads the amount and the
+            date, shows you the sentence it took them from, and asks which commitment it belongs to.
+            <br /><span className="fine">RainCheck does not read your email. Notices arrive because you paste them.</span>
+          </p>}
 
       <label className="grid" style={{ gap: 6 }}>
         <span className="label">The notice</span>
