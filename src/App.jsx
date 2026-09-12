@@ -6,6 +6,8 @@ import { simulate, capacity, goalAt, hypothetical } from './engine/forecast.js';
 import { emptyPlan, applyPatch, revert, scenarioFor, householdFor } from './engine/plan.js';
 import { buildOptions, currentOutcome } from './engine/options.js';
 import { buildAlerts } from './engine/alerts.js';
+import { buildReminders } from './engine/reminders.js';
+import { discoverCommitments } from './engine/discover.js';
 import { Icon, money, monthOf } from './components/ui.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import ForecastPage from './pages/ForecastPage.jsx';
@@ -15,6 +17,7 @@ import CashFlowPage from './pages/CashFlowPage.jsx';
 import GoalsPage from './pages/GoalsPage.jsx';
 import BillDrawer from './drawers/BillDrawer.jsx';
 import CompareDrawer from './drawers/CompareDrawer.jsx';
+import NoticeDrawer from './drawers/NoticeDrawer.jsx';
 
 const NAV = [['dashboard', 'Dashboard', 'dash'], ['forecast', 'Forecast', 'trend'], ['transactions', 'Transactions', 'list'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Cash flow', 'bars'], ['goals', 'Goals', 'target']];
 
@@ -33,11 +36,12 @@ export default function App() {
   return <Workspace key={data.source} {...data} />;
 }
 
-function Workspace({ household: base, transactions, notice, source }) {
+function Workspace({ household: base, transactions, notice, source, snapshot }) {
   const [page, setPage] = useState('dashboard');
   const [drawer, setDrawer] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [previewId, setPreviewId] = useState(null);      // an option's identity, not a snapshot of it
+  const [billId, setBillId] = useState(null);            // which bill a drawer was opened for
 
   // One accepted plan, plus the history that built it. Everything the user decides persists.
   const [planSaved, setPlanSaved] = usePersistentState('plan', null);
@@ -45,8 +49,9 @@ function Workspace({ household: base, transactions, notice, source }) {
   const [corrections, setCorrections] = usePersistentState('corrections', {});
   const [protectedIds, setProtectedIds] = usePersistentState('protected', { groceries: true });
   const [found, setFound] = usePersistentState('found', true);
+  const [leadDays, setLeadDays] = usePersistentState('leadDays', 3);
 
-  const plan = planSaved ?? emptyPlan(base);
+  const plan = planSaved ?? emptyPlan();
   const h = useMemo(() => householdFor(base, plan), [base, plan]);
   const sc = useMemo(() => scenarioFor(h, plan), [h, plan]);
 
@@ -63,6 +68,13 @@ function Workspace({ household: base, transactions, notice, source }) {
   const alerts = useMemo(() => buildAlerts(h, sc, sim, cap, lastAction(history)), [h, sc, sim, cap, history]);
   const options = useMemo(() => buildOptions(h, sc, cap, protectedIds), [h, sc, cap, protectedIds]);
   const current = useMemo(() => currentOutcome(h, sc), [h, sc]);
+  const reminders = useMemo(() => buildReminders(h, sc, leadDays), [h, sc, leadDays]);
+
+  // Proposals only. Anything the user has already adopted or rejected drops out of the list.
+  const discovered = useMemo(() => {
+    if (!snapshot) return [];
+    return discoverCommitments(snapshot, h).filter(f => !plan.adopted?.[f.id] && !plan.dismissed?.[f.id]);
+  }, [snapshot, h, plan]);
 
   // The preview always describes the option as it stands NOW. Protecting an allowance can replace
   // the trim option with a different category; the preview must follow, not describe the old one.
@@ -78,7 +90,10 @@ function Workspace({ household: base, transactions, notice, source }) {
   }), [h, transactions, plan]);
 
   const transfer = useTransfer(source);
-  const open = what => what.startsWith('page:') ? (setDrawer(null), setPage(what.slice(5))) : setDrawer(what);
+  const open = (what, id = null) => {
+    if (what.startsWith('page:')) { setDrawer(null); setPage(what.slice(5)); return; }
+    setBillId(id); setDrawer(what);
+  };
 
   /** Every change goes through here, so each one can be reversed on its own. */
   const change = (patch, label) => {
@@ -86,6 +101,10 @@ function Workspace({ household: base, transactions, notice, source }) {
     setPlanSaved(next);
     setHistory(hs => [...hs, entry].slice(-20));
   };
+
+  const markPaid = r => change({ paid: { [r.billId]: r.cycle } }, `${r.label} marked paid`);
+  const adopt = f => change({ adopted: { [f.id]: f } }, `${f.label} added as a commitment`);
+  const dismiss = f => change({ dismissed: { [f.id]: true } }, `${f.label} is not a commitment`);
 
   const applyOption = () => {
     change(confirm.apply, confirm.apply.label);
@@ -116,15 +135,16 @@ function Workspace({ household: base, transactions, notice, source }) {
 
       <main>
         <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={setPage} badges={badges} /></nav>
-        {page === 'dashboard' && <Dashboard h={h} source={source} plan={plan} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
+        {page === 'dashboard' && <Dashboard h={h} source={source} plan={plan} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
         {page === 'transactions' && <TransactionsPage transactions={transactions} allowances={h.allowances} corrections={corrections} setCorrections={setCorrections} />}
-        {page === 'recurring' && <RecurringPage h={h} sc={sc} plan={plan} change={change} cap={cap} open={open} />}
+        {page === 'recurring' && <RecurringPage h={h} sc={sc} plan={plan} change={change} cap={cap} open={open} discovered={discovered} onAdopt={adopt} onDismiss={dismiss} />}
         {page === 'cashflow' && <CashFlowPage h={h} sc={sc} sim={sim} />}
         {page === 'goals' && <GoalsPage h={h} base={base} plan={plan} change={change} cap={cap} goal={goal} history={history} onUndo={undo} open={open} transfer={transfer} />}
       </main>
 
-      {drawer === 'bill' && <BillDrawer h={h} notice={notice} plan={plan} change={change} cap={cap} onCompare={() => setDrawer('compare')} onClose={() => setDrawer(null)} />}
+      {drawer === 'bill' && <BillDrawer h={h} notice={notice} billId={billId} plan={plan} change={change} cap={cap} onCompare={() => setDrawer('compare')} onClose={() => setDrawer(null)} />}
+      {drawer === 'notice' && <NoticeDrawer h={h} base={base} plan={plan} cap={cap} change={change} onClose={() => setDrawer(null)} />}
       {drawer === 'compare' && (
         <CompareDrawer h={h} sc={sc} cap={cap} options={options} current={current}
           preview={preview} previewSim={previewSim} previewGoal={previewGoal} setPreviewId={setPreviewId}

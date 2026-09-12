@@ -10,17 +10,20 @@
 // Now the plan holds every decision, each change records only the fields it touched, and Undo
 // reverses exactly those fields.
 
-const MERGED = ['cuts', 'cancelled', 'pendingCancel', 'treatAsNewPrice'];
+const MERGED = ['cuts', 'cancelled', 'pendingCancel', 'treatAsNewPrice', 'whatIf', 'billChanges', 'paid', 'adopted', 'dismissed'];
 
 /** A plan with nothing decided yet. `null` means "use the affordable/default value". */
-export function emptyPlan(h) {
-  const changed = h.recurring.find(r => r.change);
+export function emptyPlan() {
   return {
-    increase: changed ? changed.change.to - changed.amount : 0,
     contribution: null,     // null → the contribution the forecast can carry
     goalTarget: null,       // null → the household's goal target
     goalLeft: null,         // null → the household's number of contributions
     cuts: {}, cancelled: {}, pendingCancel: {}, treatAsNewPrice: {},
+    whatIf: {},             // billId → an amount the user typed, overriding that bill's notice
+    billChanges: {},        // billId → a change imported from a notice the user pasted
+    paid: {},               // billId → the 'YYYY-MM' cycle the user confirmed paid
+    adopted: {},            // id → a commitment found in spending that the user confirmed
+    dismissed: {},          // id → a proposal the user rejected, so it is not offered again
     income: null,
   };
 }
@@ -80,6 +83,23 @@ export function householdFor(base, plan) {
   const target = plan.goalTarget ?? base.goal.target;
   const left = plan.goalLeft ?? base.goal.left;
   const income = plan.income ?? base.income;
-  if (target === base.goal.target && left === base.goal.left && income === base.income) return base;
-  return { ...base, income, goal: { ...base.goal, target, left } };
+  const imported = plan.billChanges || {};
+
+  // A notice the user imported attaches to the bill it names. Importing a second notice for the
+  // same bill REPLACES the first, so re-importing can never stack two increases on one commitment.
+  const recurring = Object.keys(imported).length
+    ? base.recurring.map(r => (imported[r.id] ? { ...r, change: imported[r.id] } : r))
+    : base.recurring;
+
+  // Commitments the user confirmed from their spending history join the bill list. Nothing
+  // reaches the forecast until they say so; a proposal on its own changes nothing.
+  const adopted = Object.values(plan.adopted || {});
+  const withAdopted = adopted.length
+    ? [...recurring, ...adopted.filter(a => !recurring.some(r => r.id === a.id))].sort((a, b) => a.day - b.day)
+    : recurring;
+
+  const unchanged = target === base.goal.target && left === base.goal.left
+    && income === base.income && withAdopted === base.recurring;
+  if (unchanged) return base;
+  return { ...base, income, recurring: withAdopted, goal: { ...base.goal, target, left } };
 }

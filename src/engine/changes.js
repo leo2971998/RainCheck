@@ -50,3 +50,50 @@ export function questionFor(bill, change) {
   ];
   return lines.filter(l => l !== undefined).join('\n');
 }
+
+
+/**
+ * Which of the user's commitments does this notice describe?
+ *
+ * Matching is deliberately conservative: the sender line and the body are searched for the bill's
+ * payee or its label. A weak guess is worse than no guess, because the user would be confirming a
+ * change against the wrong commitment — so anything uncertain comes back as a ranked list for them
+ * to choose from rather than a silent pick.
+ */
+export function matchBill(notice, recurring) {
+  const from = (/From:\s*([^<\n]+)/.exec(notice)?.[1] || '').toLowerCase();
+  const head = notice.slice(0, 400).toLowerCase();
+
+  const scored = recurring.map(r => {
+    const names = [r.payee, r.label].filter(Boolean).map(n => n.toLowerCase());
+    let score = 0;
+    for (const n of names) {
+      if (from.includes(n)) score += 10;                       // the sender names it outright
+      else if (head.includes(n)) score += 6;                   // the opening lines name it
+      const words = n.split(/\s+/).filter(w => w.length > 3);
+      score += words.filter(w => from.includes(w)).length * 4;
+      score += words.filter(w => head.includes(w)).length * 2;
+    }
+    return { bill: r, score };
+  }).filter(x => x.score > 0).sort((a, b) => b.score - a.score);
+
+  return {
+    best: scored[0]?.score >= 6 ? scored[0].bill : null,       // confident enough to preselect
+    ranked: scored.map(x => x.bill),
+  };
+}
+
+/** Everything a user needs to check before accepting an imported change. */
+export function reviewNotice(notice, recurring, year) {
+  const change = parseNotice(notice, year);
+  const { best, ranked } = matchBill(notice, recurring);
+  return {
+    change,
+    suggested: best,
+    candidates: ranked.length ? ranked : recurring,
+    problems: [
+      !change && 'No renewal amount and date were found. RainCheck reads one sentence pattern: "…will renew at $X starting with your Month D bill."',
+      change && !best && 'The notice does not clearly name one of your commitments. Choose which bill it belongs to.',
+    ].filter(Boolean),
+  };
+}

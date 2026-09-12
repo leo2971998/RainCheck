@@ -2,6 +2,7 @@ import { Icon, Kpi, STATE, money, prettyDate, longDate, prettyIso, weekdayIso } 
 import { AreaChart, GoalChart, CashBars } from '../components/charts.jsx';
 import IncomeList from '../components/IncomeList.jsx';
 import Alerts from '../components/Alerts.jsx';
+import Reminders from '../components/Reminders.jsx';
 
 /** Describes the gap between the first two expected paychecks in words, rather than assuming it. */
 function cadenceWords(income) {
@@ -10,7 +11,7 @@ function cadenceWords(income) {
   return days <= 8 ? 'week' : days <= 16 ? 'two weeks' : days <= 24 ? 'three weeks' : 'month';
 }
 
-export default function Dashboard({ h, source, plan, change, sim, previewSim, preview, cap, goal, alerts, open, history, onUndo, found, setFound }) {
+export default function Dashboard({ h, source, plan, change, sim, previewSim, preview, cap, goal, alerts, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
   const sc = plan;
   const lastAction = history?.[history.length - 1];
   const [st, tone] = STATE[sim.worst];
@@ -50,8 +51,8 @@ export default function Dashboard({ h, source, plan, change, sim, previewSim, pr
                   <div className="cat"><i className="rec"><Icon n="repeat" s={14} /></i></div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600 }}>{bill.label}</div>
-                    <div className="fine">{money(bill.amount)} → <b className="num" style={{ color: 'var(--ink)' }}>{money(bill.amount + sc.increase)}</b> per month · takes effect {prettyIso(bill.change.effective)}</div>
-                    <div className="fine">{sc.increase !== bill.change.increase ? `What-if scenario · the notice says ${money(bill.change.increase)}` : `${bill.change.why}, per the notice`}</div>
+                    <div className="fine">{money(bill.amount)} → <b className="num" style={{ color: 'var(--ink)' }}>{money(plan.whatIf?.[bill.id] ?? bill.change.to)}</b> per month · takes effect {prettyIso(bill.change.effective)}</div>
+                    <div className="fine">{plan.whatIf?.[bill.id] != null ? `What-if scenario · the notice says ${money(bill.change.to)}` : `${bill.change.why}, per the notice`}</div>
                   </div>
                 </div>
               ))}
@@ -67,8 +68,9 @@ export default function Dashboard({ h, source, plan, change, sim, previewSim, pr
               ))}
               {!changedBills.length && !unexplainedBills.length && <div className="fine">Every commitment posted the amount we expected.</div>}
               <div className="row wrap" style={{ gap: 8 }}>
-                {changedBills.length > 0 && <button className="btn sm" onClick={() => open('bill')}>See what changed</button>}
+                {changedBills.map(b => <button key={b.id} className="btn sm" onClick={() => open('bill', b.id)}>See what changed{changedBills.length > 1 ? `: ${b.label.toLowerCase()}` : ''}</button>)}
                 <button className="btn ghost sm" onClick={() => open('compare')}>Compare options</button>
+                <button className="btn ghost sm" onClick={() => open('notice')}><Icon n="mail" s={14} />Import a notice</button>
                 {unexplainedBills.length > 0 && <button className="btn ghost sm" onClick={() => open('page:recurring')}>Decide on {unexplainedBills.length === 1 ? unexplainedBills[0].label.toLowerCase() : 'these charges'}</button>}
               </div>
             </div>
@@ -89,6 +91,7 @@ export default function Dashboard({ h, source, plan, change, sim, previewSim, pr
             <div className="row wrap" style={{ gap: 6 }}><span className="pill good"><Icon n="check" s={11} />Paycheck about every {cadenceWords(h.income)}</span><span className="pill good"><Icon n="check" s={11} />{h.recurring.length} recurring commitments</span>{reviewCount > 0 && <span className="pill warn">{reviewCount} charge{reviewCount === 1 ? ' needs' : 's need'} review</span>}</div>
             <div><button className="btn ghost sm" onClick={() => open('page:transactions')}>Review my plan</button></div></div>}
           <Alerts alerts={alerts} open={open} />
+          <Reminders reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={onPaid} />
           <IncomeList h={h} plan={plan} change={change} compact />
         </div>
       </div>

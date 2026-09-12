@@ -1,7 +1,8 @@
 import { Icon, Kpi, money, prettyIso, listOf } from '../components/ui.jsx';
 import { amountFor, capacity, hypothetical, nextChargeDate, monthlyEquivalent } from '../engine/forecast.js';
+import Discovered from '../components/Discovered.jsx';
 
-export default function RecurringPage({ h, sc, plan, change, cap, open }) {
+export default function RecurringPage({ h, sc, plan, change, cap, open, discovered = [], onAdopt, onDismiss }) {
   // Everything on this page is derived, so editing the increase or switching data sources can
   // never make the page say something false.
   const withDates = h.recurring.map(r => {
@@ -30,7 +31,8 @@ export default function RecurringPage({ h, sc, plan, change, cap, open }) {
   return (
     <>
       <div className="topbar"><div><h1>Recurring</h1>
-        <div className="sub">{withDates.length} commitments · {money(total)} per month · {changed.length ? `${changed.length} increase detected` : 'no increases detected'}</div></div></div>
+        <div className="sub">{withDates.length} commitments · {money(total)} per month · {changed.length ? `${changed.length} increase detected` : 'no increases detected'}</div></div>
+        <button className="btn ghost sm" onClick={() => open('notice')}><Icon n="mail" s={14} />Import a notice</button></div>
 
       <div className="grid g4" style={{ marginBottom: 18 }}>
         <Kpi label="Monthly recurring" value={money(total)} sub={`Across ${withDates.filter(r => !r.cancelled).length} commitments${withDates.some(r => r.everyMonths > 1) ? ", longer cycles counted per month" : ""}`} />
@@ -55,6 +57,8 @@ export default function RecurringPage({ h, sc, plan, change, cap, open }) {
         </div>
       )}
 
+      <div className="grid" style={{ gap: 18 }}>
+      <Discovered found={discovered} onAdopt={onAdopt} onDismiss={onDismiss} />
       <div className="card">
         <div style={{ overflowX: 'auto' }}>
           <table>
@@ -81,7 +85,7 @@ export default function RecurringPage({ h, sc, plan, change, cap, open }) {
                       : <span className="pill good">Steady</span>
                     }</td>
                     <td className="r">
-                      {r.change && <button className="btn sm" onClick={() => open('bill')}>Review</button>}
+                      {r.change && <button className="btn sm" onClick={() => open('bill', r.id)}>Review</button>}
                       {r.pending && <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
                         <button className="btn sm" onClick={() => confirmCancelled(r.id)}>It is cancelled</button>
                         <button className="btn ghost sm" onClick={() => dropPending(r.id)}>Never mind</button>
@@ -103,6 +107,7 @@ export default function RecurringPage({ h, sc, plan, change, cap, open }) {
             ? `"The amount changed. We have not confirmed why." is an honest state. Your decision on ${listOf(unexplained.map(r => r.label))} changes the forecast immediately.`
             : 'Every posted charge matched the amount we expected.'}
         </div>
+      </div>
       </div>
     </>
   );

@@ -19,13 +19,29 @@ export function fallsOn(r, date, startIso) {
   return months >= 0 && months % every === 0;
 }
 
-/** The amount a commitment will actually post, given what the user is considering. */
+/**
+ * The amount a commitment will actually post, given what the user is considering.
+ *
+ * A change belongs to one bill. There used to be a single scenario-wide `increase`, which meant
+ * an internet rise and a separate subscription renewal could not both exist, and a what-if typed
+ * against one bill silently moved the other.
+ */
 export function amountFor(r, key, sc = {}) {
-  // An increase applies only on or after the date the notice says it takes effect.
-  if (r.change && key >= r.change.effective) return r.amount + (sc.increase ?? 0);
+  if (r.change && key >= r.change.effective) {
+    // A figure the user typed overrides the notice for THIS bill only.
+    return sc.whatIf?.[r.id] ?? r.change.to;
+  }
   // A higher posted charge counts only once the user says it is the new price, not before.
   if (r.unexplained && sc.treatAsNewPrice?.[r.id]) return r.lastPosted;
   return r.amount;
+}
+
+/** What a bill is currently assumed to become, and whether the user typed that figure. */
+export function changeOf(r, sc = {}) {
+  if (!r.change) return null;
+  const typed = sc.whatIf?.[r.id];
+  const to = typed ?? r.change.to;
+  return { ...r.change, to, increase: round2(to - r.amount), whatIf: typed != null, noticeSays: r.change.to };
 }
 
 /**

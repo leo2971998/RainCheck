@@ -5,11 +5,11 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { buildHousehold, detectPostedChanges, applyNotice } from './household.js';
-import { parseNotice } from './changes.js';
+import { parseNotice, reviewNotice } from './changes.js';
 import { simulate, capacity, goalAt, cutNeeded, nextChargeDate, monthlyEquivalent } from './forecast.js';
 import { buildOptions } from './options.js';
 import { buildAlerts } from './alerts.js';
-import { emptyPlan, applyPatch, revert, scenarioFor } from './plan.js';
+import { emptyPlan, applyPatch, revert, scenarioFor, householdFor } from './plan.js';
 
 const TODAY = '2026-09-28';
 const snap = JSON.parse(readFileSync(new URL('../../data/nessie-snapshot.json', import.meta.url), 'utf8'));
@@ -18,8 +18,13 @@ const notice = readFileSync(new URL('../../data/notice-internet.txt', import.met
 function load() {
   const h = buildHousehold(snap, TODAY);
   h.recurring = applyNotice(detectPostedChanges(h, snap), notice, parseNotice(notice, 2026));
-  const increase = h.recurring.find(r => r.change)?.change.increase ?? 0;
-  return { h, sc: { increase, contribution: h.goal.planned, cuts: {}, cancelled: {}, income: null } };
+  return { h, sc: { contribution: h.goal.planned, cuts: {}, cancelled: {}, whatIf: {}, treatAsNewPrice: {}, income: null } };
+}
+
+/** A scenario where one bill is held at a given amount — the per-bill replacement for the old
+ *  scenario-wide `increase`. Passing the bill's current amount means "as if it had not changed". */
+function holdAt(sc, billId, amount) {
+  return { ...sc, whatIf: { ...sc.whatIf, [billId]: amount } };
 }
 
 describe('reading the bank records', () => {
@@ -85,16 +90,19 @@ describe('the forecast', () => {
   });
 
   it('holds above the cushion without the increase', () => {
-    expect(simulate(h, { ...sc, increase: 0 }).low.balance).toBeGreaterThanOrEqual(h.cushion);
+    const internet = h.recurring.find(r => r.id === 'internet');
+    expect(simulate(h, holdAt(sc, 'internet', internet.amount)).low.balance).toBeGreaterThanOrEqual(h.cushion);
   });
 
   it('supports $300 a month before the increase and $275 after', () => {
-    expect(capacity(h, { ...sc, increase: 0 })).toBe(300);
+    const internet = h.recurring.find(r => r.id === 'internet');
+    expect(capacity(h, holdAt(sc, 'internet', internet.amount))).toBe(300);
     expect(capacity(h, sc)).toBe(275);
   });
 
   it('costs one dollar of contribution per dollar of increase', () => {
-    expect(capacity(h, { ...sc, increase: 75 })).toBe(225);
+    const internet = h.recurring.find(r => r.id === 'internet');
+    expect(capacity(h, holdAt(sc, 'internet', internet.amount + 75))).toBe(225);
   });
 });
 
@@ -284,7 +292,7 @@ describe('keeping the plans apart', () => {
   // It used to flip "$100 short" to "On track" on the strength of a contribution nobody could afford.
   it('a pending cancellation does not change the goal result', () => {
     const beforeAccepting = goalAt(h, cap);
-    const applied = { id: 'renewal', label: 'pending', contribution: null };
+    const applied = { contribution: null };
     const afterAccepting = goalAt(h, applied.contribution ?? cap);
     expect(afterAccepting.projected).toBe(beforeAccepting.projected);
     expect(afterAccepting.gap).toBe(100);
@@ -342,5 +350,57 @@ describe('decisions stay independent of one another', () => {
     expect(goalAt(h, start.contribution ?? cap).contribution).toBe(cap);
     const accepted = applyPatch(start, { contribution: 300 }, 'x').plan;
     expect(goalAt(h, accepted.contribution ?? cap).contribution).toBe(300);
+  });
+});
+
+describe('importing a notice the user pasted', () => {
+  const { h, sc } = load();
+  const base = { ...h };
+  const GYM_NOTICE = [
+    'From: Fit24 Memberships <billing@fit24.example>', '',
+    'Your membership will renew at $55.00 starting with your October 15 bill.',
+  ].join('\n');
+
+  it('reads the amount and date, and names the commitment it belongs to', () => {
+    const r = reviewNotice(GYM_NOTICE, h.recurring, 2026);
+    expect(r.suggested.label).toBe('Gym');
+    expect(r.change).toMatchObject({ to: 55, effective: '2026-10-15' });
+    expect(r.problems).toHaveLength(0);
+  });
+
+  it('refuses to guess when the notice names no commitment', () => {
+    const r = reviewNotice('From: Someone\n\nYour plan will renew at $99.00 starting with your December 1 bill.', h.recurring, 2026);
+    expect(r.suggested).toBeNull();
+    expect(r.problems[0]).toMatch(/does not clearly name/);
+  });
+
+  it('says so when there is nothing it can read', () => {
+    const r = reviewNotice('Hello, nothing financial here.', h.recurring, 2026);
+    expect(r.change).toBeNull();
+    expect(r.problems[0]).toMatch(/No renewal amount and date/);
+  });
+
+  // Two commitments can change at once; there is no longer one scenario-wide increase.
+  it('carries a second imported change alongside the first', () => {
+    const r = reviewNotice(GYM_NOTICE, h.recurring, 2026);
+    const plan = applyPatch(emptyPlan(), { billChanges: { gym: { ...r.change, increase: 15 } } }, 'gym').plan;
+    const after = householdFor(base, plan);
+    expect(after.recurring.filter(x => x.change).map(x => x.label).sort()).toEqual(['Gym', 'Internet']);
+    expect(capacity(after, scenarioFor(after, plan))).toBeLessThan(capacity(h, sc));
+  });
+
+  it('replaces rather than stacks when the same bill is imported twice', () => {
+    const one = applyPatch(emptyPlan(), { billChanges: { gym: { to: 55, effective: '2026-10-15' } } }, 'a').plan;
+    const two = applyPatch(one, { billChanges: { gym: { to: 60, effective: '2026-10-15' } } }, 'b').plan;
+    expect(two.billChanges.gym.to).toBe(60);
+    expect(householdFor(base, two).recurring.find(r => r.id === 'gym').change.to).toBe(60);
+  });
+
+  it('a what-if moves only the bill it was typed against', () => {
+    const plan = applyPatch(emptyPlan(), { whatIf: { internet: 150 } }, 'w').plan;
+    const after = householdFor(base, plan);
+    const day = simulate(after, scenarioFor(after, plan)).days.find(d => d.key === '2026-10-01');
+    expect(day.events.find(e => e.id === 'internet').amt).toBe(-150);
+    expect(day.events.find(e => e.id === 'streaming')).toBeUndefined();   // not due that day
   });
 });

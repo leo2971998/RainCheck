@@ -4,14 +4,16 @@ import { goalAt } from '../engine/forecast.js';
 import { questionFor } from '../engine/changes.js';
 import Drawer from '../components/Drawer.jsx';
 
-export default function BillDrawer({ h, notice, plan, change, cap, onCompare, onClose }) {
+export default function BillDrawer({ h, notice, billId, plan, change, cap, onCompare, onClose }) {
   const [drafting, setDrafting] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const bill = h.recurring.find(x => x.change);
+  // Opened for one named bill. It used to always show whichever changed bill came first,
+  // which made a second imported change unreachable.
+  const bill = h.recurring.find(x => x.id === billId && x.change) ?? h.recurring.find(x => x.change);
   if (!bill) return null;
   const billChange = bill.change;
-  const increase = plan.increase;
+  const increase = (plan.whatIf?.[bill?.id] ?? bill?.change?.to) - (bill?.amount ?? 0);
   const goal = goalAt(h, cap);
   // An amount the user typed is an assumption. The notice establishes its own figure, and the
   // app must not keep claiming the provider confirmed a number they never wrote.
@@ -42,7 +44,7 @@ export default function BillDrawer({ h, notice, plan, change, cap, onCompare, on
             <p>The notice itself says {money(billChange.increase)}, taking the bill to {money(bill.amount + billChange.increase)}.
                The evidence below still shows what the provider actually wrote.
                <button className="link" style={{ fontSize: 13, marginLeft: 6 }}
-                 onClick={() => change({ increase: billChange.increase }, 'Back to the notice amount')}>Use the notice amount</button></p>
+                 onClick={() => change({ whatIf: { [bill.id]: undefined } }, 'Back to the notice amount')}>Use the notice amount</button></p>
           </div>
         )}
 
@@ -72,7 +74,7 @@ export default function BillDrawer({ h, notice, plan, change, cap, onCompare, on
         <div className="row">
           <span className="muted">Increase of</span>
           <input type="number" min="0" step="5" value={increase} aria-label="Increase amount"
-            onChange={e => change({ increase: Math.max(0, Number(e.target.value) || 0) }, 'Increase amount changed')} />
+            onChange={e => change({ whatIf: { [bill.id]: Math.max(0, bill.amount + (Number(e.target.value) || 0)) } }, `What-if amount for ${bill.label}`)} />
           <span className="muted">per month. Everything recomputes.</span>
         </div>
 

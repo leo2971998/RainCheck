@@ -63,14 +63,29 @@ leaving unrelated decisions alone. "Reset my decisions" in the sidebar clears ev
 2. **A bill and its posted charge are one expense.** Every bill also lands as a purchase. Counting both doubled everyday spending and sent the forecast hundreds of dollars under.
 3. **Repeat purchases are not a subscription.** Purchases only ever feed spending categories. Something becomes recurring only when the bank says it is a bill.
 
+## Bringing in new information
+
+Three ways a commitment reaches the forecast, and none of them happens without the user:
+
+- **Import a notice.** Paste an email about a price change. RainCheck reads the amount and the
+  date, highlights the sentence it took them from, suggests which commitment it belongs to, and
+  previews the consequence before anything is added. A notice it cannot read says so; a notice
+  that names no commitment asks which one. Re-importing replaces rather than stacks.
+- **Decide an unexplained charge.** A charge higher than usual is a question, not a price change.
+- **Confirm a commitment found in spending.** A steady charge missing from the bank's bill list is
+  proposed with its evidence. It is never added automatically: four rides in a month and a monthly
+  subscription look alike until you check, and even then a bus fare can pass the test.
+
 ## What is not built
 
 Said plainly so nothing here is mistaken for finished work:
 
-- **Importing your own notice.** The bundled notice demonstrates the flow; there is no paste-and-confirm path yet, and the parser matches one documented sentence pattern.
-- **Reminders outside the app.** In-app alerts exist. There is no push delivery, no due-date reminder, and no lead-time preference.
-- **Discovering subscriptions from spending.** Commitments come from the bank's bill records only.
-- **Checking the whole goal horizon.** The contribution is proven across the forecast window and then assumed to continue; every screen showing the goal total says so.
+- **Notifications outside the app.** Reminders are in-app only, with a lead time you choose, and
+  they stop once you mark a charge paid. Nothing reaches your phone.
+- **Notices beyond one sentence pattern.** The parser reads
+  "…will renew at $X starting with your Month D bill." Anything else is reported as unreadable.
+- **Checking the whole goal horizon.** The contribution is proven across the forecast window and
+  then assumed to continue; every screen showing the goal total says so.
 - **Identity verification and voice.** Neither sponsor integration is wired up.
 
 ## What the app will not claim
