@@ -177,7 +177,7 @@ export default function GoalsPage({ h, base, plan, change, cap, goal, history, o
 
 function Measure({ label, value, sub, tone }) {
   return (
-    <div className="card kpi" style={{ gap: 4, padding: '14px 16px' }}>
+    <div className="card kpi measure" style={{ gap: 4, padding: '14px 16px' }}>
       <span className="l">{label}</span>
       <div className="v" style={{ fontSize: 21, color: tone === 'bad' ? 'var(--bad)' : tone === 'good' ? 'var(--good)' : undefined }}>{value}</div>
       <div className="s">{sub}</div>
