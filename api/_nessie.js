@@ -14,10 +14,13 @@ export async function loadSnapshotLike() {
   const cid = process.env.NESSIE_CUSTOMER_ID, ck = process.env.NESSIE_CHECKING_ID;
   try {
     if (!process.env.NESSIE_KEY || !cid || !ck || !process.env.NESSIE_SAVINGS_ID) throw new Error('Sandbox not configured');
-    const [accounts, bills, deposits, purchases, merchants] = await Promise.all([
-      nessie(`/customers/${cid}/accounts`), nessie(`/accounts/${ck}/bills`), nessie(`/accounts/${ck}/deposits`), nessie(`/accounts/${ck}/purchases`), nessie('/merchants'),
+    // Nessie answers 404 for a collection that is simply empty, so a missing list is not an error.
+    const empty = () => [];
+    const [accounts, bills, deposits, purchases, merchants, withdrawals] = await Promise.all([
+      nessie(`/customers/${cid}/accounts`), nessie(`/accounts/${ck}/bills`), nessie(`/accounts/${ck}/deposits`),
+      nessie(`/accounts/${ck}/purchases`), nessie('/merchants'), nessie(`/accounts/${ck}/withdrawals`).catch(empty),
     ]);
-    return { source: 'nessie', customerId: cid, checkingId: ck, savingsId: process.env.NESSIE_SAVINGS_ID, accounts, bills, deposits, purchases, merchants };
+    return { source: 'nessie', customerId: cid, checkingId: ck, savingsId: process.env.NESSIE_SAVINGS_ID, accounts, bills, deposits, purchases, merchants, withdrawals };
   } catch {
     // This file is only created by an actual sandbox seed/read-back, never fabricated.
     const snapshot = JSON.parse(await readFile(new URL('../data/nessie-snapshot.json', import.meta.url), 'utf8'));

@@ -1,0 +1,1629 @@
+{
+  "capturedAt": "2026-09-12T04:27:29.234Z",
+  "demoDate": "2026-09-28",
+  "customerId": "61bac2a7-843b-4f06-a560-05acbd24f008",
+  "checkingId": "c9f79f65-2964-4332-97dc-85a12c108609",
+  "savingsId": "a223b739-eb6c-4847-9e12-bdadee9def04",
+  "accounts": [
+    {
+      "_id": "a223b739-eb6c-4847-9e12-bdadee9def04",
+      "type": "Savings",
+      "nickname": "Emergency fund",
+      "rewards": 0,
+      "balance": 800,
+      "account_number": "5269655389196318",
+      "customer_id": "61bac2a7-843b-4f06-a560-05acbd24f008"
+    },
+    {
+      "_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "type": "Checking",
+      "nickname": "Everyday Checking",
+      "rewards": 0,
+      "balance": 1260,
+      "account_number": "0323801142068141",
+      "customer_id": "61bac2a7-843b-4f06-a560-05acbd24f008"
+    }
+  ],
+  "bills": [
+    {
+      "_id": "1635cf93-a2e0-417d-8234-95ffe144c791",
+      "status": "recurring",
+      "payee": "Reliant Energy",
+      "nickname": "Electric",
+      "creation_date": "2026-09-12",
+      "payment_date": "2026-10-06",
+      "recurring_date": 6,
+      "upcoming_payment_date": "2026-10-06",
+      "payment_amount": 110,
+      "account_id": "c9f79f65-2964-4332-97dc-85a12c108609"
+    },
+    {
+      "_id": "195606fd-55de-441a-b5e5-b2bc7a46b9e8",
+      "status": "recurring",
+      "payee": "Northline Internet",
+      "nickname": "Internet",
+      "creation_date": "2026-09-12",
+      "payment_date": "2026-10-01",
+      "recurring_date": 1,
+      "upcoming_payment_date": "2026-10-01",
+      "payment_amount": 65,
+      "account_id": "c9f79f65-2964-4332-97dc-85a12c108609"
+    },
+    {
+      "_id": "21fba070-1508-4366-a66f-aa25b9db267e",
+      "status": "recurring",
+      "payee": "Fit24",
+      "nickname": "Gym",
+      "creation_date": "2026-09-12",
+      "payment_date": "2026-10-15",
+      "recurring_date": 15,
+      "upcoming_payment_date": "2026-09-15",
+      "payment_amount": 40,
+      "account_id": "c9f79f65-2964-4332-97dc-85a12c108609"
+    },
+    {
+      "_id": "8e90e7a4-6c0b-454a-b6a3-a6788c500e91",
+      "status": "recurring",
+      "payee": "Geico",
+      "nickname": "Car insurance",
+      "creation_date": "2026-09-12",
+      "payment_date": "2026-10-10",
+      "recurring_date": 10,
+      "upcoming_payment_date": "2026-10-10",
+      "payment_amount": 120,
+      "account_id": "c9f79f65-2964-4332-97dc-85a12c108609"
+    },
+    {
+      "_id": "9d4c4ae3-52ec-41c5-9960-c8c5f7d0db9c",
+      "status": "recurring",
+      "payee": "Harbor Lofts",
+      "nickname": "Rent",
+      "creation_date": "2026-09-12",
+      "payment_date": "2026-10-05",
+      "recurring_date": 5,
+      "upcoming_payment_date": "2026-10-05",
+      "payment_amount": 1150,
+      "account_id": "c9f79f65-2964-4332-97dc-85a12c108609"
+    },
+    {
+      "_id": "c0cdb1dd-0ff0-4dbb-a9e3-cd5fe9a18d11",
+      "status": "recurring",
+      "payee": "Plexi",
+      "nickname": "Streaming",
+      "creation_date": "2026-09-12",
+      "payment_date": "2026-10-03",
+      "recurring_date": 3,
+      "upcoming_payment_date": "2026-10-03",
+      "payment_amount": 30,
+      "account_id": "c9f79f65-2964-4332-97dc-85a12c108609"
+    },
+    {
+      "_id": "e6105e8e-589c-4e2c-a99d-6c08cd76c023",
+      "status": "recurring",
+      "payee": "Mint Mobile",
+      "nickname": "Phone",
+      "creation_date": "2026-09-12",
+      "payment_date": "2026-10-12",
+      "recurring_date": 12,
+      "upcoming_payment_date": "2026-10-12",
+      "payment_amount": 45,
+      "account_id": "c9f79f65-2964-4332-97dc-85a12c108609"
+    }
+  ],
+  "deposits": [
+    {
+      "_id": "20ae9462-06a9-4034-bdd0-5f3a5b5d0167",
+      "medium": "balance",
+      "transaction_date": "2026-08-21",
+      "status": "completed",
+      "amount": 1700,
+      "description": "Paycheck Rice Coffee Co"
+    },
+    {
+      "_id": "4fd2bf9d-3b66-408b-b6a2-9b098517f126",
+      "medium": "balance",
+      "transaction_date": "2026-09-04",
+      "status": "completed",
+      "amount": 1700,
+      "description": "Paycheck Rice Coffee Co"
+    },
+    {
+      "_id": "5bf6ee1d-3b2e-4bde-aa45-a947e3f583ef",
+      "medium": "balance",
+      "transaction_date": "2026-08-07",
+      "status": "completed",
+      "amount": 1700,
+      "description": "Paycheck Rice Coffee Co"
+    },
+    {
+      "_id": "9182f9d3-6911-493c-ae0a-e8607305fd69",
+      "medium": "balance",
+      "transaction_date": "2026-07-10",
+      "status": "completed",
+      "amount": 1700,
+      "description": "Paycheck Rice Coffee Co"
+    },
+    {
+      "_id": "9e748279-1b5c-4a37-b30e-ae1a228d3e0e",
+      "medium": "balance",
+      "transaction_date": "2026-09-18",
+      "status": "completed",
+      "amount": 1700,
+      "description": "Paycheck Rice Coffee Co"
+    },
+    {
+      "_id": "f3dbc554-a9d0-4948-bf72-f00cb640ad23",
+      "medium": "balance",
+      "transaction_date": "2026-07-24",
+      "status": "completed",
+      "amount": 1700,
+      "description": "Paycheck Rice Coffee Co"
+    }
+  ],
+  "purchases": [
+    {
+      "_id": "025670df-5382-41ea-bcc1-f3edac77b0c9",
+      "type": "merchant",
+      "merchant_id": "e068b65a-6c15-4387-84b2-a09fa23149d5",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-10",
+      "amount": 19,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Half Price Books"
+    },
+    {
+      "_id": "03eb2bf7-4d0d-45d4-87b8-6343234a40cb",
+      "type": "merchant",
+      "merchant_id": "d6408957-ac0d-4837-9842-49d018fec043",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-19",
+      "amount": 37,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Local Foods"
+    },
+    {
+      "_id": "05f750df-a266-4fae-860d-293a23a2b70a",
+      "type": "merchant",
+      "merchant_id": "61ea0a9e-859b-4d25-a02c-729ae72ff019",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-10",
+      "amount": 120,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Geico"
+    },
+    {
+      "_id": "06275ead-fa7d-436d-af55-1f4d17d99c00",
+      "type": "merchant",
+      "merchant_id": "5fccf4f1-1c27-4ab5-997d-2d02d7f5c01d",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-04",
+      "amount": 36,
+      "status": "completed",
+      "medium": "balance",
+      "description": "AMC Theatres"
+    },
+    {
+      "_id": "07c6f94d-2ff9-4a86-8610-5bd73306dd1b",
+      "type": "merchant",
+      "merchant_id": "baa87831-11ce-4472-a5ff-df284ab690a7",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-11",
+      "amount": 26,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Torchy's Tacos"
+    },
+    {
+      "_id": "0ad27ae6-e381-4dd5-8a67-a725a3f2f76d",
+      "type": "merchant",
+      "merchant_id": "e068b65a-6c15-4387-84b2-a09fa23149d5",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-15",
+      "amount": 25,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Half Price Books"
+    },
+    {
+      "_id": "0e4d0fc9-585e-4beb-945a-0dfbe7963c02",
+      "type": "merchant",
+      "merchant_id": "946e0464-3261-4555-85a3-bb8c9d096e00",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-16",
+      "amount": 97,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Kroger"
+    },
+    {
+      "_id": "0fb944dd-6828-4aa2-b8d0-08caaede2d87",
+      "type": "merchant",
+      "merchant_id": "01066957-62e7-4b41-bf2d-b2ff20c3f7f8",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-06",
+      "amount": 110,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Reliant Energy"
+    },
+    {
+      "_id": "11e53119-4511-4203-b355-dbc9db081a40",
+      "type": "merchant",
+      "merchant_id": "eade63ef-3cea-48a3-b259-12c6b277c37f",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-26",
+      "amount": 94,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Amazon"
+    },
+    {
+      "_id": "131effaf-d166-42be-9b97-4daf1dc25cf2",
+      "type": "merchant",
+      "merchant_id": "13ba9d2c-026a-4d4f-a65d-358958b13467",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-14",
+      "amount": 150,
+      "status": "completed",
+      "medium": "balance",
+      "description": "H-E-B"
+    },
+    {
+      "_id": "1bfcf697-d7ab-4ec1-814c-ea74f79ece96",
+      "type": "merchant",
+      "merchant_id": "b3e8bacc-74e8-4252-a528-cff26aa374f7",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-09",
+      "amount": 102,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Trader Joe's"
+    },
+    {
+      "_id": "1dc6cba8-9f23-4d0c-b135-dafc8d621887",
+      "type": "merchant",
+      "merchant_id": "130eec47-87a4-4b2b-93e0-cfcdba49bb10",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-12",
+      "amount": 45,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Mint Mobile"
+    },
+    {
+      "_id": "1f3ca868-bdbf-4974-a1f6-a25a8c171907",
+      "type": "merchant",
+      "merchant_id": "13ba9d2c-026a-4d4f-a65d-358958b13467",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-29",
+      "amount": 172,
+      "status": "completed",
+      "medium": "balance",
+      "description": "H-E-B"
+    },
+    {
+      "_id": "20c04655-c4a1-4cda-85c3-17008a7b3d51",
+      "type": "merchant",
+      "merchant_id": "e95529f8-a176-4f29-bc6d-47f72bae03e6",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-15",
+      "amount": 40,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Fit24"
+    },
+    {
+      "_id": "23626cb1-7f0f-452a-9ac0-d8de73206739",
+      "type": "merchant",
+      "merchant_id": "baa87831-11ce-4472-a5ff-df284ab690a7",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-16",
+      "amount": 32,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Torchy's Tacos"
+    },
+    {
+      "_id": "298f586a-e143-46fb-9c96-fd6d325910b2",
+      "type": "merchant",
+      "merchant_id": "aaa08aaf-fdbb-4b72-867f-06d081e81fa9",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-11",
+      "amount": 12,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Whataburger"
+    },
+    {
+      "_id": "2993412d-b430-4bca-8d63-7d2213d4164c",
+      "type": "merchant",
+      "merchant_id": "e95529f8-a176-4f29-bc6d-47f72bae03e6",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-15",
+      "amount": 40,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Fit24"
+    },
+    {
+      "_id": "29a3e764-a319-44eb-84d3-3fdf57667782",
+      "type": "merchant",
+      "merchant_id": "3beb7b2d-444b-49b4-8876-927a855b27c7",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-01",
+      "amount": 65,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Northline Internet"
+    },
+    {
+      "_id": "2bb1bb31-7ee4-464b-8fa2-e1351e4af4fb",
+      "type": "merchant",
+      "merchant_id": "3beb7b2d-444b-49b4-8876-927a855b27c7",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-01",
+      "amount": 65,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Northline Internet"
+    },
+    {
+      "_id": "2e9337ba-5caf-4560-8b30-c34b5d68e73c",
+      "type": "merchant",
+      "merchant_id": "130eec47-87a4-4b2b-93e0-cfcdba49bb10",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-12",
+      "amount": 45,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Mint Mobile"
+    },
+    {
+      "_id": "2ec65780-9345-4c72-99ed-52c9a4f80126",
+      "type": "merchant",
+      "merchant_id": "946e0464-3261-4555-85a3-bb8c9d096e00",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-03",
+      "amount": 142,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Kroger"
+    },
+    {
+      "_id": "3a90344d-2c51-4ba2-950b-fba9a4365dc5",
+      "type": "merchant",
+      "merchant_id": "5fccf4f1-1c27-4ab5-997d-2d02d7f5c01d",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-21",
+      "amount": 58,
+      "status": "completed",
+      "medium": "balance",
+      "description": "AMC Theatres"
+    },
+    {
+      "_id": "3d70a0b0-eaac-4b81-bb8d-6c5ef62f9f94",
+      "type": "merchant",
+      "merchant_id": "c2b5d60e-e99c-4543-a4a4-963550180589",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-23",
+      "amount": 23,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Chipotle"
+    },
+    {
+      "_id": "4046032e-c6e4-4f9c-9a6a-12bb4186db8d",
+      "type": "merchant",
+      "merchant_id": "c2b5d60e-e99c-4543-a4a4-963550180589",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-29",
+      "amount": 41,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Chipotle"
+    },
+    {
+      "_id": "40f979dd-b876-4b8c-91f7-a34a83a841ea",
+      "type": "merchant",
+      "merchant_id": "24434a3e-6e67-4132-a6c9-189ea78a360b",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-05",
+      "amount": 1150,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Harbor Lofts"
+    },
+    {
+      "_id": "4408d728-0ef8-462c-850d-e5bd9cc83aa4",
+      "type": "merchant",
+      "merchant_id": "3a3dd728-d6e1-411b-91fb-4e1934261193",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-08",
+      "amount": 31,
+      "status": "completed",
+      "medium": "balance",
+      "description": "CVS Pharmacy"
+    },
+    {
+      "_id": "4c2583c7-27af-43eb-818f-333ccfe5d658",
+      "type": "merchant",
+      "merchant_id": "d6408957-ac0d-4837-9842-49d018fec043",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-24",
+      "amount": 45,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Local Foods"
+    },
+    {
+      "_id": "4d6ff0f3-f3a3-4b04-a849-49da538bef26",
+      "type": "merchant",
+      "merchant_id": "eade63ef-3cea-48a3-b259-12c6b277c37f",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-04",
+      "amount": 48,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Amazon"
+    },
+    {
+      "_id": "4e2d54b3-669b-490a-b3a8-344c6d379bae",
+      "type": "merchant",
+      "merchant_id": "eade63ef-3cea-48a3-b259-12c6b277c37f",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-11",
+      "amount": 36,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Amazon"
+    },
+    {
+      "_id": "50b62b39-06e1-427f-8546-64e366807191",
+      "type": "merchant",
+      "merchant_id": "ddffc10e-4157-4667-bc5c-e262ea13282d",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-03",
+      "amount": 30,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Plexi"
+    },
+    {
+      "_id": "55352e49-8e9e-4c9d-a28c-7c79c30270d6",
+      "type": "merchant",
+      "merchant_id": "24434a3e-6e67-4132-a6c9-189ea78a360b",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-05",
+      "amount": 1150,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Harbor Lofts"
+    },
+    {
+      "_id": "5941017a-0eae-4d36-a0fa-121a7c1c342d",
+      "type": "merchant",
+      "merchant_id": "c2b5d60e-e99c-4543-a4a4-963550180589",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-07",
+      "amount": 22,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Chipotle"
+    },
+    {
+      "_id": "5c0764e2-841f-4916-91c5-c857624838be",
+      "type": "merchant",
+      "merchant_id": "d6408957-ac0d-4837-9842-49d018fec043",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-27",
+      "amount": 52,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Local Foods"
+    },
+    {
+      "_id": "5c794425-008e-4630-be17-72a297044976",
+      "type": "merchant",
+      "merchant_id": "e068b65a-6c15-4387-84b2-a09fa23149d5",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-30",
+      "amount": 76,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Half Price Books"
+    },
+    {
+      "_id": "5cd35111-bd18-4001-ae7f-e312a8e5ac1d",
+      "type": "merchant",
+      "merchant_id": "13ba9d2c-026a-4d4f-a65d-358958b13467",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-26",
+      "amount": 153,
+      "status": "completed",
+      "medium": "balance",
+      "description": "H-E-B"
+    },
+    {
+      "_id": "5f4402de-536c-4065-8615-e48652a89063",
+      "type": "merchant",
+      "merchant_id": "946e0464-3261-4555-85a3-bb8c9d096e00",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-21",
+      "amount": 135,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Kroger"
+    },
+    {
+      "_id": "62ae079a-40e0-4c68-a8af-c029e11f1abd",
+      "type": "merchant",
+      "merchant_id": "8f219061-4af7-49b6-9686-d997a82ada4c",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-05",
+      "amount": 18,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Uber"
+    },
+    {
+      "_id": "6317440c-ea40-4110-9eae-8a149a19caca",
+      "type": "merchant",
+      "merchant_id": "ddffc10e-4157-4667-bc5c-e262ea13282d",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-03",
+      "amount": 30,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Plexi"
+    },
+    {
+      "_id": "65d7c692-c773-4687-b4e1-546a196e5a51",
+      "type": "merchant",
+      "merchant_id": "1e0b9e9f-6340-459a-b740-309317df34ed",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-17",
+      "amount": 45,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Museum of Fine Arts"
+    },
+    {
+      "_id": "6778ea46-d3ed-4c8f-a1bd-8d6c68f38fc7",
+      "type": "merchant",
+      "merchant_id": "8f219061-4af7-49b6-9686-d997a82ada4c",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-13",
+      "amount": 20,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Uber"
+    },
+    {
+      "_id": "6ba30ac9-e5d0-46fc-b277-9069bf155d45",
+      "type": "merchant",
+      "merchant_id": "61ea0a9e-859b-4d25-a02c-729ae72ff019",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-10",
+      "amount": 120,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Geico"
+    },
+    {
+      "_id": "6c6b45ce-4184-4ce4-a2bc-c9d69df94690",
+      "type": "merchant",
+      "merchant_id": "8f219061-4af7-49b6-9686-d997a82ada4c",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-18",
+      "amount": 12,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Uber"
+    },
+    {
+      "_id": "6e4987de-afd2-4706-8807-2598c84de97b",
+      "type": "merchant",
+      "merchant_id": "37fc2442-45a4-4a9a-b77f-1890a009da0f",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-04",
+      "amount": 9,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Starbucks"
+    },
+    {
+      "_id": "74211702-e71c-4975-bc18-f6ffb2eb9af8",
+      "type": "merchant",
+      "merchant_id": "eade63ef-3cea-48a3-b259-12c6b277c37f",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-22",
+      "amount": 48,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Amazon"
+    },
+    {
+      "_id": "75d26d74-2e68-417a-80b3-0aa063b51c5b",
+      "type": "merchant",
+      "merchant_id": "01066957-62e7-4b41-bf2d-b2ff20c3f7f8",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-06",
+      "amount": 128,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Reliant Energy"
+    },
+    {
+      "_id": "7ae978b3-56ad-449e-ae1b-56ce7f256c31",
+      "type": "merchant",
+      "merchant_id": "8f219061-4af7-49b6-9686-d997a82ada4c",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-12",
+      "amount": 15,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Uber"
+    },
+    {
+      "_id": "7c8f5f6a-b1a7-4962-900b-da548d7e2687",
+      "type": "merchant",
+      "merchant_id": "130eec47-87a4-4b2b-93e0-cfcdba49bb10",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-12",
+      "amount": 45,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Mint Mobile"
+    },
+    {
+      "_id": "7d1a25ce-6606-427f-9f11-c36014ec0335",
+      "type": "merchant",
+      "merchant_id": "e95529f8-a176-4f29-bc6d-47f72bae03e6",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-15",
+      "amount": 40,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Fit24"
+    },
+    {
+      "_id": "7f12c614-2c0d-41aa-a45e-bd65f235d50e",
+      "type": "merchant",
+      "merchant_id": "b3e8bacc-74e8-4252-a528-cff26aa374f7",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-15",
+      "amount": 88,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Trader Joe's"
+    },
+    {
+      "_id": "869c63d4-812f-425e-9cad-fd85e707b2f3",
+      "type": "merchant",
+      "merchant_id": "13ba9d2c-026a-4d4f-a65d-358958b13467",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-09",
+      "amount": 168,
+      "status": "completed",
+      "medium": "balance",
+      "description": "H-E-B"
+    },
+    {
+      "_id": "875de218-44f2-47eb-9a7c-12e5b3adf476",
+      "type": "merchant",
+      "merchant_id": "8f219061-4af7-49b6-9686-d997a82ada4c",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-05",
+      "amount": 18,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Uber"
+    },
+    {
+      "_id": "89336c54-87e3-4a76-ba56-1322cd87e4ab",
+      "type": "merchant",
+      "merchant_id": "8f219061-4af7-49b6-9686-d997a82ada4c",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-26",
+      "amount": 16,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Uber"
+    },
+    {
+      "_id": "8ac5cf6d-4e3b-46fc-9393-4bfd269b6d3c",
+      "type": "merchant",
+      "merchant_id": "8f219061-4af7-49b6-9686-d997a82ada4c",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-19",
+      "amount": 23,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Uber"
+    },
+    {
+      "_id": "8c808e59-f2c1-4a01-bcf1-0e97a9f5761d",
+      "type": "merchant",
+      "merchant_id": "3a3dd728-d6e1-411b-91fb-4e1934261193",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-20",
+      "amount": 24,
+      "status": "completed",
+      "medium": "balance",
+      "description": "CVS Pharmacy"
+    },
+    {
+      "_id": "8d98678b-d845-4e26-b0e6-350847efd9e2",
+      "type": "merchant",
+      "merchant_id": "aaa08aaf-fdbb-4b72-867f-06d081e81fa9",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-12",
+      "amount": 17,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Whataburger"
+    },
+    {
+      "_id": "8db42e9c-b823-4257-b7c1-d4de0090f5ca",
+      "type": "merchant",
+      "merchant_id": "3beb7b2d-444b-49b4-8876-927a855b27c7",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-01",
+      "amount": 65,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Northline Internet"
+    },
+    {
+      "_id": "9370576c-47ce-433d-8a4e-1e85050147a0",
+      "type": "merchant",
+      "merchant_id": "d6408957-ac0d-4837-9842-49d018fec043",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-27",
+      "amount": 62,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Local Foods"
+    },
+    {
+      "_id": "939084f4-6e8b-46cd-bba3-424c85fb7ab3",
+      "type": "merchant",
+      "merchant_id": "e21bd399-3514-4763-bde2-d1d97a1e484b",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-12",
+      "amount": 3,
+      "status": "completed",
+      "medium": "balance",
+      "description": "METRO Houston"
+    },
+    {
+      "_id": "9561e723-3d4b-428c-856f-97486d1c1b76",
+      "type": "merchant",
+      "merchant_id": "3a3dd728-d6e1-411b-91fb-4e1934261193",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-18",
+      "amount": 18,
+      "status": "completed",
+      "medium": "balance",
+      "description": "CVS Pharmacy"
+    },
+    {
+      "_id": "9766e42c-159d-4f7c-bb9d-09c8acb54a3e",
+      "type": "merchant",
+      "merchant_id": "37fc2442-45a4-4a9a-b77f-1890a009da0f",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-07",
+      "amount": 9,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Starbucks"
+    },
+    {
+      "_id": "9e84cdfd-958c-47ef-87ba-980439d24506",
+      "type": "merchant",
+      "merchant_id": "c2b5d60e-e99c-4543-a4a4-963550180589",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-14",
+      "amount": 19,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Chipotle"
+    },
+    {
+      "_id": "9efc0ef4-22cf-4a8e-8371-1b213bf2bb5e",
+      "type": "merchant",
+      "merchant_id": "c2b5d60e-e99c-4543-a4a4-963550180589",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-03",
+      "amount": 18,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Chipotle"
+    },
+    {
+      "_id": "a06ef91e-fb44-4979-9405-b79addb2e149",
+      "type": "merchant",
+      "merchant_id": "b3e8bacc-74e8-4252-a528-cff26aa374f7",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-22",
+      "amount": 121,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Trader Joe's"
+    },
+    {
+      "_id": "a0813b8b-023d-4b46-803e-fb1019d76f1e",
+      "type": "merchant",
+      "merchant_id": "5fccf4f1-1c27-4ab5-997d-2d02d7f5c01d",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-07",
+      "amount": 33,
+      "status": "completed",
+      "medium": "balance",
+      "description": "AMC Theatres"
+    },
+    {
+      "_id": "a9ec05b5-f7e2-4b8b-a4cc-fd57b0da17df",
+      "type": "merchant",
+      "merchant_id": "aaa08aaf-fdbb-4b72-867f-06d081e81fa9",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-16",
+      "amount": 15,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Whataburger"
+    },
+    {
+      "_id": "ac70b7be-eb84-4068-b50a-d724a4928e9f",
+      "type": "merchant",
+      "merchant_id": "24434a3e-6e67-4132-a6c9-189ea78a360b",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-05",
+      "amount": 1150,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Harbor Lofts"
+    },
+    {
+      "_id": "b052e1f1-e123-4692-8856-ae3f699318cd",
+      "type": "merchant",
+      "merchant_id": "e21bd399-3514-4763-bde2-d1d97a1e484b",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-19",
+      "amount": 3,
+      "status": "completed",
+      "medium": "balance",
+      "description": "METRO Houston"
+    },
+    {
+      "_id": "b37bb8a1-663c-4f38-a924-72c496f9951e",
+      "type": "merchant",
+      "merchant_id": "65915993-a5c8-4527-ac34-bf8757c584b4",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-15",
+      "amount": 88,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Target"
+    },
+    {
+      "_id": "b5d0a62e-84ff-440f-ad00-d7b64004b918",
+      "type": "merchant",
+      "merchant_id": "65915993-a5c8-4527-ac34-bf8757c584b4",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-05",
+      "amount": 112,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Target"
+    },
+    {
+      "_id": "b6270949-1d3d-48c8-bd9c-6a0f59cce336",
+      "type": "merchant",
+      "merchant_id": "1e0b9e9f-6340-459a-b740-309317df34ed",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-14",
+      "amount": 30,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Museum of Fine Arts"
+    },
+    {
+      "_id": "b702b73f-b1e4-4c07-ab6f-849637c25993",
+      "type": "merchant",
+      "merchant_id": "13ba9d2c-026a-4d4f-a65d-358958b13467",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-28",
+      "amount": 133,
+      "status": "completed",
+      "medium": "balance",
+      "description": "H-E-B"
+    },
+    {
+      "_id": "b7dfb5fc-1145-43c8-87ab-c01cb881b16d",
+      "type": "merchant",
+      "merchant_id": "419d5bb4-7d67-44d0-bd7c-b5b5ed5d0389",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-24",
+      "amount": 129,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Academy Sports"
+    },
+    {
+      "_id": "bb107c33-80ab-4f37-85d6-9fccd5df9643",
+      "type": "merchant",
+      "merchant_id": "baa87831-11ce-4472-a5ff-df284ab690a7",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-18",
+      "amount": 34,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Torchy's Tacos"
+    },
+    {
+      "_id": "bb9d3b46-73c1-4d60-ab5f-55d2dedce65f",
+      "type": "merchant",
+      "merchant_id": "13ba9d2c-026a-4d4f-a65d-358958b13467",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-02",
+      "amount": 156,
+      "status": "completed",
+      "medium": "balance",
+      "description": "H-E-B"
+    },
+    {
+      "_id": "bcc14979-5e21-4629-ad64-c15474627ec0",
+      "type": "merchant",
+      "merchant_id": "946e0464-3261-4555-85a3-bb8c9d096e00",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-02",
+      "amount": 177,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Kroger"
+    },
+    {
+      "_id": "bddc2b7f-8c77-4862-a21d-cdb37ff72c8d",
+      "type": "merchant",
+      "merchant_id": "8f219061-4af7-49b6-9686-d997a82ada4c",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-27",
+      "amount": 23,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Uber"
+    },
+    {
+      "_id": "c120804d-74a7-41b2-88f3-193653dd9b16",
+      "type": "merchant",
+      "merchant_id": "1e0b9e9f-6340-459a-b740-309317df34ed",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-21",
+      "amount": 45,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Museum of Fine Arts"
+    },
+    {
+      "_id": "d304827b-923e-42b7-8897-af0ccfc3dac1",
+      "type": "merchant",
+      "merchant_id": "e21bd399-3514-4763-bde2-d1d97a1e484b",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-25",
+      "amount": 3,
+      "status": "completed",
+      "medium": "balance",
+      "description": "METRO Houston"
+    },
+    {
+      "_id": "d3ce74bd-3a49-46f1-8c0f-951cc0c61bad",
+      "type": "merchant",
+      "merchant_id": "c2b5d60e-e99c-4543-a4a4-963550180589",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-02",
+      "amount": 16,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Chipotle"
+    },
+    {
+      "_id": "d8c08d7a-8ab4-460a-b6c4-d5ecb2638455",
+      "type": "merchant",
+      "merchant_id": "01066957-62e7-4b41-bf2d-b2ff20c3f7f8",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-06",
+      "amount": 105,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Reliant Energy"
+    },
+    {
+      "_id": "dc756f41-cc9c-44b5-891b-22125f35284f",
+      "type": "merchant",
+      "merchant_id": "ddffc10e-4157-4667-bc5c-e262ea13282d",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-03",
+      "amount": 30,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Plexi"
+    },
+    {
+      "_id": "deaaedad-ad93-40cf-8852-90721811f3bd",
+      "type": "merchant",
+      "merchant_id": "65915993-a5c8-4527-ac34-bf8757c584b4",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-13",
+      "amount": 96,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Target"
+    },
+    {
+      "_id": "ded1dc6b-abf9-43e5-9dda-b1b6584b896b",
+      "type": "merchant",
+      "merchant_id": "61ea0a9e-859b-4d25-a02c-729ae72ff019",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-10",
+      "amount": 120,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Geico"
+    },
+    {
+      "_id": "e1212c02-4fe3-4ef0-9242-be0ff95e5485",
+      "type": "merchant",
+      "merchant_id": "eade63ef-3cea-48a3-b259-12c6b277c37f",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-28",
+      "amount": 92,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Amazon"
+    },
+    {
+      "_id": "e32a2ec6-9ae0-4820-8e2d-43016bf08cd6",
+      "type": "merchant",
+      "merchant_id": "419d5bb4-7d67-44d0-bd7c-b5b5ed5d0389",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-13",
+      "amount": 142,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Academy Sports"
+    },
+    {
+      "_id": "e36f6d95-5117-4902-b19c-98292a14a4be",
+      "type": "merchant",
+      "merchant_id": "5fccf4f1-1c27-4ab5-997d-2d02d7f5c01d",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-30",
+      "amount": 68,
+      "status": "completed",
+      "medium": "balance",
+      "description": "AMC Theatres"
+    },
+    {
+      "_id": "e770a340-2811-48f5-b508-4231bd136ffe",
+      "type": "merchant",
+      "merchant_id": "eade63ef-3cea-48a3-b259-12c6b277c37f",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-25",
+      "amount": 93,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Amazon"
+    },
+    {
+      "_id": "e92dcbf7-fe0a-4db1-bd6c-cf86fef64b05",
+      "type": "merchant",
+      "merchant_id": "946e0464-3261-4555-85a3-bb8c9d096e00",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-08",
+      "amount": 188,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Kroger"
+    },
+    {
+      "_id": "ef1b86d8-53ab-4108-9dec-7d0c9f388b8e",
+      "type": "merchant",
+      "merchant_id": "37fc2442-45a4-4a9a-b77f-1890a009da0f",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-20",
+      "amount": 14,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Starbucks"
+    },
+    {
+      "_id": "ef59122a-0ca0-4162-9cde-054c0d42bffd",
+      "type": "merchant",
+      "merchant_id": "d6408957-ac0d-4837-9842-49d018fec043",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-23",
+      "amount": 29,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Local Foods"
+    },
+    {
+      "_id": "f18c136e-d8e7-4ce9-a928-539e4120108b",
+      "type": "merchant",
+      "merchant_id": "8f219061-4af7-49b6-9686-d997a82ada4c",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-24",
+      "amount": 12,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Uber"
+    },
+    {
+      "_id": "f42171e6-5bb4-40e4-afbc-c4f6dd7fe561",
+      "type": "merchant",
+      "merchant_id": "8f219061-4af7-49b6-9686-d997a82ada4c",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-06",
+      "amount": 14,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Uber"
+    },
+    {
+      "_id": "f8f65360-b545-4a9d-9eaf-ca0fac186742",
+      "type": "merchant",
+      "merchant_id": "946e0464-3261-4555-85a3-bb8c9d096e00",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-09-20",
+      "amount": 118,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Kroger"
+    },
+    {
+      "_id": "fbbd1c7e-7a46-41dd-affd-93f9344705a7",
+      "type": "merchant",
+      "merchant_id": "419d5bb4-7d67-44d0-bd7c-b5b5ed5d0389",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-22",
+      "amount": 165,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Academy Sports"
+    },
+    {
+      "_id": "fdcfea06-dea8-41f5-ad4b-00bb6175bc52",
+      "type": "merchant",
+      "merchant_id": "37fc2442-45a4-4a9a-b77f-1890a009da0f",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-07-06",
+      "amount": 8,
+      "status": "completed",
+      "medium": "balance",
+      "description": "Starbucks"
+    },
+    {
+      "_id": "ff62c462-c837-4006-bdaf-1500811d3cab",
+      "type": "merchant",
+      "merchant_id": "5fccf4f1-1c27-4ab5-997d-2d02d7f5c01d",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "purchase_date": "2026-08-09",
+      "amount": 29,
+      "status": "completed",
+      "medium": "balance",
+      "description": "AMC Theatres"
+    }
+  ],
+  "withdrawals": [
+    {
+      "_id": "55032981-c127-4d9f-8c06-69da84e33b6b",
+      "type": "withdrawal",
+      "transaction_date": "2026-08-25",
+      "status": "completed",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "medium": "balance",
+      "amount": 300,
+      "description": "Transfer to Emergency fund"
+    },
+    {
+      "_id": "ee8dd7e5-3fe4-435a-b627-bc925bba2b9f",
+      "type": "withdrawal",
+      "transaction_date": "2026-09-25",
+      "status": "completed",
+      "payer_id": "c9f79f65-2964-4332-97dc-85a12c108609",
+      "medium": "balance",
+      "amount": 300,
+      "description": "Transfer to Emergency fund"
+    }
+  ],
+  "merchants": [
+    {
+      "_id": "01066957-62e7-4b41-bf2d-b2ff20c3f7f8",
+      "name": "Reliant Energy",
+      "category": "Utilities",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "130eec47-87a4-4b2b-93e0-cfcdba49bb10",
+      "name": "Mint Mobile",
+      "category": "Telecom",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "13ba9d2c-026a-4d4f-a65d-358958b13467",
+      "name": "H-E-B",
+      "category": "Groceries",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "1e0b9e9f-6340-459a-b740-309317df34ed",
+      "name": "Museum of Fine Arts",
+      "category": "Fun & other",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "24434a3e-6e67-4132-a6c9-189ea78a360b",
+      "name": "Harbor Lofts",
+      "category": "Rent",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "37fc2442-45a4-4a9a-b77f-1890a009da0f",
+      "name": "Starbucks",
+      "category": "Dining & takeout",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "3a3dd728-d6e1-411b-91fb-4e1934261193",
+      "name": "CVS Pharmacy",
+      "category": "Household",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "3beb7b2d-444b-49b4-8876-927a855b27c7",
+      "name": "Northline Internet",
+      "category": "Utilities",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "419d5bb4-7d67-44d0-bd7c-b5b5ed5d0389",
+      "name": "Academy Sports",
+      "category": "Fun & other",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "5fccf4f1-1c27-4ab5-997d-2d02d7f5c01d",
+      "name": "AMC Theatres",
+      "category": "Fun & other",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "61ea0a9e-859b-4d25-a02c-729ae72ff019",
+      "name": "Geico",
+      "category": "Insurance",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "65915993-a5c8-4527-ac34-bf8757c584b4",
+      "name": "Target",
+      "category": "Household",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "8f219061-4af7-49b6-9686-d997a82ada4c",
+      "name": "Uber",
+      "category": "Rides & transit",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "946e0464-3261-4555-85a3-bb8c9d096e00",
+      "name": "Kroger",
+      "category": "Groceries",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "aaa08aaf-fdbb-4b72-867f-06d081e81fa9",
+      "name": "Whataburger",
+      "category": "Dining & takeout",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "b3e8bacc-74e8-4252-a528-cff26aa374f7",
+      "name": "Trader Joe's",
+      "category": "Groceries",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "baa87831-11ce-4472-a5ff-df284ab690a7",
+      "name": "Torchy's Tacos",
+      "category": "Dining & takeout",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "c2b5d60e-e99c-4543-a4a4-963550180589",
+      "name": "Chipotle",
+      "category": "Dining & takeout",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "d6408957-ac0d-4837-9842-49d018fec043",
+      "name": "Local Foods",
+      "category": "Dining & takeout",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "ddffc10e-4157-4667-bc5c-e262ea13282d",
+      "name": "Plexi",
+      "category": "Entertainment",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "e068b65a-6c15-4387-84b2-a09fa23149d5",
+      "name": "Half Price Books",
+      "category": "Fun & other",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "e21bd399-3514-4763-bde2-d1d97a1e484b",
+      "name": "METRO Houston",
+      "category": "Rides & transit",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "e95529f8-a176-4f29-bc6d-47f72bae03e6",
+      "name": "Fit24",
+      "category": "Fitness",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    },
+    {
+      "_id": "eade63ef-3cea-48a3-b259-12c6b277c37f",
+      "name": "Amazon",
+      "category": "Household",
+      "address": {
+        "street_number": "1",
+        "street_name": "Main Street",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77005"
+      },
+      "geocode": {
+        "lat": 29.7174,
+        "lng": -95.4018
+      }
+    }
+  ]
+}

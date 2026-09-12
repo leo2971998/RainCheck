@@ -1,4 +1,6 @@
 From: Northline Internet <billing@northline.example>
+To: alex.rivera@example.com
+Date: Fri, 25 Sep 2026 09:12:04 -0500
 Subject: Your October bill
 
 Hi Alex,
@@ -8,3 +10,6 @@ Your 12-month promotional credit of $25.00 ended on September 30.
 Your speed and service are unchanged.
 
 Questions? Visit support.northline.example or call the number on your bill.
+
+Northline Internet
+Account ending 4417

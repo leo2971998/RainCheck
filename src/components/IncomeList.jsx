@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Icon, money } from './ui.jsx';
 
-export default function IncomeList({ h, sc, setSc, compact }) {
+export default function IncomeList({ h, plan, change, compact }) {
   const [editing, setEditing] = useState(null);
-  const income = sc.income || h.income;
-  const update = (id, patch) => setSc(s => ({ ...s, income: income.map(p => p.id === id ? { ...p, ...patch } : p) }));
+  const income = plan.income || h.income;
+  // Editing a paycheck is a decision like any other, so it is recorded and can be undone.
+  const update = (id, patch) => change({ income: income.map(p => p.id === id ? { ...p, ...patch } : p) }, 'Expected income edited');
   return (
     <div className="card">
       <div className="hd"><h2>Expected income</h2><span className="fine">Editable</span></div>
