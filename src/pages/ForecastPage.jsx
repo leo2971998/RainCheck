@@ -2,7 +2,7 @@ import { STATE, money, prettyDate } from '../components/ui.jsx';
 import { AreaChart } from '../components/charts.jsx';
 import IncomeList from '../components/IncomeList.jsx';
 
-export default function ForecastPage({ h, sc, setSc, sim, cap }) {
+export default function ForecastPage({ h, sc, plan, change, sim, cap }) {
   const [st, tone] = STATE[sim.worst];
   return (
     <>
