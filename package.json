@@ -10,7 +10,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "data:preview": "node scripts/seed-backend.mjs",
-    "data:seed": "node scripts/seed-backend.mjs --apply"
+    "data:seed": "node scripts/seed-backend.mjs --apply",
+    "db:setup": "node scripts/setup-supabase.mjs --apply",
+    "db:verify": "node scripts/verify-supabase.mjs",
+    "db:sync": "node scripts/sync-supabase.mjs --apply"
   },
   "dependencies": {
     "react": "19.2.8",
@@ -18,6 +21,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "6.0.4",
+    "pg": "8.23.0",
     "vite": "8.1.5",
     "vitest": "^5.0.0"
   },
