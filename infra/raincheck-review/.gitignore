@@ -1,0 +1,8 @@
+__pycache__/
+.api-key
+profile/auth-profiles.json
+profile/.secret_key
+profile/data/
+profile/shared/
+profile/agents/
+state/
