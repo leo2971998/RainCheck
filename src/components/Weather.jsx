@@ -8,7 +8,7 @@ import { money } from './ui.jsx';
  * SVG groups, so each part moves on its own, and the icon can cross-fade to a different state.
  *
  * Two separate things decide what is shown, on purpose:
- *   the forecast state picks the icon  (sun / partly / rain / storm)
+ *   the supplied severity state picks the icon  (sun / partly / rain / storm)
  *   the time of day picks the sky      (dawn / day / dusk / night)
  * so a hero at 9pm shows a moon on a navy sky when money is fine, and a storm cloud on that
  * same sky when it is not. Evening never reads as bad news; only the icon can say that.

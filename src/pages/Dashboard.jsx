@@ -1,10 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Icon, Kpi, Num, STATE, money, prettyDate, longDate, prettyIso, weekdayIso } from '../components/ui.jsx';
 import { AreaChart } from '../components/charts.jsx';
 import { Sky, Outlook, timeOfDay } from '../components/Weather.jsx';
 import { GoalRing } from '../components/GoalRing.jsx';
 import { budgetStatus } from '../engine/review-status.js';
 
-export default function Dashboard({ h, source, dark = false, plan, sc, change, sim, previewSim, preview, cap, goal, alerts, waiting = [], onReviewNotice, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
+export default function Dashboard({ h, source, plan, sc, change, sim, previewSim, preview, cap, goal, alerts, waiting = [], onReviewNotice, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
   // The scenario, not the raw plan: an unaccepted plan has no contribution of its own and falls back
   // to the planned figure. Reading the plan here made the chart caption say "$0 contribution" beside
   // a line that was simulated at $300.
@@ -16,12 +17,21 @@ export default function Dashboard({ h, source, dark = false, plan, sc, change, s
   const sourceLabel = { sample: 'Sample data', nessie: 'Nessie sandbox', snapshot: 'Saved sandbox snapshot' }[source];
   const nextPay = (sc.income || h.income)[0];
   const lastDay = sim.days[sim.days.length - 1];
-  // The weather picture reports the same status as everything else. Decoration that always showed
-  // sunshine would be the one part of the page that could not deliver bad news. The clock picks
-  // only the sky behind it, so an evening never looks like a bad forecast — and neither does a
-  // dark theme, which is treated as night for the same reason.
-  const tod = dark ? 'night' : timeOfDay();
-  const attention = alerts.filter(a => a.tone !== 'good').length + reminders.length + waiting.length;
+  // Appearance mode never decides whether it is day or night. Start with a stable server value,
+  // then read the visitor's local clock and refresh it so the banner can cross a boundary while open.
+  const [tod, setTod] = useState('day');
+  useEffect(() => {
+    const update = () => setTod(timeOfDay());
+    update();
+    const timer = window.setInterval(update, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  // Alerts alone decide the icon: clear when nothing needs attention, partly cloudy for a warning,
+  // and stormy for a severe alert. Positive confirmations do not cloud the forecast.
+  const activeAlerts = alerts.filter(a => a.tone !== 'good');
+  const weatherState = activeAlerts.some(a => a.tone === 'bad') ? 'over' : activeAlerts.length ? 'tight' : 'ok';
+  const attention = activeAlerts.length + reminders.length + waiting.length;
   const night = tod === 'night';
   const goalStatus = budgetStatus({ ...goal, low: sim.low.balance }, h.cushion);
   const headline = sim.worst === 'over' ? 'Your balance would go below zero before payday.' : sim.worst === 'below' ? 'Bills are covered, but your savings plan dips below your cushion.' : !goal.fits || goal.gap > 0 ? 'Bills are covered, but your goal needs an adjustment.' : 'Bills are covered and your goal is on track.';
@@ -33,7 +43,7 @@ export default function Dashboard({ h, source, dark = false, plan, sc, change, s
           <h1>{headline}</h1>
           <div className="sub">{longDate(today)}{nextPay ? ` · Next paycheck ${weekdayIso(nextPay.date)}` : ''} · Forecast through {prettyDate(lastDay.date)}</div>
         </div>
-        <div className="hero-weather"><Sky state={sim.worst} night={night} /></div>
+        <div className="hero-weather"><Sky state={weatherState} night={night} /></div>
       </div>
       <Outlook sim={sim} h={h} />
       <div className="top-actions"><span className="pill teal"><Icon n="bank" s={13} />{sourceLabel}</span><button className="btn ghost sm" onClick={() => open('page:purchases')}>Plan a purchase</button><button className="btn ghost sm" onClick={() => open('assistant')}>Talk through my plan</button></div>

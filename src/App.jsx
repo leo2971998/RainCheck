@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useReducedMotion } from './hooks/useMotion.js';
 import { useTheme } from './hooks/useTheme.js';
-import { Ambient } from './components/Ambient.jsx';
 import { Toasts, toast } from './components/Toast.jsx';
 import { useHousehold } from './hooks/useHousehold.js';
 import { useTransfer } from './hooks/useTransfer.js';
@@ -243,7 +242,7 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
         </div>
         <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
         {backTo && page !== backTo && <button className="back-link" onClick={() => navigate(backTo)}><i className="back-ic"><Icon n="arrow" s={14} /></i>Back to Today</button>}
-        {page === 'dashboard' && <Dashboard h={h} source={source} dark={theme.dark} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
+        {page === 'dashboard' && <Dashboard h={h} source={source} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
         {page === 'alerts' && <AlertsPage h={h} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} found={found} setFound={setFound} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
         {page === 'purchases' && <PurchasesPage h={h} available={purchasesAvailable} open={open} refresh={refresh} />}
@@ -253,7 +252,6 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
         {page === 'goals' && <GoalsPage h={h} base={base} plan={plan} change={change} cap={cap} goal={goal} history={history} onUndo={undo} open={open} transfer={transfer} />}
       </main>
 
-      <Ambient state={sim.worst} />
       <Toasts />
       {drawer === 'assistant' && <AssistantDrawer baseVersion={baseVersion} plan={plan} savedId={new URLSearchParams(window.location.search).get('review')} onClose={() => setDrawer(null)} />}
       {drawer === 'purchase' && purchasesAvailable && <PurchaseDrawer key={`${billId}:${baseVersion}:${JSON.stringify(plan)}`} id={billId} base={base} baseVersion={baseVersion} plan={plan} refresh={refresh} onClose={() => setDrawer(null)} />}
