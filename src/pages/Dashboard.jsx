@@ -92,10 +92,11 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
           </div>
           <div className="grid g2">
             <div className="card">
-              <div className="hd"><h2>What changed</h2>
+              <div className="hd"><h2>Bill changes &amp; reviews</h2>
                 {changedBills.length ? <span className="pill warn"><Icon n="up" s={11} />{changedBills.length} accepted</span>
                   : waiting.length ? <span className="pill accent">{waiting.length} waiting</span>
-                  : <span className="pill good"><Icon n="check" s={11} />No increases</span>}</div>
+                  : unexplainedBills.length ? <span className="pill warn">{unexplainedBills.length} to review</span>
+                  : <span className="pill good"><Icon n="check" s={11} />Up to date</span>}</div>
               {changedBills.map(bill => (
                 <div className="row" style={{ alignItems: 'flex-start' }} key={bill.id}>
                   <div className="cat"><i className="rec"><Icon n="repeat" s={14} /></i></div>
@@ -112,7 +113,8 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600 }}>{bill.label}</div>
                     <div className="fine">{money(bill.lastPosted)} posted against a usual {money(bill.usual ?? bill.amount)}</div>
-                    <div className="fine">We have not confirmed why. Decide on the Recurring page.</div>
+                    <div className="fine">The bank record does not explain why. Keep a next step for the company.</div>
+                    <button className="btn sm" onClick={() => open('anomaly', bill.id)}>Review {bill.label.toLowerCase()} charge</button>
                   </div>
                 </div>
               ))}
@@ -127,12 +129,11 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
                   <button className="btn sm" onClick={() => onReviewNotice(n)}>Review it</button>
                 </div>
               ))}
-              {!changedBills.length && !unexplainedBills.length && !waiting.length && <div className="fine">Every commitment posted the amount we expected, and nothing is waiting to be reviewed.</div>}
+              {!changedBills.length && !unexplainedBills.length && !waiting.length && <div className="fine">No charge differences are waiting for review. Saved follow-ups remain on Recurring.</div>}
               <div className="row wrap" style={{ gap: 8 }}>
                 {changedBills.map(b => <button key={b.id} className="btn sm" onClick={() => open('bill', b.id)}>See what changed{changedBills.length > 1 ? `: ${b.label.toLowerCase()}` : ''}</button>)}
                 <button className="btn ghost sm" onClick={() => open('compare')}>Compare options</button>
-                <button className="btn ghost sm" onClick={() => open('notice')}><Icon n="mail" s={14} />Import a notice</button>
-                {unexplainedBills.length > 0 && <button className="btn ghost sm" onClick={() => open('page:recurring')}>Decide on {unexplainedBills.length === 1 ? unexplainedBills[0].label.toLowerCase() : 'these charges'}</button>}
+                <button className="btn ghost sm" onClick={() => open('page:recurring')}>View bills &amp; saved reviews</button>
               </div>
             </div>
             <div className="card">

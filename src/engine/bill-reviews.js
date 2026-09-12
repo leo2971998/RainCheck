@@ -5,6 +5,9 @@ export function needsBillReview(r, plan = {}) {
   if (!r.unexplained || plan.cancelled?.[r.id]) return false;
   const review = reviewForBill(r, plan);
   if (review) return !review.reviewed;
+  // A later charge matching the estimate the user chose is not a new unexplained difference.
+  const estimate = latestBillEstimate(r, plan, r.lastPostedDate);
+  if (estimate != null && Math.round(estimate * 100) === Math.round(r.lastPosted * 100)) return false;
   return !Object.hasOwn(plan.treatAsNewPrice || {}, r.id);
 }
 
@@ -22,6 +25,14 @@ export function createBillReview(r, { forecastAmount, nextStep }, updatedAt = ne
   }
   return { billId: r.id, label: r.label, postedId: r.lastPostedId || '', postedDate: r.lastPostedDate,
     amount: r.lastPosted, expected: r.usual ?? r.amount, forecastAmount, nextStep, reviewed: true, updatedAt };
+}
+
+export function billReviewPatch(bill, charge, record) {
+  const key = billReviewKey(charge), patch = { billReviews: { [key]: record } };
+  // An existing notice takes precedence in the calculator. An explicit current review must also
+  // update its what-if estimate; editing an older history entry must not change today's override.
+  if (bill.change && key === billReviewKey(bill)) patch.whatIf = { [bill.id]: record.forecastAmount };
+  return patch;
 }
 
 // Earlier versions saved only a bill-level boolean. Bind that existing choice to the displayed

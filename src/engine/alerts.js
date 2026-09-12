@@ -1,4 +1,4 @@
-import { goalAt, simulate } from './forecast.js';
+import { goalAt } from './forecast.js';
 import { needsBillReview } from './bill-reviews.js';
 
 const short = date => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -45,29 +45,26 @@ export function buildAlerts(h, sc, sim, cap, lastAction) {
       title: `Your ${bill.label.toLowerCase()} bill increased by ${$(increase)}.`,
       body: [breachSentence, goalSentence, 'Review the effect on your goal.'].filter(Boolean).join(' '),
       actions: [
-        { label: 'See what changed', target: 'bill', primary: true },
+        { label: 'See what changed', target: 'bill', billId: bill.id, primary: true },
         { label: 'Compare options', target: 'compare' },
       ],
     });
   }
 
-  // --- 2. A charge arrived higher than usual and nothing explains it. ---
+  // --- 2. A charge differs from earlier charges and nothing explains it. ---
   // This is NOT called a price change. It is a question for the user, and the forecast does not
   // move until they answer it.
   for (const bill of h.recurring.filter(r => r.unexplained)) {
     if (!needsBillReview(bill, sc)) continue;
     const usual = bill.usual ?? bill.amount;
     const gap = bill.lastPosted - usual;
-    // What it would cost if this turns out to be the new price, every month from here.
-    const ifNew = capacityUnder(h, { ...sc, treatAsNewPrice: { ...sc.treatAsNewPrice, [bill.id]: true } });
     alerts.push({
       id: `unexplained:${bill.id}`,
       tone: 'warn',
-      title: `Your ${bill.label.toLowerCase()} charge came in ${$(gap)} higher than usual.`,
+      title: `Your ${bill.label.toLowerCase()} charge came in ${$(Math.abs(gap))} ${gap < 0 ? 'lower' : 'higher'} than usual.`,
       body: `${$(bill.lastPosted)} posted${bill.lastPostedDate ? ` on ${shortIso(bill.lastPostedDate)}` : ''}, against a usual ${$(usual)}. We have not confirmed why.`
-        + (ifNew < cap ? ` If this is the new price, your plan would support ${$(ifNew)} a month instead of ${$(cap)}.` : '')
-        + ' Tell us whether it was a one-time charge or the new price.',
-      actions: [{ label: 'Decide on this charge', target: 'page:recurring', primary: true }],
+        + ' Review the charge, choose a future estimate, and save a next step for the company.',
+      actions: [{ label: 'Review charge', target: 'anomaly', billId: bill.id, primary: true }],
     });
   }
 
@@ -96,11 +93,4 @@ export function buildAlerts(h, sc, sim, cap, lastAction) {
 
   const rank = { bad: 0, warn: 1, good: 2 };
   return alerts.sort((a, b) => rank[a.tone] - rank[b.tone]);
-}
-
-/** The contribution the plan would support under a hypothetical, without disturbing the real one. */
-function capacityUnder(h, scenario, max = 600, step = 5) {
-  for (let c = max; c >= 0; c -= step)
-    if (simulate(h, { ...scenario, contribution: c }).low.balance >= h.cushion) return c;
-  return 0;
 }

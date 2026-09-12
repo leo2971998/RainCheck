@@ -20,7 +20,7 @@ export default function Alerts({ alerts, open }) {
           {a.actions?.length > 0 && (
             <div className="row wrap" style={{ gap: 8 }}>
               {a.actions.map(action => (
-                <button key={action.target} className={'btn sm' + (action.primary ? '' : ' ghost')} onClick={() => open(action.target)}>
+                <button key={action.target} className={'btn sm' + (action.primary ? '' : ' ghost')} onClick={() => open(action.target, action.billId)}>
                   {action.label}
                 </button>
               ))}

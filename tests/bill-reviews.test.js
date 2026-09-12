@@ -1,11 +1,19 @@
 import { expect, it } from 'vitest';
 import { household as base } from '../data/household.sample.js';
-import { emptyPlan, applyPatch, revert } from '../src/engine/plan.js';
+import { emptyPlan, applyPatch, revert, scenarioFor } from '../src/engine/plan.js';
 import { amountFor, simulate, capacity } from '../src/engine/forecast.js';
 import { buildAlerts } from '../src/engine/alerts.js';
-import { billReviewKey, needsBillReview, createBillReview, migrateBillReviews } from '../src/engine/bill-reviews.js';
+import { billReviewKey, needsBillReview, createBillReview, migrateBillReviews, billReviewPatch } from '../src/engine/bill-reviews.js';
 
 const bill = base.recurring.find(r => r.unexplained);
+it('opens the exact unusual charge and does not pretend to know why it changed', () => {
+  const sc=scenarioFor(base,emptyPlan());
+  const alert=buildAlerts(base,sc,simulate(base,sc),capacity(base,sc)).find(a=>a.id===`unexplained:${bill.id}`);
+  expect(alert.actions[0]).toMatchObject({target:'anomaly',billId:bill.id});
+  expect(alert.body).not.toContain('whether it was a one-time');
+  const lower={...base,recurring:base.recurring.map(r=>r.id===bill.id?{...r,lastPosted:80}:r)};
+  expect(buildAlerts(lower,sc,simulate(lower,sc),capacity(lower,sc)).find(a=>a.id===alert.id).title).toContain('lower');
+});
 const sc = { ...emptyPlan(), contribution: 0 };
 const save = (forecastAmount = bill.amount) => {
   const record = createBillReview(bill, { forecastAmount, nextStep: 'contact' }, '2026-09-28T12:00:00Z');
@@ -28,6 +36,7 @@ it('uses a chosen future estimate but does not silently adopt the next unusual a
   expect(amountFor(bill, '2026-10-10', plan)).toBe(128);
   const later = { ...bill, lastPosted: 160, lastPostedDate: '2026-10-10', lastPostedId: 'later-charge' };
   expect(needsBillReview(later, plan)).toBe(true);
+  expect(needsBillReview({ ...later, lastPosted:128 }, plan)).toBe(false);
   expect(amountFor(later, '2026-11-10', plan)).toBe(128);
 });
 it('keys reviews to individual charges and preserves earlier review records', () => {
@@ -52,4 +61,14 @@ it('does not count a cancelled bill as a pending review', () => {
 it('rejects invalid estimate amounts and unsupported next steps', () => {
   expect(() => createBillReview(bill, { forecastAmount: -1, nextStep: 'contact' })).toThrow();
   expect(() => createBillReview(bill, { forecastAmount: 100, nextStep: 'company-admitted-fault' })).toThrow();
+});
+it('applies an explicitly chosen estimate even when a notice also exists for that bill', () => {
+  const withNotice={...bill,change:{to:140,effective:'2026-10-01'}};
+  const record=createBillReview(bill,{forecastAmount:125,nextStep:'watch'});
+  const patch=billReviewPatch(withNotice,bill,record);
+  const {plan}=applyPatch(sc,patch);
+  expect(amountFor(withNotice,'2026-10-10',plan)).toBe(125);
+  const earlier={...bill,lastPostedDate:'2026-08-06'};
+  const old=createBillReview(earlier,{forecastAmount:100,nextStep:'done'});
+  expect(billReviewPatch(withNotice,earlier,old).whatIf).toBeUndefined();
 });

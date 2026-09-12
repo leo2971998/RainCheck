@@ -153,7 +153,30 @@
 /* Budget changes: ordinary labelled forms, then an explicit before/after decision. */
 .budget-form { display: grid; gap: 16px; }
 .budget-form label { display: grid; gap: 7px; font-weight: 600; font-size: 14px; }
-.budget-form input, .budget-form select { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: var(--field); color: var(--ink); }
+.budget-form input, .budget-form select, .budget-form textarea { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: var(--field); color: var(--ink); }
+.budget-form textarea { resize: vertical; line-height: 1.6; }
+.bill-review-drawer .fine, .bill-reviews .fine, .bill-evidence p { color: var(--ink-2); }
+.bill-review-drawer p, .bill-reviews p { line-height: 1.6; }
+.bill-review-drawer h3 { margin-top: 8px; }
+.bill-evidence { display: grid; gap: 12px; padding: 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; }
+.bill-evidence p, .bill-review-entry p { margin: 6px 0; }
+.bill-evidence .ba b { font-size: 28px; }
+.bill-charge-history { list-style: none; padding: 0; }
+.bill-charge-history li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.bill-call-prep pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 14px; line-height: 1.7; background: var(--bg); border-radius: 12px; padding: 16px; }
+.bill-review-entry { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 0; border-top: 1px solid var(--line); }
+.bill-review-entry > div { min-width: 0; flex: 1; }
+.bill-review-entry h3 { margin: 0; font-size: 16px; }
+.bill-review-entry .btn { flex-shrink: 0; }
+.bill-review-history summary, .bill-evidence summary { min-height: 44px; padding-block: 12px; font-weight: 600; cursor: pointer; }
+.bill-note { white-space: pre-wrap; overflow-wrap: anywhere; border-left: 3px solid var(--rain); padding-left: 12px; }
+.weather-status { font-size: 14px; font-weight: 600; line-height: 1.6; margin-top: 12px; color: var(--hero-ink); }
+@media (max-width: 600px) {
+  .bill-review-entry { flex-direction: column; gap: 10px; }
+  .bill-review-entry .btn { min-height: 44px; width: 100%; }
+  .bill-review-drawer .btn { min-height: 44px; }
+  .bill-review-drawer input, .bill-review-drawer select, .bill-review-drawer textarea { font-size: 16px; }
+}
 .purchase-intro { display: flex; flex-wrap: wrap; gap: 12px 24px; color: var(--ink-2); font-size: 14px; margin: 20px 0; }
 .purchase-card, .purchase-history { margin-bottom: 20px; }
 .purchase-list { list-style: none; margin: 0; padding: 0; }

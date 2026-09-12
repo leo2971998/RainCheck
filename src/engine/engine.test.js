@@ -243,7 +243,7 @@ describe('alerts', () => {
     expect(unexplained.title).toContain('$20 higher than usual');
     expect(unexplained.body).toContain("$108");   // the gap and the usual must add up on screen
     expect(unexplained.body).toMatch(/We have not confirmed why/);
-    expect(unexplained.actions[0].target).toBe('page:recurring');
+    expect(unexplained.actions[0]).toMatchObject({ target: 'anomaly', billId: 'electric' });
   });
 
   it('never calls an unexplained charge a price change', () => {
@@ -256,11 +256,12 @@ describe('alerts', () => {
       expect(alertsFor({ ...sc, treatAsNewPrice: { electric: decision } }).some(a => a.id.startsWith('unexplained:'))).toBe(false);
   });
 
-  it('warns what it would cost if the higher charge is the new price', () => {
+  it('keeps the first alert focused on evidence and a user-chosen estimate', () => {
     const unexplained = alertsFor(sc).find(a => a.id === 'unexplained:electric');
     const ifNew = capacity(h, { ...sc, treatAsNewPrice: { electric: true } });
     expect(ifNew).toBeLessThan(cap);
-    expect(unexplained.body).toContain(`$${ifNew} a month`);
+    expect(unexplained.body).toContain('choose a future estimate');
+    expect(unexplained.body).not.toContain('If this is the new price');
   });
 
   it('raises the cushion alert on its own when nothing else explains it', () => {

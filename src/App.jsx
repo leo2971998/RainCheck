@@ -21,6 +21,7 @@ import RecurringPage from './pages/RecurringPage.jsx';
 import CashFlowPage from './pages/CashFlowPage.jsx';
 import GoalsPage from './pages/GoalsPage.jsx';
 import BillDrawer from './drawers/BillDrawer.jsx';
+import BillReviewDrawer from './drawers/BillReviewDrawer.jsx';
 import CompareDrawer from './drawers/CompareDrawer.jsx';
 import NoticeDrawer from './drawers/NoticeDrawer.jsx';
 import BudgetDrawer from './drawers/BudgetDrawer.jsx';
@@ -253,12 +254,14 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
         {page === 'purchases' && <PurchasesPage h={h} available={purchasesAvailable} open={open} refresh={refresh} />}
         {page === 'transactions' && <TransactionsPage transactions={transactions} allowances={h.allowances} corrections={corrections} setCorrections={setCorrections} />}
-        {page === 'recurring' && <RecurringPage h={h} sc={sc} plan={plan} change={change} cap={cap} open={open} discovered={discovered} onAdopt={adopt} onDismiss={dismiss} />}
+        {page === 'recurring' && <RecurringPage h={h} sc={sc} plan={plan} change={change} cap={cap} open={open} discovered={discovered} onAdopt={adopt} onDismiss={dismiss} billNotes={billNotes} />}
         {page === 'cashflow' && <CashFlowPage h={h} sc={sc} sim={sim} />}
         {page === 'goals' && <GoalsPage h={h} base={base} plan={plan} change={change} cap={cap} goal={goal} history={history} onUndo={undo} open={open} transfer={transfer} />}
       </main>
 
       <Toasts />
+      {drawer === 'anomaly' && <BillReviewDrawer id={billId} h={h} plan={plan} notes={billNotes} change={change}
+        saveNote={(key,text) => setBillNotes(previous => ({ ...previous, [key]: text }))} onClose={() => setDrawer(null)} />}
       {drawer === 'assistant' && <AssistantDrawer baseVersion={baseVersion} plan={plan} savedId={new URLSearchParams(window.location.search).get('review')} onClose={() => setDrawer(null)} />}
       {drawer === 'purchase' && purchasesAvailable && <PurchaseDrawer key={`${billId}:${baseVersion}:${JSON.stringify(plan)}`} id={billId} base={base} baseVersion={baseVersion} plan={plan} refresh={refresh} onClose={() => setDrawer(null)} />}
       {(drawer === 'goal' || drawer === 'subscription') && <BudgetDrawer key={`${drawer}:${billId}`} kind={drawer} id={billId} base={base} baseVersion={baseVersion} plan={plan} change={change} onClose={() => setDrawer(null)} />}

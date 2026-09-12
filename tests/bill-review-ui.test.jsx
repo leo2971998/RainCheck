@@ -5,6 +5,7 @@ import AlertsPage from '../src/pages/AlertsPage.jsx';
 import Dashboard from '../src/pages/Dashboard.jsx';
 import { household as h } from '../data/household.sample.js';
 import { emptyPlan } from '../src/engine/plan.js';
+import { billReviewKey, createBillReview } from '../src/engine/bill-reviews.js';
 import { simulate, goalAt } from '../src/engine/forecast.js';
 import { useHousehold } from '../src/hooks/useHousehold.js';
 const bill = h.recurring.find(r => r.unexplained);
@@ -30,4 +31,11 @@ it('starts the sample workspace without an invented provider announcement', () =
   function Probe() { const data=useHousehold(); return <span>{data.pendingNotices.length}</span>; }
   expect(renderToStaticMarkup(<Probe />)).toBe('<span>0</span>');
   vi.unstubAllEnvs();
+});
+it('keeps saved follow-ups and escaped private notes accessible after review', () => {
+  const key=billReviewKey(bill), review=createBillReview(bill,{forecastAmount:110,nextStep:'contact'});
+  const saved={...emptyPlan(),billReviews:{[key]:review}};
+  const html=renderToStaticMarkup(<RecurringPage h={h} sc={saved} plan={saved} billNotes={{[key]:'Ask about usage <script>alert(1)</script>'}} cap={0} open={() => {}} />);
+  for (const text of ['Saved follow-ups', 'Ask the company', 'View / edit review', 'Ask about usage &lt;script&gt;']) expect(html).toContain(text);
+  expect(html).not.toContain('Every posted charge matched');
 });
