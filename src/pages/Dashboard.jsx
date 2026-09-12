@@ -38,7 +38,7 @@ export default function Dashboard({ h, source, dark = false, plan, sc, change, s
       <div className="grid g4" style={{ marginBottom: 18 }}>
         <Kpi label="Checking balance" value={<Num v={h.checking} />} sub="Everyday Checking" />
         <Kpi label="Lowest projected balance" value={<Num v={sim.low.balance} />} sub={`${prettyDate(sim.low.date)} · cushion ${money(h.cushion)}`} pill={<span className={'pill ' + tone}>{st}</span>} />
-        <Kpi label="Contribution the plan supports" value={<><Num v={cap} />/mo</>} sub={`Planned ${money(h.goal.planned)} · ${cap < h.goal.planned ? `${money(h.goal.planned - cap)} less after the bill change` : 'unchanged'}`} pill={cap < h.goal.planned ? <span className="pill warn"><Icon n="down" s={11} />{money(h.goal.planned - cap)}</span> : <span className="pill good">OK</span>} />
+        <Kpi label={`Supported saving · next ${h.windowDays} days`} value={<><Num v={cap} />/mo</>} sub={`Planned ${money(sc.contribution)} · ${cap < sc.contribution ? 'above estimated capacity' : 'within estimated capacity'}`} pill={cap < sc.contribution ? <span className="pill warn"><Icon n="down" s={11} />{money(sc.contribution - cap)}</span> : <span className="pill good">OK</span>} />
         <Kpi label={h.goal.label} value={<Num v={goal.projected} />} sub={`Projected of ${money(h.goal.target)} by ${goal.targetLabel}`} pill={goal.gap ? <span className="pill bad">{money(goal.gap)} short</span> : <span className="pill good">On track</span>} />
       </div>
       {/* A glance at what lives on the other pages, and a way there. Each line is the same figure
@@ -131,7 +131,7 @@ export default function Dashboard({ h, source, dark = false, plan, sc, change, s
                   <span className="row" style={{ gap: 8 }}><i className="dot" style={{ background: 'var(--line)' }} /><span className="fine">Target <b className="num">{money(h.goal.target)}</b> by {goal.targetLabel}</span></span>
                 </div>
               </div>
-              <div className="row between fine"><span>Saved <b className="num">{money(h.goal.saved)}</b> · projected <b className="num">{money(goal.projected)}</b></span><span>{goal.accepted ? 'Accepted plan' : 'Affordable plan'} <b className="num">{money(goal.contribution)}/mo</b></span></div>
+              <div className="row between fine"><span>Saved <b className="num">{money(h.goal.saved)}</b> · projected <b className="num">{money(goal.projected)}</b></span><span>Planned saving <b className="num">{money(goal.contribution)}/mo</b></span></div>
               {lastAction && <span className="row" style={{ gap: 6 }}><span className="pill good"><Icon n="check" s={11} />{lastAction.label}</span><button className="link" style={{ fontSize: 13 }} onClick={onUndo}>Undo</button></span>}
             </div>
           </div>

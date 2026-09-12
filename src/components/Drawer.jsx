@@ -14,6 +14,10 @@ export default function Drawer({ label, onClose, children }) {
 
   useEffect(() => {
     opener.current = document.activeElement;
+    const behind = [...document.querySelectorAll('.app > main, .app > aside, .toasts')].map(el => [el, el.inert]);
+    behind.forEach(([el]) => { el.inert = true; });
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     panel.current?.querySelector('button, [href], input, select, textarea')?.focus();
 
     const onKey = e => {
@@ -29,6 +33,8 @@ export default function Drawer({ label, onClose, children }) {
     document.addEventListener('keydown', onKey, true);
     return () => {
       document.removeEventListener('keydown', onKey, true);
+      behind.forEach(([el, inert]) => { el.inert = inert; });
+      document.body.style.overflow = overflow;
       if (opener.current instanceof HTMLElement) opener.current.focus();
     };
   }, [onClose]);

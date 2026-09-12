@@ -20,6 +20,23 @@ npm test             # engine, API, and dataset regression tests
 npm run build
 ```
 
+## Preview goals and subscriptions
+
+- **Goals → Add a goal:** enter a total savings target and deadline, then preview its impact. Use
+  the goal or save it for later without changing the active forecast. Edit/remove saved alternatives;
+  the starting savings goal stays available. Only one goal is active, so savings are never counted twice.
+- **Recurring → Add subscription:** preview an additional monthly cost, including cents and its first
+  billing date. Edit/remove it later. Billing on the 31st uses month-end in shorter months.
+- Previews do not change the plan. Applying does not subscribe, cancel a provider service, or move
+  money. Undo reverses the latest decision. All these decisions persist **on this browser only**;
+  they are not yet synced to Supabase or Nessie.
+- The comparison shows monthly bills at their next-charge rates, the chosen savings contribution,
+  lowest checking balance in the forecast window, and savings at the goal deadline. Different
+  goal deadlines are labelled because their totals cover different periods.
+- These are deterministic estimates, not AI predictions. The contribution search is capped at
+  $600/month; editors allow dates up to two years from the dataset's forecast date. Expected paychecks
+  repeat the observed cadence. A ZeroClaw financial-review endpoint is **not connected yet**.
+
 ## Connect the Capital One sandbox
 
 1. Sign in at https://nessieisreal.com with GitHub and copy your key.
@@ -176,8 +193,8 @@ because there are only two: **keep the date** and find the difference somewhere 
 allowance, a commitment you cancel), or **keep the spending** and accept a later date, named and
 dated. Neither is free, and the app says which cost each one carries.
 
-Both are checked across the whole goal horizon. `validatePlan()` simulates every bill and paycheck
-from today to the last contribution — 247 days for a June goal, not a 34-day window multiplied out —
+Goal feasibility is checked across the whole goal horizon. `goalPlan()` asks `validatePlan()` to
+simulate expected bills and paychecks through the target date, including bills after the final contribution,
 so a contribution that clears the cushion in October but fails at a February annual renewal is
 reported as failing. `affordableOver()` searches for the largest contribution that survives all of
 it. Every screen naming a goal total also names the date through which it was checked.

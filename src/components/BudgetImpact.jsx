@@ -1,0 +1,31 @@
+export const budgetDate = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+export const budgetMoney = n => Number.isFinite(n)
+  ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })
+  : 'Not available';
+
+export default function BudgetImpact({ impact }) {
+  const { before: a, after: b, cushion } = impact;
+  const safe = b.low >= cushion && b.fits;
+  const rows = [
+    ['Monthly bills', a.monthlyBills, b.monthlyBills],
+    ['Planned monthly saving', a.contribution, b.contribution],
+    [`Lowest checking · next ${impact.windowDays} days`, a.low, b.low],
+    ['Savings at each goal deadline', a.projected, b.projected],
+  ];
+  return <section className="budget-impact" aria-label="Budget preview" aria-live="polite">
+    <span className="pill teal">Preview · not applied</span>
+    <h3>{b.gap ? 'This plan falls short of the goal' : !safe ? 'The goal fits, but checking needs attention' : 'This fits the current estimates'}</h3>
+    <p>{b.goalLabel}: {budgetMoney(b.target)} by {budgetDate(b.targetDate)}.
+      {b.gap > 0 && ` The projected shortfall is ${budgetMoney(b.gap)}.`}
+      {!safe && ` Keep an eye on your ${budgetMoney(cushion)} checking cushion.`}</p>
+    <div className="budget-comparison">
+      <div className="budget-comparison-head"><span>What changes</span><b>Now</b><b>Preview</b></div>
+      {rows.map(([label, before, after]) => <div key={label}><span>{label}</span><b>{budgetMoney(before)}</b><b>{budgetMoney(after)}</b></div>)}
+    </div>
+    {a.targetDate !== b.targetDate && <p className="fine">Different deadlines: Now {budgetDate(a.targetDate)}; preview {budgetDate(b.targetDate)}. The totals cover different periods.</p>}
+    <p className="fine">With this change, the calculator supports up to {budgetMoney(b.supported)}/month toward the goal
+      {b.checkedThrough ? ` through ${budgetDate(b.checkedThrough)}` : ''}. This prototype tests contributions up to $600/month.
+      Expected income and everyday spending are estimates, not guarantees.</p>
+  </section>;
+}

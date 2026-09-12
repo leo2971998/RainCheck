@@ -8,7 +8,7 @@ import { useHousehold } from './hooks/useHousehold.js';
 import { useTransfer } from './hooks/useTransfer.js';
 import { usePersistentState, clearPersisted, hasPersisted } from './hooks/usePersistentState.js';
 import { simulate, capacity, goalPlan, dateToReach, hypothetical } from './engine/forecast.js';
-import { emptyPlan, applyPatch, revert, scenarioFor, householdFor } from './engine/plan.js';
+import { emptyPlan, applyPatch, undoLatest, scenarioFor, householdFor } from './engine/plan.js';
 import { buildOptions, currentOutcome } from './engine/options.js';
 import { buildAlerts } from './engine/alerts.js';
 import { buildReminders } from './engine/reminders.js';
@@ -23,6 +23,7 @@ import GoalsPage from './pages/GoalsPage.jsx';
 import BillDrawer from './drawers/BillDrawer.jsx';
 import CompareDrawer from './drawers/CompareDrawer.jsx';
 import NoticeDrawer from './drawers/NoticeDrawer.jsx';
+import BudgetDrawer from './drawers/BudgetDrawer.jsx';
 
 const NAV = [['dashboard', 'Today', 'dash'], ['alerts', 'Alerts', 'bell'], ['forecast', 'Forecast', 'trend'], ['transactions', 'Transactions', 'list', 'Activity'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Cash flow', 'bars'], ['goals', 'Goals', 'target']];
 
@@ -109,7 +110,7 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
   const goal = useMemo(() => {
     const g = goalPlan(h, sc, {
       target: h.goal.target, targetDate: h.goal.targetDate, saved: h.goal.saved,
-      contribution: plan.contribution,
+      contribution: sc.contribution,
     });
     return {
       ...g,
@@ -171,34 +172,41 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
     setConfirm(null); setDrawer(null); setPreviewId(null);
   };
 
-  const undo = () => {
-    const entry = history[history.length - 1];
-    if (!entry) return;
-    setPlanSaved(revert(plan, entry));
-    setHistory(hs => hs.slice(0, -1));
+  const latestDecisions = useRef({ plan, history });
+  latestDecisions.current = { plan, history };
+  const undo = expectedAt => {
+    const latest = latestDecisions.current;
+    const result = undoLatest(latest.plan, latest.history, typeof expectedAt === 'number' ? expectedAt : null);
+    if (!result) {
+      if (typeof expectedAt === 'number') toast.push({ title: 'That change is no longer the latest', body: 'Undo the most recent change first.', tone: 'neutral' });
+      return;
+    }
+    latestDecisions.current = result;
+    setPlanSaved(result.plan);
+    setHistory(result.history);
   };
 
   const resetAll = () => { clearPersisted(); window.location.reload(); };
 
   // A plan change reports its consequence in one line, with Undo beside it. The figures come from
   // this render, so the toast can never disagree with the cards it summarises.
-  const seen = useRef(history.length);
+  const seen = useRef(lastAction(history)?.at ?? 0);
   const before = useRef({ cap, gap: goal.gap, low: sim.low.balance });
   useEffect(() => {
-    const grew = history.length > seen.current;
-    seen.current = history.length;
+    const entry = lastAction(history);
+    const grew = entry && entry.at > seen.current;
+    seen.current = Math.max(seen.current, entry?.at ?? 0);
     const prev = before.current;
     before.current = { cap, gap: goal.gap, low: sim.low.balance };
     if (!grew) return;
-    const entry = history[history.length - 1];
     const parts = [];
     if (cap !== prev.cap) parts.push(`plan carries ${money(prev.cap)} → ${money(cap)}`);
     if (goal.gap !== prev.gap) parts.push(goal.gap ? `goal ${money(goal.gap)} short` : 'goal back on track');
     if (sim.low.balance !== prev.low) parts.push(`lowest balance ${money(sim.low.balance)}`);
     const worse = goal.gap > prev.gap || sim.low.balance < prev.low || cap < prev.cap;
     toast.push({ title: entry.label, body: parts.length ? parts.join(' · ') : 'Forecast unchanged',
-      tone: worse ? 'warn' : 'good', ttl: 9000, actions: [{ label: 'Undo', run: undo }] });
-  }, [history.length]);   // eslint-disable-line react-hooks/exhaustive-deps
+      tone: worse ? 'warn' : 'good', ttl: 9000, actions: [{ label: 'Undo', run: () => undo(entry.at) }] });
+  }, [history]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Bills due soon are announced once per session. The reminder card stays; this is the nudge.
   useEffect(() => {
@@ -242,6 +250,7 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
 
       <Ambient state={sim.worst} />
       <Toasts />
+      {(drawer === 'goal' || drawer === 'subscription') && <BudgetDrawer key={`${drawer}:${billId}`} kind={drawer} id={billId} base={base} plan={plan} change={change} onClose={() => setDrawer(null)} />}
       {drawer === 'bill' && <BillDrawer h={h} notice={notice} billId={billId} plan={plan} change={change} cap={cap} onCompare={() => setDrawer('compare')} onClose={() => setDrawer(null)} />}
       {drawer === 'notice' && <NoticeDrawer h={h} base={base} plan={plan} cap={cap} change={change}
         initialText={noticeText} origin={waiting.find(n => n.id === billId)}

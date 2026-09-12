@@ -1,6 +1,7 @@
-import { useState } from 'react';
 import { Icon, Num, money, prettyIso, monthOf } from '../components/ui.jsx';
 import { GoalChart } from '../components/charts.jsx';
+import { BASE_GOAL, goalChoices } from '../engine/budget.js';
+import { budgetMoney } from '../components/BudgetImpact.jsx';
 
 /**
  * A goal, the way a person states one: this much, by this date.
@@ -15,31 +16,31 @@ import { GoalChart } from '../components/charts.jsx';
  */
 export default function GoalsPage({ h, base, plan, change, cap, goal, history, onUndo, open,
   transfer = { available: false, status: null, request: () => {} } }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState({ target: h.goal.target, targetDate: h.goal.targetDate });
   const lastAction = history?.[history.length - 1];
   const transferring = transfer.pending || transfer.status === 'requested';
-  const edited = plan.goalTarget != null || plan.goalDate != null;
-
-  const save = () => {
-    const target = Math.max(1, Math.round(Number(draft.target) || 0));
-    const targetDate = draft.targetDate || h.goal.targetDate;
-    change({ goalTarget: target, goalDate: targetDate }, `Goal set to ${money(target)} by ${prettyIso(targetDate)}`);
-    setEditing(false);
-  };
-  const reset = () => { change({ goalTarget: null, goalDate: null }, 'Goal reset'); setEditing(false); };
+  const activeId = plan.goalId || BASE_GOAL;
+  const alternatives = goalChoices(base, plan).filter(g => g.id !== activeId);
 
   return (
     <>
       <div className="topbar">
         <div><h1>{h.goal.label}</h1>
           <div className="sub">{money(h.goal.saved)} saved toward {money(h.goal.target)} by {monthOf(h.goal.targetDate)}</div></div>
-        {editing
-          ? <div className="row" style={{ gap: 8 }}><button className="btn" onClick={save}><Icon n="check" s={15} />Save goal</button><button className="btn ghost" onClick={() => setEditing(false)}>Cancel</button></div>
-          : <div className="row" style={{ gap: 8 }}>
-              {edited && <button className="btn ghost sm" onClick={reset}>Reset goal</button>}
-              <button className="btn ghost sm" onClick={() => { setDraft({ target: h.goal.target, targetDate: h.goal.targetDate }); setEditing(true); }}><Icon n="edit" s={14} />Edit goal</button>
-            </div>}
+        <div className="row wrap budget-actions">
+          <button className="btn ghost sm" onClick={() => open('goal', activeId)}><Icon n="edit" s={14} />Edit goal</button>
+          <button className="btn sm" onClick={() => open('goal')}>Add a goal</button>
+        </div>
+      </div>
+
+      <div className="card budget-library">
+        <div className="hd"><h2>Your active goal</h2><span className="pill teal">One goal at a time</span></div>
+        <p>{h.goal.label} uses the savings shown below. Other ideas do not change your budget until you choose one.</p>
+        {alternatives.length > 0 && <details><summary>Other goals ({alternatives.length})</summary>
+          <ul className="budget-list">{alternatives.map(g => <li key={g.id}>
+            <div><b>{g.label}</b><span className="fine">{budgetMoney(g.target)} by {prettyIso(g.targetDate)} · not funded separately</span></div>
+            <button className="btn ghost sm" onClick={() => open('goal', g.id)}>Explore</button>
+          </li>)}</ul>
+        </details>}
       </div>
 
       <div className="grid g32">
@@ -48,45 +49,33 @@ export default function GoalsPage({ h, base, plan, change, cap, goal, history, o
           <div className="card">
             <div className="hd">
               <h2>Can this plan reach the goal?</h2>
-              <span className={'pill ' + (goal.feasible ? 'good' : 'bad')}>
-                {goal.feasible ? 'Yes, by that date' : `${money(goal.gap)} short by that date`}
+              <span className={'pill ' + (goal.onTarget && goal.fits ? 'good' : 'warn')}>
+                {!goal.fits ? 'Checking needs attention' : goal.gap ? `${money(goal.gap)} short by that date` : 'On track in this estimate'}
               </span>
             </div>
 
-            {editing && (
-              <div className="alert">
-                <b>What are you saving for, and by when?</b>
-                <div className="row wrap" style={{ gap: 14, marginTop: 4 }}>
-                  <label className="row" style={{ gap: 8 }}><span className="muted">Target</span>
-                    <input type="number" min="1" step="50" value={draft.target} aria-label="Goal amount"
-                      onChange={e => setDraft(d => ({ ...d, target: e.target.value }))} /></label>
-                  <label className="row" style={{ gap: 8 }}><span className="muted">By</span>
-                    <input type="date" value={draft.targetDate} aria-label="Target date"
-                      onChange={e => setDraft(d => ({ ...d, targetDate: e.target.value }))} /></label>
-                </div>
-                <p>Already saved {money(h.goal.saved)}. Contributions land on your payday each month.</p>
-              </div>
-            )}
+            {!goal.fits && <div className="alert"><b>Your planned saving does not fit the available cash.</b>
+              <p>Planning to save {budgetMoney(goal.contribution)}/month can still make the savings total look high. That is not affordable if checking falls below your cushion. Edit the goal or compare adjustments before using this plan.</p></div>}
 
             <div className="grid g4" style={{ gap: 10 }}>
               <Measure label="Already saved" value={<Num v={goal.saved} />} sub="Actually in the account" />
-              <Measure label="That date asks for" value={<><Num v={goal.required} />/mo</>} sub={`${goal.left} contribution${goal.left === 1 ? '' : 's'}`} />
+              <Measure label="That date asks for" value={Number.isFinite(goal.required) ? <><Num v={goal.required} />/mo</> : 'No payday before deadline'} sub={`${goal.left} contribution${goal.left === 1 ? '' : 's'}`} />
               <Measure label="Your plan can carry" value={<><Num v={goal.supported} />/mo</>} sub="Alongside bills and cushion"
                 tone={goal.feasible ? 'good' : 'bad'} />
               <Measure label="Projected result" value={<Num v={goal.projected} />} sub={goal.onTarget ? 'Reaches the target' : `${money(goal.gap)} short`} />
             </div>
 
             <div className={'alert ' + (goal.feasible ? 'good' : '')}>
-              <b>{goal.feasible
+              <b>{!Number.isFinite(goal.required) ? 'Choose a deadline after your next expected payday.' : goal.feasible
                 ? `Your plan carries the ${money(goal.required)} a month this date asks for.`
                 : `This date asks for ${money(goal.required)} a month. Your bills and your ${money(h.cushion)} cushion leave room for ${money(goal.supported)}.`}</b>
               <p>{goal.assumption}</p>
             </div>
 
-            <GoalChart h={h} goal={goal} cap={goal.contribution} />
+            {goal.left > 0 && <GoalChart h={h} goal={goal} cap={goal.contribution} />}
           </div>
 
-          {!goal.feasible && (
+          {!goal.feasible && Number.isFinite(goal.required) && (
             <div className="card">
               <div className="hd"><h2>Two ways forward</h2><span className="fine">Both are real; neither is free</span></div>
 
@@ -120,7 +109,7 @@ export default function GoalsPage({ h, base, plan, change, cap, goal, history, o
 
           <div className="card">
             <div className="hd"><h2>Contribution schedule</h2>
-              <span className="fine">{goal.accepted ? 'The plan you accepted' : 'The affordable plan'}</span></div>
+              <span className="fine">Your planned contribution · {budgetMoney(goal.contribution)}/month</span></div>
             {/* A timeline rather than a table, with every date and amount still written on its node,
                 so the shape of the plan is visible without losing the figures a table gave. */}
             <div className="scroll-x">
@@ -136,8 +125,7 @@ export default function GoalsPage({ h, base, plan, change, cap, goal, history, o
               </ol>
             </div>
             <div className="fine">
-              Every bill and paycheck between now and {prettyIso(goal.checkedThrough)} was checked against this
-              contribution, not just the next few weeks.
+              {goal.checkedThrough ? `Every expected bill and paycheck through ${prettyIso(goal.checkedThrough)} was checked against this contribution. These are estimates, not guaranteed balances.` : 'There is no scheduled contribution before this deadline.'}
             </div>
             <div className="row" style={{ gap: 8 }}>
               <button className="btn" onClick={() => open('compare')}>Compare options</button>
@@ -154,7 +142,7 @@ export default function GoalsPage({ h, base, plan, change, cap, goal, history, o
               <b className="num" style={{ fontSize: 22, fontFamily: 'var(--display)' }}>{money(h.savings)}</b></div>
             <div className="fine">Counted toward one goal. Accepting a plan never moves money.</div>
 
-            <button className="btn ghost" disabled={!transfer.available || transferring} onClick={() => transfer.request(goal.contribution)}>
+            <button className="btn ghost" disabled={!transfer.available || transferring || !(goal.contribution > 0)} onClick={() => transfer.request(goal.contribution)}>
               Move {money(goal.contribution)} to savings (sandbox)
             </button>
             {!transfer.available && <div className="fine">Connect the Nessie sandbox to move money.</div>}

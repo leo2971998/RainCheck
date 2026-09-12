@@ -1,6 +1,7 @@
 import { Icon, Kpi, money, prettyIso, listOf } from '../components/ui.jsx';
 import { amountFor, capacity, hypothetical, nextChargeDate, monthlyEquivalent } from '../engine/forecast.js';
 import Discovered from '../components/Discovered.jsx';
+import { budgetMoney } from '../components/BudgetImpact.jsx';
 
 export default function RecurringPage({ h, sc, plan, change, cap, open, discovered = [], onAdopt, onDismiss }) {
   // Everything on this page is derived, so editing the increase or switching data sources can
@@ -32,7 +33,8 @@ export default function RecurringPage({ h, sc, plan, change, cap, open, discover
     <>
       <div className="topbar"><div><h1>Recurring</h1>
         <div className="sub">{withDates.length} commitments · {money(total)} per month · {changed.length ? `${changed.length} increase detected` : 'no increases detected'}</div></div>
-        <button className="btn ghost sm" onClick={() => open('notice')}><Icon n="mail" s={14} />Import a notice</button></div>
+        <div className="row wrap budget-actions"><button className="btn ghost sm" onClick={() => open('notice')}><Icon n="mail" s={14} />Import a notice</button>
+          <button className="btn sm" onClick={() => open('subscription')}>Add subscription</button></div></div>
 
       <div className="grid g4" style={{ marginBottom: 18 }}>
         <Kpi label="Monthly recurring" value={money(total)} sub={`Across ${withDates.filter(r => !r.cancelled).length} commitments${withDates.some(r => r.everyMonths > 1) ? ", longer cycles counted per month" : ""}`} />
@@ -58,13 +60,21 @@ export default function RecurringPage({ h, sc, plan, change, cap, open, discover
       )}
 
       <div className="grid" style={{ gap: 18 }}>
+      <div className="card">
+        <div className="hd"><h2>Subscriptions in your budget</h2><span className="pill teal">Your estimates</span></div>
+        <p>Explore new monthly costs here. Adding or removing one changes the forecast, not an actual subscription.</p>
+        {withDates.some(r => r.budgetOnly) ? <ul className="budget-list">{withDates.filter(r => r.budgetOnly).map(r => <li key={r.id}>
+          <div><b>{r.label}</b><span className="fine">{budgetMoney(r.amount)}/month · next {prettyIso(r.next)}</span></div>
+          <button className="btn ghost sm" onClick={() => open('subscription', r.id)} aria-label={`Edit ${r.label}`}>Edit</button>
+        </li>)}</ul> : <div className="fine">No extra subscriptions yet. Use “Add subscription” to preview one.</div>}
+      </div>
       <Discovered found={discovered} onAdopt={onAdopt} onDismiss={onDismiss} />
       <div className="card">
         <div style={{ overflowX: 'auto' }}>
           <table>
             <thead><tr><th>Commitment</th><th>Next</th><th>Frequency</th><th className="r">Amount</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              {withDates.map(r => {
+              {withDates.filter(r => !r.budgetOnly).map(r => {
                 const isNewPrice = !!sc.treatAsNewPrice?.[r.id];
                 return (
                   <tr key={r.id} className="hover" style={{ opacity: r.cancelled ? 0.55 : 1 }}>

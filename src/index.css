@@ -147,6 +147,30 @@
 /* The drawer is a flex column, so a scrollable block inside it collapses to zero height unless
    it is told not to shrink. This hid the entire comparison table. */
 .drawer > * { flex: 0 0 auto; }
+.drawer-bg { z-index: 70; }
+.modal-bg { z-index: 80; }
+
+/* Budget changes: ordinary labelled forms, then an explicit before/after decision. */
+.budget-form { display: grid; gap: 16px; }
+.budget-form label { display: grid; gap: 7px; font-weight: 600; font-size: 14px; }
+.budget-form input { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: var(--field); color: var(--ink); }
+.budget-form input::placeholder { color: var(--muted); }
+.budget-form p, .budget-impact p, .budget-library p { margin: 0; line-height: 1.6; }
+.budget-impact { display: grid; gap: 14px; padding: 18px 0; border-block: 1px solid var(--line); }
+.budget-impact .pill { justify-self: start; }
+.budget-comparison > div { display: grid; grid-template-columns: minmax(100px, 1.6fr) repeat(2, minmax(70px, 1fr)); gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.budget-comparison b { text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.budget-comparison-head { color: var(--muted); }
+.budget-actions { gap: 8px; }
+.budget-actions .btn { min-height: 44px; white-space: normal; }
+.budget-remove { color: var(--ink-2); text-decoration: underline; min-height: 44px; align-self: start; }
+.budget-impact .fine, .budget-form .fine, .budget-library .fine, .budget-comparison-head { color: var(--ink-2); }
+.budget-library { margin-bottom: 18px; }
+.budget-library summary { padding: 10px 0; cursor: pointer; font-weight: 600; }
+.budget-list { list-style: none; margin: 0; padding: 0; }
+.budget-list li { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--line); }
+.budget-list li > div { display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.budget-list .btn { flex-shrink: 0; min-height: 44px; }
 .scroll-x { flex: 0 0 auto; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
 .scroll-x table { margin: 0; }
 
