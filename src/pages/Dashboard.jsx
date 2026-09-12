@@ -3,7 +3,7 @@ import { AreaChart } from '../components/charts.jsx';
 import { Sky, Outlook, timeOfDay } from '../components/Weather.jsx';
 import { GoalRing } from '../components/GoalRing.jsx';
 
-export default function Dashboard({ h, source, plan, sc, change, sim, previewSim, preview, cap, goal, alerts, waiting = [], onReviewNotice, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
+export default function Dashboard({ h, source, dark = false, plan, sc, change, sim, previewSim, preview, cap, goal, alerts, waiting = [], onReviewNotice, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
   // The scenario, not the raw plan: an unaccepted plan has no contribution of its own and falls back
   // to the planned figure. Reading the plan here made the chart caption say "$0 contribution" beside
   // a line that was simulated at $300.
@@ -17,8 +17,9 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
   const lastDay = sim.days[sim.days.length - 1];
   // The weather picture reports the same status as everything else. Decoration that always showed
   // sunshine would be the one part of the page that could not deliver bad news. The clock picks
-  // only the sky behind it, so an evening never looks like a bad forecast.
-  const tod = timeOfDay();
+  // only the sky behind it, so an evening never looks like a bad forecast — and neither does a
+  // dark theme, which is treated as night for the same reason.
+  const tod = dark ? 'night' : timeOfDay();
   const attention = alerts.filter(a => a.tone !== 'good').length + reminders.length + waiting.length;
   const night = tod === 'night';
   const headline = sim.worst === 'over' ? 'Your balance would go below zero before payday.' : sim.worst === 'below' ? 'Bills are covered, but your savings plan dips below your cushion.' : goal.gap > 0 ? 'Bills are covered, but your goal needs an adjustment.' : 'Bills are covered and your goal is on track.';

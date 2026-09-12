@@ -62,7 +62,7 @@ export default function NoticeDrawer({ h, base, plan, cap, change, initialText =
         <textarea value={text} onChange={e => { setText(e.target.value); setTouched(true); setBillId(null); }}
           rows={9} placeholder={'From: Northline Internet <billing@northline.example>\n\nYour Internet 300 plan will renew at $90.00 starting with your October 1 bill.'}
           aria-label="Paste the notice"
-          style={{ font: '13px/1.55 ui-monospace, Consolas, monospace', padding: 12, borderRadius: 10, border: '1px solid var(--line)', resize: 'vertical', background: '#fff', color: 'var(--ink)' }} />
+          style={{ font: '13px/1.55 ui-monospace, Consolas, monospace', padding: 12, borderRadius: 10, border: '1px solid var(--line)', resize: 'vertical', background: 'var(--field)', color: 'var(--ink)' }} />
       </label>
 
       {touched && review?.problems.map(problem => (

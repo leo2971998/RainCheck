@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useReducedMotion } from './hooks/useMotion.js';
+import { useTheme } from './hooks/useTheme.js';
+import { Ambient } from './components/Ambient.jsx';
 import { Toasts, toast } from './components/Toast.jsx';
 import { useHousehold } from './hooks/useHousehold.js';
 import { useTransfer } from './hooks/useTransfer.js';
@@ -26,11 +28,19 @@ const NAV = [['dashboard', 'Today', 'dash'], ['alerts', 'Alerts', 'bell'], ['for
 
 function Navigation({ page, setPage, badges = {} }) {
   return NAV.map(([id, label, icon, short = label]) => (
-    <button key={id} className={`nav${page === id ? ' on' : ''}`} aria-current={page === id ? 'page' : undefined} onClick={() => setPage(id)}>
+    <button key={id} className={`nav${page === id ? ' on' : ''}`} aria-label={label + (badges[id] > 0 ? ` (${badges[id]} need attention)` : '')} aria-current={page === id ? 'page' : undefined} onClick={() => setPage(id)}>
       <Icon n={icon} s={17} /><span className="nav-l nav-long">{label}</span><span className="nav-l nav-short" aria-hidden="true">{short}</span>
       {badges[id] > 0 && <span className="badge" aria-label={`${badges[id]} need attention`}>{badges[id]}</span>}
     </button>
   ));
+}
+
+function ThemeSwitch({ theme }) {
+  return <div className="theme-switch" role="group" aria-label="Colour theme">
+    {theme.MODES.map(m => <button key={m} aria-pressed={theme.mode === m} onClick={() => theme.setMode(m)}>
+      {m === 'auto' ? 'Auto' : m === 'light' ? 'Light' : 'Dark'}
+    </button>)}
+  </div>;
 }
 
 export default function App() {
@@ -42,6 +52,7 @@ export default function App() {
 function Workspace({ household: base, transactions, notice, source, discovered: candidates = [], pendingNotices = [] }) {
   const [page, setPageRaw] = useState('dashboard');
   const reducedMotion = useReducedMotion();
+  const theme = useTheme();
 
   /**
    * Cross-fade between sections where the browser supports it.
@@ -208,14 +219,19 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
         <div className="side-foot">
           <div className="acct"><span className="avatar">AR</span><span>Alex Rivera</span></div>
           Everyday Checking · Savings<br />{sourceLabel}
+          <ThemeSwitch theme={theme} />
           {hasPersisted() && <><br /><button className="link" style={{ fontSize: 12, marginTop: 6 }} onClick={resetAll}>Reset my decisions</button></>}
         </div>
       </aside>
 
       <main className="workspace">
+        <div className="mobile-tools">
+          <div><b>RainCheck</b>{hasPersisted() && <button className="link" onClick={resetAll} title="Clear local decisions only. Bank records do not change.">Reset demo</button>}</div>
+          <ThemeSwitch theme={theme} />
+        </div>
         <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
         {backTo && page !== backTo && <button className="back-link" onClick={() => navigate(backTo)}><i className="back-ic"><Icon n="arrow" s={14} /></i>Back to Today</button>}
-        {page === 'dashboard' && <Dashboard h={h} source={source} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
+        {page === 'dashboard' && <Dashboard h={h} source={source} dark={theme.dark} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
         {page === 'alerts' && <AlertsPage h={h} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} found={found} setFound={setFound} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
         {page === 'transactions' && <TransactionsPage transactions={transactions} allowances={h.allowances} corrections={corrections} setCorrections={setCorrections} />}
@@ -224,6 +240,7 @@ function Workspace({ household: base, transactions, notice, source, discovered: 
         {page === 'goals' && <GoalsPage h={h} base={base} plan={plan} change={change} cap={cap} goal={goal} history={history} onUndo={undo} open={open} transfer={transfer} />}
       </main>
 
+      <Ambient state={sim.worst} />
       <Toasts />
       {drawer === 'bill' && <BillDrawer h={h} notice={notice} billId={billId} plan={plan} change={change} cap={cap} onCompare={() => setDrawer('compare')} onClose={() => setDrawer(null)} />}
       {drawer === 'notice' && <NoticeDrawer h={h} base={base} plan={plan} cap={cap} change={change}

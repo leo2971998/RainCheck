@@ -38,14 +38,14 @@ export default function TransactionsPage({ transactions, allowances = [], correc
         </label>
       </div>
 
-      <div className="card">
+      <div className="card transaction-card">
         <div className="hd">
           <div className="chips">{FILTERS.map(([id, label]) =>
             <button key={id} className={'chip' + (filter === id ? ' on' : '')} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}</div>
           <span className="fine">Transfers are not income · a bill and its charge count once · repeat purchases are not auto-subscriptions</span>
         </div>
 
-        <table>
+        <table className="transaction-table">
           <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th className="r">Amount</th><th></th></tr></thead>
           <tbody>
             {rows.map(t => {
