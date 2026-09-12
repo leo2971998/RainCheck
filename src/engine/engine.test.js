@@ -497,7 +497,7 @@ describe('a goal stated as an amount by a date', () => {
   it('checks the contribution across the whole goal, not one window', () => {
     const g = goalPlan(h, sc, GOAL);
     expect(g.horizonDays).toBeGreaterThan(h.windowDays * 2);
-    expect(g.checkedThrough).toBe('2027-01-02');
+    expect(g.checkedThrough).toBe('2027-01-31');
     expect(validatePlan(h, sc, { contribution: g.supported, schedule: g.schedule }).ok).toBe(true);
   });
 

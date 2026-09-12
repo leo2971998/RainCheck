@@ -15,7 +15,7 @@
 // a first cancellation or imported change survived its own undo.
 const ABSENT = '__raincheck_absent__';
 
-const MERGED = ['cuts', 'cancelled', 'pendingCancel', 'treatAsNewPrice', 'whatIf', 'billChanges', 'paid', 'adopted', 'dismissed'];
+const MERGED = ['cuts', 'cancelled', 'pendingCancel', 'treatAsNewPrice', 'whatIf', 'billChanges', 'paid', 'adopted', 'dismissed', 'goals', 'subscriptions'];
 
 /** A plan with nothing decided yet. `null` means "use the affordable/default value". */
 export function emptyPlan() {
@@ -30,6 +30,7 @@ export function emptyPlan() {
     adopted: {},            // id → a commitment found in spending that the user confirmed
     dismissed: {},          // id → a proposal the user rejected, so it is not offered again
     income: null,
+    goalId: null, goals: {}, subscriptions: {},
   };
 }
 
@@ -72,6 +73,13 @@ export function revert(plan, entry) {
   return next;
 }
 
+/** Reject stale notification actions rather than undoing a newer, unrelated decision. */
+export function undoLatest(plan, history, expectedAt = null) {
+  const entry = history[history.length - 1];
+  if (!entry || (expectedAt != null && entry.at !== expectedAt)) return null;
+  return { plan: revert(plan, entry), history: history.slice(0, -1) };
+}
+
 /** The scenario the forecast runs on: the plan, with the scheduled contribution filled in. */
 export function scenarioFor(h, plan) {
   return { ...plan, contribution: plan.contribution ?? h.goal.planned };
@@ -85,8 +93,9 @@ export function scenarioFor(h, plan) {
  * so two screens disagreed about the same date.
  */
 export function householdFor(base, plan) {
-  const target = plan.goalTarget ?? base.goal.target;
-  const targetDate = plan.goalDate ?? base.goal.targetDate;
+  const selected = plan.goals?.[plan.goalId] || base.goal;
+  const target = plan.goalTarget ?? selected.target;
+  const targetDate = plan.goalDate ?? selected.targetDate;
   const income = plan.income ?? base.income;
   const imported = plan.billChanges || {};
 
@@ -100,8 +109,9 @@ export function householdFor(base, plan) {
   // reaches the forecast until they say so; a proposal on its own changes nothing.
   const adopted = Object.values(plan.adopted || {});
   const newlyAdopted = adopted.filter(a => !recurring.some(r => r.id === a.id));
-  const withAdopted = newlyAdopted.length
-    ? [...recurring, ...newlyAdopted].sort((a, b) => a.day - b.day)
+  const subscriptions = Object.values(plan.subscriptions || {}).filter(Boolean);
+  const withAdopted = newlyAdopted.length || subscriptions.length
+    ? [...recurring, ...newlyAdopted, ...subscriptions].sort((a, b) => a.day - b.day)
     : recurring;
 
   // Those charges were ALREADY inside a spending category, because they were purchases. Adding the
@@ -115,8 +125,8 @@ export function householdFor(base, plan) {
       reclaim[x.id] ? { ...x, monthly: Math.max(0, Math.round(x.monthly - reclaim[x.id])), reclaimed: reclaim[x.id] } : x);
   }
 
-  const unchanged = target === base.goal.target && targetDate === base.goal.targetDate
+  const unchanged = selected === base.goal && target === base.goal.target && targetDate === base.goal.targetDate
     && income === base.income && withAdopted === base.recurring && allowances === base.allowances;
   if (unchanged) return base;
-  return { ...base, income, recurring: withAdopted, allowances, goal: { ...base.goal, target, targetDate } };
+  return { ...base, income, recurring: withAdopted, allowances, goal: { ...base.goal, label: selected.label, target, targetDate } };
 }

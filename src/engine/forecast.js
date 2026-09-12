@@ -13,7 +13,9 @@ export const stateOf = (b, cushion) => b < 0 ? 'over' : b < cushion ? 'below' : 
 
 /** Does a commitment fall on this date? Monthly by default; `everyMonths` handles longer cycles. */
 export function fallsOn(r, date, startIso) {
-  if (date.getDate() !== r.day) return false;
+  if (r.startsOn && iso(date) < r.startsOn) return false;
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  if (date.getDate() !== Math.min(r.day, lastDay)) return false;
   const every = r.everyMonths || 1;
   if (every === 1) return true;
   // Count whole months from the commitment's anchor so annual bills land once a year, not monthly.
@@ -185,16 +187,13 @@ export function cutNeeded(h, sc, allowanceId, want, max = 400, step = 5) {
  * its full amount were a monthly cost.
  */
 export function nextChargeDate(r, todayIso) {
-  const today = new Date(todayIso + 'T12:00:00');
-  const every = r.everyMonths || 1;
-  if (every === 1) {
-    const here = new Date(today.getFullYear(), today.getMonth(), r.day, 12);
-    return (here >= today ? here : new Date(today.getFullYear(), today.getMonth() + 1, r.day, 12)).toISOString().slice(0, 10);
-  }
-  const anchor = new Date((r.anchor || todayIso) + 'T12:00:00');
+  const first = r.startsOn && r.startsOn > todayIso ? r.startsOn : todayIso;
+  const today = new Date(first + 'T12:00:00');
   for (let i = 0; i < 240; i++) {
-    const d = new Date(anchor.getFullYear(), anchor.getMonth() + i * every, r.day, 12);
-    if (d >= today) return d.toISOString().slice(0, 10);
+    const month = new Date(today.getFullYear(), today.getMonth() + i, 1, 12);
+    const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    const d = new Date(month.getFullYear(), month.getMonth(), Math.min(r.day, lastDay), 12);
+    if (d >= today && fallsOn(r, d, todayIso)) return iso(d);
   }
   return null;
 }
@@ -245,19 +244,20 @@ export function projectIncome(h, throughDate) {
  * This is what turns "this contribution fits next month" into "every contribution in this plan
  * fits", which multiplying one month's affordable figure never established.
  */
-export function validatePlan(h, sc, { contribution, schedule }) {
+export function validatePlan(h, sc, { contribution, schedule, throughDate }) {
   if (!schedule.length) return { ok: false, low: null, checkedThrough: null, horizonDays: 0 };
   const last = schedule[schedule.length - 1];
-  const horizonDays = Math.max(h.windowDays, isoDaysBetween(h.today, last) + 3);
-  const income = projectIncome(h, last);
+  const end = throughDate && throughDate > last ? throughDate : last;
+  const horizonDays = Math.max(h.windowDays, isoDaysBetween(h.today, end) + 3);
+  const income = projectIncome(h, end);
   const sim = simulate(h, { ...sc, income, contribution, contributionDates: schedule }, { days: horizonDays });
-  return { ...sim, ok: sim.low.balance >= h.cushion, checkedThrough: last, horizonDays };
+  return { ...sim, ok: sim.low.balance >= h.cushion, checkedThrough: end, horizonDays };
 }
 
 /** The largest contribution that clears the cushion on EVERY day of the whole schedule. */
-export function affordableOver(h, sc, schedule, max = 600, step = 5) {
+export function affordableOver(h, sc, schedule, max = 600, step = 5, throughDate) {
   for (let c = max; c >= 0; c -= step)
-    if (validatePlan(h, sc, { contribution: c, schedule }).ok) return c;
+    if (validatePlan(h, sc, { contribution: c, schedule, throughDate }).ok) return c;
   return 0;
 }
 
@@ -268,21 +268,24 @@ export function affordableOver(h, sc, schedule, max = 600, step = 5) {
 export function goalPlan(h, sc, { target, targetDate, saved, contribution = null }) {
   const schedule = scheduleUntil(h, targetDate);
   const left = schedule.length;
-  const required = left ? round2((target - saved) / left) : Infinity;
-  const supported = affordableOver(h, sc, schedule);
-  const using = contribution ?? supported;
+  const remaining = Math.max(0, target - saved);
+  const required = remaining === 0 ? 0 : left ? Math.ceil(Math.round(remaining * 100) / left) / 100 : Infinity;
+  const supported = affordableOver(h, sc, schedule, 600, 5, targetDate);
+  const using = contribution ?? (remaining === 0 ? 0 : supported);
   const projected = round2(saved + left * using);
   const gap = round2(Math.max(0, target - projected));
-  const check = validatePlan(h, sc, { contribution: using, schedule });
+  const check = validatePlan(h, sc, { contribution: using, schedule, throughDate: targetDate });
 
   return {
     target, targetDate, saved, schedule, left,
     required, supported, contribution: using,
     projected, gap, onTarget: gap === 0,
-    feasible: left > 0 && required <= supported,
+    feasible: remaining === 0 || (left > 0 && required <= supported),
     fits: check.ok,                       // does THIS contribution clear the cushion throughout?
     low: check.low, checkedThrough: check.checkedThrough, horizonDays: check.horizonDays,
-    assumption: `Checked against every bill and paycheck through ${longIso(check.checkedThrough)}. Paychecks beyond the next three repeat your current cadence.`,
+    assumption: check.checkedThrough
+      ? `Checked against every bill and paycheck through ${longIso(check.checkedThrough)}. Paychecks beyond the next three repeat your current cadence.`
+      : 'No contribution is scheduled before this deadline. Choose a later date to explore future savings.',
   };
 }
 
