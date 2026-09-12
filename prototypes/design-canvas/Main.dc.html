@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #FEF7ED; font-family: Geist, system-ui, -apple-system, "Segoe UI", sans-serif; color: #1F2937; -webkit-font-smoothing: antialiased; }
+    a { color: #B94308; } a:hover { color: #93340A; }
+    .num { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+<div style="width: 390px; min-height: 844px; box-sizing: border-box; padding: 24px 24px 28px; background: #FEF7ED; display: flex; flex-direction: column; gap: 20px;">
+
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 20px; font-weight: 700; line-height: 24px;">RainCheck</div>
+      <div style="font-size: 14px; line-height: 18px; color: #596273;">Thursday, September 11</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 6px 12px 6px 10px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E5DFD7; font-size: 13px; font-weight: 500; color: #596273; line-height: 16px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 9l9-5 9 5M5 9v9M9 9v9M15 9v9M19 9v9M3 20h18" stroke="#596273" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <span>Checking</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px; padding: 20px 22px 22px; border-radius: 20px; background: #FFF3DC;">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4" stroke="#D98E2B" stroke-width="2"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="#D98E2B" stroke-width="2" stroke-linecap="round"></path></svg>
+    <div style="font-size: 28px; font-weight: 700; line-height: 34px;">Clear today</div>
+    <div style="font-size: 15px; line-height: 20px; color: #596273;">Safe to spend</div>
+    <div class="num" style="font-size: 56px; font-weight: 700; line-height: 60px; letter-spacing: -1.5px;">$86</div>
+    <div style="font-size: 15px; line-height: 20px; color: #596273;">Nothing is due until Thursday the 18th.</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div style="font-size: 12px; font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase; color: #596273; line-height: 16px;">Next 14 days</div>
+    <div style="display: flex; justify-content: space-between; gap: 2px;">
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">Th</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4" stroke="#D98E2B" stroke-width="2"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="#D98E2B" stroke-width="2" stroke-linecap="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">11</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">F</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4" stroke="#D98E2B" stroke-width="2"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="#D98E2B" stroke-width="2" stroke-linecap="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">12</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">Sa</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4" stroke="#D98E2B" stroke-width="2"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="#D98E2B" stroke-width="2" stroke-linecap="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">13</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">Su</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4" stroke="#D98E2B" stroke-width="2"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="#D98E2B" stroke-width="2" stroke-linecap="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">14</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">M</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4" stroke="#D98E2B" stroke-width="2"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="#D98E2B" stroke-width="2" stroke-linecap="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">15</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">Tu</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4" stroke="#D98E2B" stroke-width="2"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="#D98E2B" stroke-width="2" stroke-linecap="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">16</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">W</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4" stroke="#D98E2B" stroke-width="2"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="#D98E2B" stroke-width="2" stroke-linecap="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">17</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">Th</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.6 4.25 4.25 0 0 0 7 18z" stroke="#6B7B93" stroke-width="2" stroke-linejoin="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">18</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">F</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.6 4.25 4.25 0 0 0 7 18z" stroke="#6B7B93" stroke-width="2" stroke-linejoin="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">19</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">Sa</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.6 4.25 4.25 0 0 0 7 18z" stroke="#6B7B93" stroke-width="2" stroke-linejoin="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">20</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">Su</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.6 4.25 4.25 0 0 0 7 18z" stroke="#6B7B93" stroke-width="2" stroke-linejoin="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">21</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">M</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.6 4.25 4.25 0 0 0 7 18z" stroke="#6B7B93" stroke-width="2" stroke-linejoin="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">22</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">Tu</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.6 4.25 4.25 0 0 0 7 18z" stroke="#6B7B93" stroke-width="2" stroke-linejoin="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px;">23</div></div>
+      <div style="width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; border-radius: 8px; background: #E4EDFA;"><div style="font-size: 11px; font-weight: 500; line-height: 14px; color: #596273;">W</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 15h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 6.6 4.25 4.25 0 0 0 7 15z" stroke="#3B7DD8" stroke-width="2" stroke-linejoin="round"></path><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3" stroke="#3B7DD8" stroke-width="2" stroke-linecap="round"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; line-height: 14px; color: #3B7DD8;">24</div></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 16px; background: #E4EDFA;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 15h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 6.6 4.25 4.25 0 0 0 7 15z" stroke="#3B7DD8" stroke-width="2" stroke-linejoin="round"></path><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3" stroke="#3B7DD8" stroke-width="2" stroke-linecap="round"></path></svg>
+      <div style="font-size: 17px; font-weight: 600; line-height: 22px; color: #3B7DD8;">Rain on Wednesday the 24th</div>
+    </div>
+    <div style="font-size: 15px; line-height: 21px;">Rent and car insurance land the same day. You'll be about $80 short before payday.</div>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 8px; padding: 16px 20px; border-radius: 14px; background: #3B7DD8; color: #FFFFFF; font-size: 16px; font-weight: 600; line-height: 20px;">
+      <span>See what you can do</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column;">
+    <div style="font-size: 12px; font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase; color: #596273; line-height: 16px;">Coming up</div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #E5DFD7;">
+      <div style="width: 56px; font-size: 13px; line-height: 18px; color: #596273;">Sep 18</div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.6 4.25 4.25 0 0 0 7 18z" stroke="#6B7B93" stroke-width="2" stroke-linejoin="round"></path></svg>
+      <div style="flex: 1; font-size: 16px; line-height: 20px;">Electric</div>
+      <div class="num" style="font-size: 16px; font-weight: 500; line-height: 20px;">$162</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #E5DFD7;">
+      <div style="width: 56px; font-size: 13px; line-height: 18px; color: #596273;">Sep 22</div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.6 4.25 4.25 0 0 0 7 18z" stroke="#6B7B93" stroke-width="2" stroke-linejoin="round"></path></svg>
+      <div style="flex: 1; font-size: 16px; line-height: 20px;">Internet</div>
+      <div class="num" style="font-size: 16px; font-weight: 500; line-height: 20px;">$89</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #E5DFD7;">
+      <div style="width: 56px; font-size: 13px; line-height: 18px; color: #596273;">Sep 24</div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 15h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 6.6 4.25 4.25 0 0 0 7 15z" stroke="#3B7DD8" stroke-width="2" stroke-linejoin="round"></path><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3" stroke="#3B7DD8" stroke-width="2" stroke-linecap="round"></path></svg>
+      <div style="flex: 1; font-size: 16px; line-height: 20px;">Rent + car insurance</div>
+      <div class="num" style="font-size: 16px; font-weight: 500; line-height: 20px;">$970</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0;">
+      <div style="width: 56px; font-size: 13px; line-height: 18px; color: #596273;">Sep 26</div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4" stroke="#D98E2B" stroke-width="2"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="#D98E2B" stroke-width="2" stroke-linecap="round"></path></svg>
+      <div style="flex: 1; font-size: 16px; line-height: 20px;">Paycheck</div>
+      <div class="num" style="font-size: 16px; font-weight: 500; line-height: 20px; color: #D98E2B;">+$1,850</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

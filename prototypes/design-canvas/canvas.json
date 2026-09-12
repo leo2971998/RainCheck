@@ -1,0 +1,12 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "1 · Home — Forecast", "x": 0, "y": 0, "w": 390, "h": 880 },
+    { "file": "RainyDay.dc.html", "title": "2 · Rainy day — Sep 24", "x": 480, "y": 0, "w": 390, "h": 1130 },
+    { "file": "Fixed.dc.html", "title": "3 · Fixed — Clear again", "x": 960, "y": 0, "w": 390, "h": 880 },
+    { "file": "States.dc.html", "title": "States, type and tokens", "x": 1440, "y": 0, "w": 560, "h": 900 }
+  ],
+  "annotations": [
+    { "id": "flow-note", "x": 0, "y": -150, "w": 420, "text": "RainCheck · HackRice 16 draft v1\nFlow: Home → tap the rain heads-up → pick a fix → confirmation.\nScreen 2 is a scrolling screen on a real phone. Figures are sample data." }
+  ],
+  "launch": { "view": "canvas" }
+}

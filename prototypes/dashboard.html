@@ -1,0 +1,560 @@
+<title>RainCheck</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Geist:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #F6F7FB; --card: #FFFFFF; --line: #E6E8F0; --line-2: #EEF0F6; --ink: #111827; --ink-2: #374151; --muted: #6B7280; --faint: #9CA3AF;
+    --side: #12162B; --side-ink: #C9CEE3; --side-hi: rgba(255,255,255,.08);
+    --accent: #4F46E5; --accent-2: #4338CA; --accent-bg: #EEF0FF; --teal: #0D9488; --teal-bg: #E6F7F5;
+    --good: #16A34A; --good-bg: #DCFCE7; --warn: #D97706; --warn-bg: #FEF3C7; --bad: #DC2626; --bad-bg: #FEE2E2;
+    --display: "Manrope", "Geist", system-ui, sans-serif; --body: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --r: 14px; --shadow: 0 1px 2px rgba(17,24,39,.04), 0 8px 24px rgba(17,24,39,.05);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14.5px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+  button, input { font-family: inherit; }
+  .app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+  aside { background: var(--side); color: var(--side-ink); padding: 22px 14px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 4px; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 4px 10px 22px; color: #fff; }
+  .brand .mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #6366F1, #22D3EE); display: grid; place-items: center; }
+  .brand b { font-family: var(--display); font-weight: 800; font-size: 18px; letter-spacing: -0.2px; }
+  .nav { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 42px; padding: 9px 12px; border-radius: 10px; border: 0; background: none; color: var(--side-ink); font-size: 14.5px; font-weight: 500; cursor: pointer; text-align: left; }
+  .nav:hover { background: var(--side-hi); color: #fff; } .nav.on { background: var(--side-hi); color: #fff; font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
+  .nav .badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+  .side-foot { margin-top: auto; padding: 14px 12px; border-top: 1px solid rgba(255,255,255,.08); font-size: 12.5px; color: #8A92B2; line-height: 1.4; }
+  .side-foot .acct { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 600; margin-bottom: 6px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #F59E0B, #EF4444); display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 700; }
+  main { padding: 26px 32px 60px; max-width: 1400px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+  .topbar h1 { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: -0.4px; margin: 0; line-height: 1.15; }
+  .topbar .sub { color: var(--muted); font-size: 14px; margin-top: 3px; }
+  .grid { display: grid; gap: 18px; } .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } .g32 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); } .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .card h2 { font-family: var(--display); font-weight: 700; font-size: 15.5px; margin: 0; letter-spacing: -0.1px; }
+  .card .hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .kpi .v { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: -0.5px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .kpi .l { font-size: 12.5px; color: var(--muted); font-weight: 500; } .kpi .s { font-size: 12.5px; color: var(--muted); }
+  .pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.3; white-space: nowrap; }
+  .pill.good { background: var(--good-bg); color: #15803D; } .pill.warn { background: var(--warn-bg); color: #B45309; } .pill.bad { background: var(--bad-bg); color: #B91C1C; } .pill.accent { background: var(--accent-bg); color: var(--accent-2); } .pill.neutral { background: var(--line-2); color: var(--ink-2); } .pill.teal { background: var(--teal-bg); color: #0F766E; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 14px; border-radius: 10px; border: 1px solid transparent; background: var(--accent); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .btn:hover { background: var(--accent-2); } .btn.ghost { background: #fff; color: var(--ink); border-color: var(--line); } .btn.ghost:hover { background: var(--bg); } .btn.sm { min-height: 34px; padding: 6px 11px; font-size: 13px; border-radius: 9px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn:focus-visible, .nav:focus-visible, .link:focus-visible, input:focus-visible, .chip:focus-visible { outline: 3px solid #A5B4FC; outline-offset: 2px; }
+  .link { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; font-size: 14px; cursor: pointer; }
+  .link:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .muted { color: var(--muted); } .fine { font-size: 12.5px; color: var(--muted); } .num { font-variant-numeric: tabular-nums; }
+  .row { display: flex; align-items: center; gap: 10px; } .between { justify-content: space-between; } .wrap { flex-wrap: wrap; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; letter-spacing: .3px; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 11px 10px; border-bottom: 1px solid var(--line-2); vertical-align: middle; } tr:last-child td { border-bottom: 0; } tr.hover:hover td { background: #FAFBFF; }
+  td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .cat { display: inline-flex; align-items: center; gap: 8px; } .cat i { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--line-2); color: var(--ink-2); flex: none; }
+  .cat i.in { background: var(--good-bg); color: var(--good); } .cat i.rec { background: var(--accent-bg); color: var(--accent); } .cat i.tr { background: var(--teal-bg); color: var(--teal); } .cat i.rev { background: var(--warn-bg); color: var(--warn); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; } .chip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 11px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--ink-2); } .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .search { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; background: #fff; color: var(--muted); font-size: 13.5px; min-width: 220px; }
+  .alert { border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: #fff; }
+  .alert.bad { border-left-color: var(--bad); } .alert.good { border-left-color: var(--good); }
+  .alert b { font-size: 14px; } .alert p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+  .bars { display: flex; align-items: flex-end; gap: 22px; height: 170px; padding: 0 6px; }
+  .bars .grp { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; }
+  .bars .pair { display: flex; align-items: flex-end; gap: 6px; height: 100%; width: 100%; justify-content: center; }
+  .bars .b { width: 26px; border-radius: 6px 6px 3px 3px; } .b.in { background: var(--teal); } .b.out { background: #C7CBE0; } .b.out.proj { background: repeating-linear-gradient(45deg, #C7CBE0 0 6px, #DFE2EE 6px 12px); }
+  .bars .m { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .hbar { display: grid; grid-template-columns: 120px 1fr 80px; align-items: center; gap: 12px; font-size: 13.5px; } .hbar .t { height: 10px; border-radius: 5px; background: var(--line-2); overflow: hidden; position: relative; } .hbar .t i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 5px; background: var(--accent); } .hbar .t i.cut { background: repeating-linear-gradient(45deg, #C7CBE0 0 4px, #E6E8F0 4px 8px); }
+  .progress { height: 12px; border-radius: 6px; background: var(--line-2); position: relative; overflow: hidden; } .progress i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 6px; } .progress .saved { background: var(--accent); } .progress .proj { background: #C7CBE0; }
+  .drawer-bg { position: fixed; inset: 0; background: rgba(17,24,39,.35); z-index: 20; display: flex; justify-content: flex-end; }
+  .drawer { width: 560px; max-width: 100%; height: 100%; background: #fff; box-shadow: -20px 0 60px rgba(17,24,39,.2); overflow-y: auto; padding: 22px 24px 40px; display: flex; flex-direction: column; gap: 16px; }
+  .drawer h2 { font-family: var(--display); font-weight: 800; font-size: 20px; margin: 0; letter-spacing: -0.3px; }
+  .drawer h3 { font-family: var(--display); font-weight: 700; font-size: 14.5px; margin: 0; }
+  .notice { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12.5px; line-height: 1.55; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; white-space: pre-wrap; }
+  mark { background: #FDE68A; color: inherit; padding: 0 2px; border-radius: 3px; }
+  .kv { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; font-size: 14px; } .kv .k { color: var(--muted); } .kv .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .option { border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: #fff; } .option.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+  .option h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 15px; } .option p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .ba > div { border-radius: 10px; padding: 9px 11px; background: var(--bg); display: flex; flex-direction: column; gap: 2px; } .ba .k { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; font-weight: 600; } .ba b { font-size: 16px; font-family: var(--display); font-weight: 800; font-variant-numeric: tabular-nums; }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer; position: relative; } .toggle i { width: 34px; height: 20px; border-radius: 999px; background: #D1D5DB; position: relative; display: inline-block; transition: background .15s; } .toggle i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; } .toggle.on i { background: var(--accent); } .toggle.on i::after { left: 16px; }
+  input[type=number], input[type=date] { font: 500 14px var(--body); padding: 7px 9px; border: 1px solid var(--line); border-radius: 9px; width: 110px; background: #fff; color: var(--ink); } input[type=date] { width: 148px; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(17,24,39,.45); z-index: 30; display: grid; place-items: center; padding: 20px; }
+  .modal { background: #fff; border-radius: 16px; padding: 22px; max-width: 460px; width: 100%; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 30px 80px rgba(17,24,39,.3); }
+  .modal h2 { font-family: var(--display); font-weight: 800; font-size: 20px; margin: 0; }
+  .tip { pointer-events: none; }
+  .legend { display: flex; gap: 14px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; } .legend span { display: inline-flex; align-items: center; gap: 6px; } .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .tabs { display: none; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; } .tabs .nav { width: auto; color: var(--ink-2); } .tabs .nav.on { background: var(--ink); color: #fff; box-shadow: none; }
+  @media (max-width: 1100px) { .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .g32, .g2 { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { .app { grid-template-columns: 1fr; } aside { display: none; } .tabs { display: flex; } main { padding: 16px; } }
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.4/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useMemo } = React;
+
+/* =============== sample household (Nessie would supply the records) =============== */
+const TODAY = new Date(2026, 8, 28);
+const WINDOW = 34;
+const H = {
+  checking: 1260, savings: 800, cushion: 200,
+  income: [
+    { id: 'p1', label: 'Paycheck · Rice Coffee Co', date: '2026-10-02', amount: 1700, status: 'confirmed' },
+    { id: 'p2', label: 'Paycheck · Rice Coffee Co', date: '2026-10-16', amount: 1700, status: 'estimated' },
+    { id: 'p3', label: 'Paycheck · Rice Coffee Co', date: '2026-10-30', amount: 1700, status: 'estimated' },
+  ],
+  recurring: [
+    { id: 'rent', label: 'Rent · Harbor Lofts', amount: 1150, day: 5, freq: 'Monthly' },
+    { id: 'internet', label: 'Internet · Northline', amount: 65, day: 1, freq: 'Monthly', change: { to: 90, effective: '2026-10-01', why: 'Promotional credit ended', source: 'notice' } },
+    { id: 'streaming', label: 'Streaming · Plexi', amount: 30, day: 3, freq: 'Monthly', cancellable: true },
+    { id: 'electric', label: 'Electric · Reliant', amount: 110, day: 6, freq: 'Monthly', lastPosted: 128, unexplained: true },
+    { id: 'car', label: 'Car insurance · Geico', amount: 120, day: 10, freq: 'Monthly' },
+    { id: 'phone', label: 'Phone · Mint', amount: 45, day: 12, freq: 'Monthly' },
+    { id: 'gym', label: 'Gym · Fit24', amount: 40, day: 15, freq: 'Monthly', renews: '2026-10-15', cancellable: true },
+  ],
+  allowances: [
+    { id: 'groceries', label: 'Groceries', monthly: 700 }, { id: 'takeout', label: 'Dining & takeout', monthly: 180 }, { id: 'rides', label: 'Rides & transit', monthly: 60 },
+    { id: 'household', label: 'Household', monthly: 260 }, { id: 'fun', label: 'Fun & other', monthly: 300 },
+  ],
+  goal: { label: 'Emergency fund', target: 2000, saved: 800, left: 4, planned: 300, targetLabel: 'January 2027', months: ['Oct 2', 'Nov 2', 'Dec 2', 'Jan 4'] },
+  history: [{ m: 'Jul', inc: 3400, out: 3080 }, { m: 'Aug', inc: 3400, out: 3140 }, { m: 'Sep', inc: 3400, out: 3095 }],
+};
+const NOTICE = `From: Northline Internet <billing@northline.example>
+Subject: Your October bill
+
+Hi Alex,
+
+Your Internet 300 plan will renew at $90.00 starting with your October 1 bill.
+Your 12-month promotional credit of $25.00 ended on September 30.
+Your speed and service are unchanged.
+
+Questions? Visit support.northline.example or call the number on your bill.`;
+const TX = [
+  { d: 'Sep 26', what: 'Kroger', amt: -84.12, cat: 'Groceries', k: 'ev' }, { d: 'Sep 25', what: 'Transfer to Savings', amt: -300, cat: 'Transfer', k: 'tr', note: 'Your own savings account. Not counted as spending.' },
+  { d: 'Sep 24', what: 'Uber', amt: -18.4, cat: 'Rides & transit', k: 'ev', note: '4th ride this month. Not treated as a subscription.' }, { d: 'Sep 22', what: 'Amazon', amt: -48.3, cat: 'Household', k: 'ev', review: 'Matches the receipt you forwarded. Counted once.' },
+  { d: 'Sep 18', what: 'Paycheck · Rice Coffee Co', amt: 1700, cat: 'Income', k: 'in' }, { d: 'Sep 15', what: 'Fit24', amt: -40, cat: 'Gym', k: 'rec' },
+  { d: 'Sep 12', what: 'Mint Mobile', amt: -45, cat: 'Phone', k: 'rec' }, { d: 'Sep 10', what: 'Geico', amt: -120, cat: 'Car insurance', k: 'rec' },
+  { d: 'Sep 8', what: 'Venmo · Sam R.', amt: 60, cat: 'Transfer', k: 'tr', review: 'Money back from a friend, or income?' }, { d: 'Sep 6', what: 'Reliant Energy', amt: -128, cat: 'Electric', k: 'rec', note: 'Higher than usual ($110). Not confirmed why.' },
+  { d: 'Sep 5', what: 'Harbor Lofts', amt: -1150, cat: 'Rent', k: 'rec' }, { d: 'Sep 4', what: 'Paycheck · Rice Coffee Co', amt: 1700, cat: 'Income', k: 'in' }, { d: 'Sep 3', what: 'Plexi', amt: -30, cat: 'Streaming', k: 'rec' },
+];
+
+/* =============== helpers =============== */
+const $ = n => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
+const $2 = n => (n < 0 ? '−$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const iso = d => d.toISOString().slice(0, 10);
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const pretty = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const long = d => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+const stateOf = (b, c) => b < 0 ? 'over' : b < c ? 'below' : b < c + 100 ? 'tight' : 'ok';
+const STATE = { ok: ['On track', 'good'], tight: ['Tight', 'warn'], below: ['Below cushion', 'bad'], over: ['Overdrawn', 'bad'] };
+const MONTHS = ['October 2026', 'November 2026', 'December 2026', 'January 2027', 'February 2027', 'March 2027', 'April 2027', 'May 2027', 'June 2027', 'July 2027'];
+const monthLabel = n => MONTHS[Math.min(MONTHS.length, Math.max(1, n)) - 1];
+const FLEX_ORDER = ['takeout', 'fun', 'rides', 'household', 'groceries'];
+
+/* =============== engine =============== */
+function simulate(sc) {
+  const income = sc.income || H.income;
+  const dailySpend = (H.allowances.reduce((a, x) => a + x.monthly - (sc.cuts?.[x.id] || 0), 0)) / 30;
+  const days = []; let b = H.checking;
+  for (let i = 0; i < WINDOW; i++) {
+    const date = addDays(TODAY, i), key = iso(date), events = [];
+    for (const p of income) if (p.date === key) { b += p.amount; events.push({ label: p.label.split(' · ')[0] + (p.status === 'estimated' ? ' (estimated)' : ''), amt: p.amount, pay: true }); }
+    for (const r of H.recurring) {
+      if (date.getDate() !== r.day || sc.cancelled?.[r.id]) continue;
+      let amt = r.amount;
+      if (r.change && key >= r.change.effective) amt = r.amount + sc.increase;
+      if (r.id === 'electric' && sc.treatElectricAsNew) amt = r.lastPosted;
+      b -= amt; events.push({ label: r.label.split(' · ')[0], amt: -amt, bill: true, big: amt >= 100 });
+    }
+    if (key === '2026-10-02' && sc.contribution > 0) { b -= sc.contribution; events.push({ label: 'Savings contribution', amt: -sc.contribution, transfer: true }); }
+    b -= dailySpend; events.push({ label: 'Everyday spending', amt: -dailySpend });
+    days.push({ date, key, balance: b, events, state: stateOf(b, H.cushion) });
+  }
+  const low = days.reduce((a, x) => (x.balance < a.balance ? x : a));
+  const worst = ['over', 'below', 'tight', 'ok'].find(s => days.some(d => d.state === s));
+  const oct = days.filter(d => d.key >= '2026-10-01');
+  const cash = { income: oct.reduce((a, d) => a + d.events.filter(e => e.pay).reduce((s, e) => s + e.amt, 0), 0), bills: oct.reduce((a, d) => a + d.events.filter(e => e.bill).reduce((s, e) => s - e.amt, 0), 0), everyday: Math.round(oct.length * dailySpend), savings: sc.contribution };
+  return { days, low, worst, dailySpend, cash };
+}
+function capacity(sc) { for (let c = 600; c >= 0; c -= 5) if (simulate({ ...sc, contribution: c }).low.balance >= H.cushion) return c; return 0; }
+function goalAt(c, left = H.goal.left) {
+  const projected = H.goal.saved + left * c, gap = Math.max(0, H.goal.target - projected);
+  const monthsNeeded = c > 0 ? Math.ceil((H.goal.target - H.goal.saved) / c) : Infinity;
+  return { projected, gap, monthsNeeded, contributions: left * c, left, targetLabel: monthLabel(left) };
+}
+function cutNeeded(sc, id, want) { for (let cut = 0; cut <= 400; cut += 5) if (capacity({ ...sc, cuts: { ...sc.cuts, [id]: cut } }) >= want) return cut; return null; }
+
+/* =============== icons =============== */
+const I = ({ n, s = 18, c = 'currentColor' }) => {
+  const p = { width: s, height: s, viewBox: '0 0 24 24', fill: 'none', stroke: c, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  const d = {
+    dash: <><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></>,
+    trend: <><path d="M3 17l5-6 4 4 5-8 4 5" /></>, list: <><path d="M4 6h16M4 12h16M4 18h10" /></>, repeat: <><path d="M17 2l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="M7 22l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></>,
+    bars: <><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></>, target: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2" /></>,
+    bell: <><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2zM10 20a2 2 0 0 0 4 0" /></>, search: <><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></>,
+    x: <><path d="M6 6l12 12M18 6L6 18" /></>, check: <><path d="M5 12.5l4.5 4.5L19 7.5" /></>, arrow: <><path d="M5 12h14M13 6l6 6-6 6" /></>, warn: <><path d="M12 3l10 18H2L12 3z" /><path d="M12 10v5M12 18h.01" /></>,
+    up: <><path d="M12 19V5M6 11l6-6 6 6" /></>, down: <><path d="M12 5v14M6 13l6 6 6-6" /></>, edit: <><path d="M4 20h4l10-10-4-4L4 16v4z" /><path d="M13 7l4 4" /></>, ext: <><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" /></>,
+    bank: <><path d="M3 9l9-5 9 5M5 9v9M9 9v9M15 9v9M19 9v9M3 20h18" /></>, mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></>, shield: <><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" /></>, dollar: <><path d="M12 2v20M17 6.5C17 4.6 14.8 3 12 3S7 4.6 7 6.5 9.2 10 12 10s5 1.6 5 3.5S14.8 17 12 17s-5-1.6-5-3.5" /></>,
+    swap: <><path d="M4 7h13l-3-3M20 17H7l3 3" /></>, cart: <><circle cx="9" cy="20" r="1" /><circle cx="17" cy="20" r="1" /><path d="M3 4h2l2.5 11h11L21 7H6" /></>, spark: <><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" /></>,
+  }[n];
+  return <svg {...p}>{d}</svg>;
+};
+const KIND_ICON = { in: ['dollar', 'in'], rec: ['repeat', 'rec'], tr: ['swap', 'tr'], ev: ['cart', ''] };
+
+/* =============== charts (hand-drawn SVG) =============== */
+function niceTicks(min, max, n = 4) { const span = max - min, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw); const out = []; for (let v = Math.ceil(min / step) * step; v <= max; v += step) out.push(v); return out; }
+function AreaChart({ sim, id = 'a', height = 250 }) {
+  const [hov, setHov] = useState(null);
+  const days = sim.days, n = days.length, W = 920, Hh = height, L = 56, R = 18, T = 20, B = 30;
+  const vals = days.map(d => d.balance); const maxV = Math.max(...vals, H.cushion) * 1.06; const minV = Math.min(0, ...vals) - 80;
+  const x = i => L + (i / (n - 1)) * (W - L - R), y = v => T + (1 - (v - minV) / (maxV - minV)) * (Hh - T - B);
+  const line = days.map((d, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(d.balance).toFixed(1)}`).join(' ');
+  const area = `${line} L${x(n - 1).toFixed(1)},${y(minV)} L${x(0)},${y(minV)} Z`;
+  const ticks = niceTicks(Math.min(0, minV + 80), maxV);
+  const lowI = days.indexOf(sim.low);
+  const h = hov !== null ? days[hov] : null;
+  const tipX = h ? Math.min(Math.max(x(hov) - 90, L), W - R - 190) : 0;
+  return (
+    <svg viewBox={`0 0 ${W} ${Hh}`} width="100%" style={{ display: 'block' }} onMouseLeave={() => setHov(null)} role="img" aria-label={`Projected checking balance over the next ${n} days; lowest ${$(sim.low.balance)} on ${pretty(sim.low.date)}`}>
+      <defs><linearGradient id={'g' + id} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#4F46E5" stopOpacity=".26" /><stop offset="1" stopColor="#4F46E5" stopOpacity="0" /></linearGradient></defs>
+      {ticks.map(t => <g key={t}><line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke="#EEF0F6" /><text x={L - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="#9CA3AF">{$(t)}</text></g>)}
+      <line x1={L} x2={W - R} y1={y(H.cushion)} y2={y(H.cushion)} stroke="#D97706" strokeDasharray="5 5" strokeWidth="1.2" />
+      <text x={W - R} y={y(H.cushion) - 6} textAnchor="end" fontSize="11" fill="#B45309" fontWeight="600">Cushion {$(H.cushion)}</text>
+      {minV < 0 && <line x1={L} x2={W - R} y1={y(0)} y2={y(0)} stroke="#DC2626" strokeWidth="1" opacity=".6" />}
+      <path d={area} fill={`url(#g${id})`} /><path d={line} fill="none" stroke="#4F46E5" strokeWidth="2.4" strokeLinejoin="round" />
+      {days.map((d, i) => d.events.some(e => e.pay) ? <circle key={'p' + i} cx={x(i)} cy={y(d.balance)} r="4" fill="#0D9488" stroke="#fff" strokeWidth="1.5" /> : d.events.some(e => e.big) ? <circle key={'b' + i} cx={x(i)} cy={y(d.balance)} r="3.5" fill="#fff" stroke="#4F46E5" strokeWidth="1.8" /> : null)}
+      <circle cx={x(lowI)} cy={y(sim.low.balance)} r="5" fill={sim.low.state === 'ok' ? '#16A34A' : sim.low.state === 'tight' ? '#D97706' : '#DC2626'} stroke="#fff" strokeWidth="2" />
+      <text x={x(lowI)} y={y(sim.low.balance) + 18} textAnchor={lowI > n * 0.8 ? 'end' : 'middle'} fontSize="11.5" fontWeight="600" fill="#374151">Low {$(sim.low.balance)} · {pretty(sim.low.date)}</text>
+      {days.map((d, i) => (i % 7 === 0 || i === n - 1) && <text key={'x' + i} x={x(i)} y={Hh - 8} textAnchor="middle" fontSize="11" fill="#9CA3AF">{pretty(d.date)}</text>)}
+      {days.map((d, i) => <rect key={'h' + i} x={x(i) - (W - L - R) / (n - 1) / 2} y={T} width={(W - L - R) / (n - 1)} height={Hh - T - B} fill="transparent" onMouseEnter={() => setHov(i)} />)}
+      {h && <g className="tip"><line x1={x(hov)} x2={x(hov)} y1={T} y2={Hh - B} stroke="#9CA3AF" strokeDasharray="3 3" /><circle cx={x(hov)} cy={y(h.balance)} r="4.5" fill="#4F46E5" stroke="#fff" strokeWidth="2" />
+        <rect x={tipX} y={T + 2} width="190" height={30 + 15 * Math.min(4, h.events.length)} rx="8" fill="#111827" opacity=".94" />
+        <text x={tipX + 10} y={T + 20} fontSize="12" fontWeight="700" fill="#fff">{pretty(h.date)} · {$(h.balance)}</text>
+        {h.events.slice(0, 4).map((e, k) => <text key={k} x={tipX + 10} y={T + 35 + 15 * k} fontSize="11" fill="#C9CEE3">{e.label}: {e.amt > 0 ? '+' : ''}{$(e.amt)}</text>)}</g>}
+    </svg>
+  );
+}
+function GoalChart({ cap }) {
+  const W = 420, Hh = 150, L = 44, R = 14, T = 14, B = 26; const months = ['Now', 'Oct', 'Nov', 'Dec', 'Jan'];
+  const orig = [0, 1, 2, 3, 4].map(i => H.goal.saved + i * H.goal.planned), upd = [0, 1, 2, 3, 4].map(i => H.goal.saved + i * cap);
+  const top = Math.max(2200, ...upd) * 1.05;
+  const y = v => T + (1 - v / top) * (Hh - T - B), x = i => L + (i / 4) * (W - L - R);
+  const pl = a => a.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${y(v)}`).join(' ');
+  return (
+    <svg viewBox={`0 0 ${W} ${Hh}`} width="100%" role="img" aria-label="Goal projection, original plan versus updated plan">
+      {[0, 1000, 2000].map(t => <g key={t}><line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke="#EEF0F6" /><text x={L - 6} y={y(t) + 4} textAnchor="end" fontSize="10.5" fill="#9CA3AF">{$(t)}</text></g>)}
+      <line x1={L} x2={W - R} y1={y(H.goal.target)} y2={y(H.goal.target)} stroke="#16A34A" strokeDasharray="4 4" />
+      <path d={pl(orig)} fill="none" stroke="#C7CBE0" strokeWidth="2.2" strokeDasharray="6 4" /><path d={pl(upd)} fill="none" stroke="#4F46E5" strokeWidth="2.6" />
+      {upd.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r="3.5" fill="#4F46E5" stroke="#fff" strokeWidth="1.5" />)}
+      {months.map((m, i) => <text key={m} x={x(i)} y={Hh - 8} textAnchor="middle" fontSize="11" fill="#9CA3AF">{m}</text>)}
+      <text x={W - R} y={y(H.goal.target) - 5} textAnchor="end" fontSize="10.5" fill="#15803D" fontWeight="600">Target {$(H.goal.target)}</text>
+    </svg>
+  );
+}
+
+/* =============== pieces =============== */
+function Kpi({ label, value, sub, pill }) { return <div className="card kpi" style={{ gap: 6 }}><div className="row between"><span className="l">{label}</span>{pill}</div><div className="v">{value}</div><div className="s">{sub}</div></div>; }
+function Toggle({ on, onChange, children }) { return <label className={'toggle' + (on ? ' on' : '')}><input type="checkbox" checked={on} onChange={e => onChange(e.target.checked)} style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }} /><i></i>{children}</label>; }
+function IncomeList({ sc, setSc, compact }) {
+  const [editing, setEditing] = useState(null);
+  const income = sc.income || H.income;
+  const update = (id, patch) => setSc(s => ({ ...s, income: income.map(p => p.id === id ? { ...p, ...patch } : p) }));
+  return (
+    <div className="card">
+      <div className="hd"><h2>Expected income</h2><span className="fine">Editable</span></div>
+      <table><tbody>{income.map(p => (
+        <tr key={p.id}><td style={{ paddingLeft: 0 }}><div className="cat"><i className="in"><I n="dollar" s={14} /></i><div><div style={{ fontWeight: 500 }}>{compact ? 'Paycheck' : p.label}</div><div className="fine">{new Date(p.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · <span className={'pill ' + (p.status === 'confirmed' ? 'good' : p.status === 'edited' ? 'accent' : 'neutral')}>{p.status === 'confirmed' ? 'Confirmed' : p.status === 'edited' ? 'Edited by you' : 'Estimated'}</span></div></div></div></td>
+          <td className="r" style={{ paddingRight: 0 }}>{editing === p.id ? <div className="row" style={{ justifyContent: 'flex-end' }}><input type="number" value={p.amount} onChange={e => update(p.id, { amount: Number(e.target.value) || 0, status: 'edited' })} aria-label="Amount" /><input type="date" value={p.date} onChange={e => update(p.id, { date: e.target.value, status: 'edited' })} aria-label="Date" /><button className="btn sm" onClick={() => setEditing(null)}>Done</button></div>
+            : <div className="row" style={{ justifyContent: 'flex-end' }}><b className="num" style={{ color: 'var(--good)' }}>+{$(p.amount)}</b><button className="btn ghost sm" onClick={() => setEditing(p.id)}><I n="edit" s={14} />Edit</button></div>}</td></tr>))}</tbody></table>
+      <div className="fine">Change an amount or date and the forecast updates. Estimated paychecks come from your pattern; RainCheck never invents irregular income.</div>
+    </div>
+  );
+}
+function Alerts({ alerts }) {
+  return (
+    <div className="card">
+      <div className="hd"><h2>Needs your attention</h2><span className="pill neutral">{alerts.length}</span></div>
+      {alerts.length === 0 && <div className="fine">Nothing right now.</div>}
+      {alerts.map((a, i) => <div className={'alert ' + a.tone} key={i}><b>{a.title}</b><p>{a.body}</p>{a.actions && <div className="row wrap" style={{ gap: 8 }}>{a.actions.map(ac => <button key={ac.label} className={'btn sm' + (ac.primary ? '' : ' ghost')} onClick={ac.go}>{ac.label}</button>)}</div>}</div>)}
+      <div className="fine">One event, one alert. Spending trends go in the weekly summary.</div>
+    </div>
+  );
+}
+
+/* =============== pages =============== */
+function Dashboard({ sc, setSc, sim, cap, goal, alerts, open, applied, found, setFound }) {
+  const [st, tone] = STATE[sim.worst];
+  const internet = H.recurring.find(r => r.id === 'internet');
+  const headline = sim.worst === 'over' ? 'Your balance would go below zero before payday.' : sim.worst === 'below' ? 'Bills are covered, but your savings plan dips below your cushion.' : goal.gap > 0 ? 'Bills are covered, but your goal needs an adjustment.' : 'Bills are covered and your goal is on track.';
+  return (
+    <>
+      <div className="topbar"><div><h1>{headline}</h1><div className="sub">{long(TODAY)} · Next paycheck Friday, Oct 2 · Forecast through Oct 31</div></div>
+        <div className="row"><span className="pill teal"><I n="bank" s={13} />Nessie sandbox · 2 accounts</span><button className="btn ghost sm"><I n="bell" s={15} />{alerts.length}</button></div></div>
+      <div className="grid g4" style={{ marginBottom: 18 }}>
+        <Kpi label="Checking balance" value={$(H.checking)} sub="Everyday Checking · updated today" />
+        <Kpi label="Lowest projected balance" value={$(sim.low.balance)} sub={`${pretty(sim.low.date)} · cushion ${$(H.cushion)}`} pill={<span className={'pill ' + tone}>{st}</span>} />
+        <Kpi label="Contribution the plan supports" value={`${$(cap)}/mo`} sub={`Planned ${$(H.goal.planned)} · ${cap < H.goal.planned ? `${$(H.goal.planned - cap)} less after the bill change` : 'unchanged'}`} pill={cap < H.goal.planned ? <span className="pill warn"><I n="down" s={11} />{$(H.goal.planned - cap)}</span> : <span className="pill good">OK</span>} />
+        <Kpi label={H.goal.label} value={$(goal.projected)} sub={`Projected of ${$(H.goal.target)} by ${goal.targetLabel}`} pill={goal.gap ? <span className="pill bad">{$(goal.gap)} short</span> : <span className="pill good">On track</span>} />
+      </div>
+      <div className="grid g32">
+        <div className="grid" style={{ gap: 18 }}>
+          <div className="card">
+            <div className="hd"><div><h2>Projected checking balance</h2><div className="fine">Next 34 days · scheduled bills, expected income, everyday spending and your {$(sc.contribution)} contribution</div></div>
+              <div className="legend"><span><i style={{ background: '#4F46E5' }}></i>Balance</span><span><i style={{ background: '#0D9488', borderRadius: '50%' }}></i>Paycheck</span><span><i style={{ background: '#fff', border: '2px solid #4F46E5', borderRadius: '50%', width: 8, height: 8 }}></i>Bill ≥ $100</span><span><i style={{ background: '#D97706', height: 2, width: 14 }}></i>Cushion</span></div></div>
+            <AreaChart sim={sim} id="dash" />
+          </div>
+          <div className="grid g2">
+            <div className="card">
+              <div className="hd"><h2>What changed</h2><span className="pill warn"><I n="up" s={11} />1 increase detected</span></div>
+              <div className="row" style={{ alignItems: 'flex-start' }}>
+                <div className="cat"><i className="rec"><I n="repeat" s={14} /></i></div>
+                <div style={{ flex: 1 }}><div style={{ fontWeight: 600 }}>{internet.label}</div><div className="fine">{$(internet.amount)} → <b className="num" style={{ color: 'var(--ink)' }}>{$(internet.amount + sc.increase)}</b> per month · takes effect Oct 1</div><div className="fine">{internet.change.why}, per the notice{sc.increase !== 25 ? ' · amount edited for the demo' : ''}</div></div>
+              </div>
+              <div className="row wrap" style={{ gap: 8 }}><button className="btn sm" onClick={() => open('bill')}>See what changed</button><button className="btn ghost sm" onClick={() => open('compare')}>Compare options</button></div>
+            </div>
+            <div className="card">
+              <div className="hd"><h2>{H.goal.label}</h2><span className={'pill ' + (goal.gap ? 'bad' : 'good')}>{goal.gap ? `${$(goal.gap)} short` : 'On track'}</span></div>
+              <GoalChart cap={applied ? sc.contribution : cap} />
+              <div className="row between fine"><span>Saved <b className="num">{$(H.goal.saved)}</b> · projected <b className="num">{$(goal.projected)}</b></span><span>Updated plan <b className="num">{$(applied ? sc.contribution : cap)}/mo</b></span></div>
+              {applied && <span className="pill good"><I n="check" s={11} />{applied.label}</span>}
+            </div>
+          </div>
+          <div className="card">
+            <div className="hd"><h2>Cash flow</h2><span className="fine">October is projected from the forecast</span></div>
+            <CashBars sim={sim} />
+          </div>
+        </div>
+        <div className="grid" style={{ gap: 18 }}>
+          {found && <div className="card" style={{ background: 'linear-gradient(135deg, #EEF0FF, #F6F7FB)' }}><div className="hd"><h2>Here is what we found</h2><button className="link" onClick={() => setFound(false)}>Dismiss</button></div>
+            <div className="row wrap" style={{ gap: 6 }}><span className="pill good"><I n="check" s={11} />Paycheck about every two weeks</span><span className="pill good"><I n="check" s={11} />7 recurring commitments</span><span className="pill warn">2 transactions need review</span></div>
+            <div><button className="btn ghost sm" onClick={() => open('page:transactions')}>Review my plan</button></div></div>}
+          <Alerts alerts={alerts} />
+          <IncomeList sc={sc} setSc={setSc} compact />
+        </div>
+      </div>
+    </>
+  );
+}
+function CashBars({ sim }) {
+  const data = [...H.history, { m: 'Oct', inc: sim.cash.income, out: sim.cash.bills + sim.cash.everyday + sim.cash.savings, proj: true }];
+  const max = Math.max(...data.flatMap(d => [d.inc, d.out]));
+  return (
+    <div className="grid g32" style={{ gap: 24 }}>
+      <div className="bars">{data.map(d => <div className="grp" key={d.m}><div className="pair"><div className={'b in'} style={{ height: d.inc / max * 100 + '%' }} title={`Income ${$(d.inc)}`}></div><div className={'b out' + (d.proj ? ' proj' : '')} style={{ height: d.out / max * 100 + '%' }} title={`Spending ${$(d.out)}`}></div></div><span className="m">{d.m}{d.proj ? ' (proj.)' : ''}</span></div>)}</div>
+      <div className="kv" style={{ alignContent: 'start' }}>
+        <span className="k"><span className="dot" style={{ background: 'var(--teal)', marginRight: 6 }}></span>Income in October</span><span className="v">{$(sim.cash.income)}</span>
+        <span className="k">Recurring bills</span><span className="v">{$(sim.cash.bills)}</span>
+        <span className="k">Everyday spending</span><span className="v">{$(sim.cash.everyday)}</span>
+        <span className="k">To savings</span><span className="v">{$(sim.cash.savings)}</span>
+        <span className="k" style={{ fontWeight: 600, color: 'var(--ink)' }}>Left over</span><span className="v" style={{ fontWeight: 700 }}>{$(sim.cash.income - sim.cash.bills - sim.cash.everyday - sim.cash.savings)}</span>
+      </div>
+    </div>
+  );
+}
+function ForecastPage({ sc, setSc, sim, cap }) {
+  const [st, tone] = STATE[sim.worst];
+  return (
+    <>
+      <div className="topbar"><div><h1>Forecast</h1><div className="sub">Day by day through Oct 31 · lowest {$(sim.low.balance)} on {pretty(sim.low.date)} · <span className={'pill ' + tone}>{st}</span></div></div></div>
+      <div className="grid g32">
+        <div className="grid" style={{ gap: 18 }}>
+          <div className="card"><div className="hd"><h2>Projected checking balance</h2><span className="fine">Hover for the day's events</span></div><AreaChart sim={sim} id="fc" height={300} /></div>
+          <div className="card"><div className="hd"><h2>Day by day</h2><span className="fine">Only days with bills, income or transfers</span></div>
+            <table><thead><tr><th>Date</th><th>Events</th><th className="r">End of day</th><th>Status</th></tr></thead><tbody>
+              {sim.days.filter(d => d.events.length > 1).map(d => <tr key={d.key} className="hover"><td style={{ whiteSpace: 'nowrap' }}>{d.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</td><td>{d.events.filter(e => !e.label.startsWith('Everyday')).map((e, i) => <span key={i} className="pill neutral" style={{ marginRight: 6 }}>{e.label} {e.amt > 0 ? '+' : ''}{$(e.amt)}</span>)}</td><td className="r"><b>{$(d.balance)}</b></td><td><span className={'pill ' + STATE[d.state][1]}>{STATE[d.state][0]}</span></td></tr>)}
+            </tbody></table></div>
+        </div>
+        <div className="grid" style={{ gap: 18 }}>
+          <div className="card"><h2>Assumptions</h2><div className="kv"><span className="k">Cushion</span><span className="v">{$(H.cushion)}</span><span className="k">Everyday spending</span><span className="v">{$(sim.dailySpend)}/day</span><span className="k">Savings contribution</span><span className="v">{$(sc.contribution)} on Oct 2</span><span className="k">Supported contribution</span><span className="v">{$(cap)}</span></div><div className="fine">Supported = the largest contribution that keeps every day at or above the cushion.</div></div>
+          <IncomeList sc={sc} setSc={setSc} />
+        </div>
+      </div>
+    </>
+  );
+}
+function TransactionsPage() {
+  const [f, setF] = useState('all');
+  const rows = TX.filter(t => f === 'all' || (f === 'review' ? t.review : t.k === f));
+  return (
+    <>
+      <div className="topbar"><div><h1>Transactions</h1><div className="sub">September 1 – 28 · 13 transactions · 2 need review</div></div><div className="search"><I n="search" s={15} />Search transactions</div></div>
+      <div className="card">
+        <div className="hd"><div className="chips">{[['all', 'All'], ['review', 'Needs review'], ['in', 'Income'], ['rec', 'Recurring'], ['ev', 'Everyday'], ['tr', 'Transfers']].map(([id, l]) => <button key={id} className={'chip' + (f === id ? ' on' : '')} onClick={() => setF(id)}>{l}</button>)}</div><span className="fine">Transfers are not income · receipts match once · repeat purchases are not auto-subscriptions</span></div>
+        <table><thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th className="r">Amount</th><th></th></tr></thead><tbody>
+          {rows.map((t, i) => { const [ic, cls] = KIND_ICON[t.k]; return <tr key={i} className="hover"><td className="muted" style={{ whiteSpace: 'nowrap' }}>{t.d}</td><td><div className="cat"><i className={t.review ? 'rev' : cls}><I n={t.review ? 'warn' : ic} s={14} /></i><div><div style={{ fontWeight: 500 }}>{t.what}</div>{(t.note || t.review) && <div className="fine">{t.review || t.note}</div>}</div></div></td><td><span className={'pill ' + (t.review ? 'warn' : 'neutral')}>{t.review ? 'Needs review' : t.cat}</span></td><td className="r" style={{ fontWeight: 600, color: t.amt > 0 ? 'var(--good)' : undefined }}>{t.amt > 0 ? '+' : ''}{$2(t.amt)}</td><td className="r">{t.review && <button className="btn ghost sm">Fix category</button>}</td></tr>; })}
+        </tbody></table>
+      </div>
+    </>
+  );
+}
+function RecurringPage({ sc, setSc, open }) {
+  const total = H.recurring.reduce((a, r) => a + (r.change ? r.amount + sc.increase : r.id === 'electric' && sc.treatElectricAsNew ? r.lastPosted : r.amount), 0);
+  return (
+    <>
+      <div className="topbar"><div><h1>Recurring</h1><div className="sub">7 commitments · {$(total)} per month · 1 increase detected</div></div></div>
+      <div className="grid g4" style={{ marginBottom: 18 }}>
+        <Kpi label="Monthly recurring" value={$(total)} sub="Across 7 commitments" />
+        <Kpi label="Due in the next 7 days" value={$(H.recurring.filter(r => r.day <= 5).reduce((a, r) => a + (r.change ? r.amount + sc.increase : r.amount), 0))} sub="Internet Oct 1 · Streaming Oct 3 · Rent Oct 5" />
+        <Kpi label="Changes detected" value="1" sub="Internet · confirmed from a notice" pill={<span className="pill warn"><I n="up" s={11} />{$(sc.increase)}</span>} />
+        <Kpi label="Unexplained" value="1" sub="Electric posted $128, usually $110" pill={<span className="pill neutral">Needs a decision</span>} />
+      </div>
+      <div className="card">
+        <table><thead><tr><th>Commitment</th><th>Next</th><th>Frequency</th><th className="r">Amount</th><th>Status</th><th></th></tr></thead><tbody>
+          {H.recurring.map(r => <tr key={r.id} className="hover">
+            <td><div className="cat"><i className="rec"><I n="repeat" s={14} /></i><span style={{ fontWeight: 500 }}>{r.label}</span></div></td>
+            <td>Oct {r.day}</td><td className="muted">{r.freq}</td>
+            <td className="r">{r.change ? <><span className="muted" style={{ textDecoration: 'line-through' }}>{$(r.amount)}</span> <b>{$(r.amount + sc.increase)}</b></> : r.id === 'electric' && sc.treatElectricAsNew ? <b>{$(r.lastPosted)}</b> : $(r.amount)}</td>
+            <td>{r.change ? <span className="pill warn"><I n="up" s={11} />Increase from notice</span> : r.unexplained ? <span className="pill neutral">Posted {$(r.lastPosted)} · not confirmed why</span> : sc.cancelled?.[r.id] ? <span className="pill accent">Cancel pending</span> : r.renews ? <span className="pill neutral">Renews Oct 15</span> : <span className="pill good">Steady</span>}</td>
+            <td className="r">{r.change && <button className="btn sm" onClick={() => open('bill')}>Review</button>}{r.unexplained && <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}><button className={'btn sm' + (sc.treatElectricAsNew ? ' ghost' : '')} onClick={() => setSc(s => ({ ...s, treatElectricAsNew: false }))}>One-time</button><button className={'btn sm' + (sc.treatElectricAsNew ? '' : ' ghost')} onClick={() => setSc(s => ({ ...s, treatElectricAsNew: true }))}>New price</button></div>}</td>
+          </tr>)}
+        </tbody></table>
+        <div className="fine">"The amount changed. We have not confirmed why." is an honest state. Your decision on Electric changes the forecast immediately.</div>
+      </div>
+    </>
+  );
+}
+function CashFlowPage({ sc, sim }) {
+  return (
+    <>
+      <div className="topbar"><div><h1>Cash flow</h1><div className="sub">Income against spending, with October projected from the forecast</div></div></div>
+      <div className="grid g32">
+        <div className="card"><div className="hd"><h2>Monthly</h2><div className="legend"><span><i style={{ background: 'var(--teal)' }}></i>Income</span><span><i style={{ background: '#C7CBE0' }}></i>Spending</span></div></div><CashBars sim={sim} /></div>
+        <div className="card"><div className="hd"><h2>Everyday allowances</h2><span className="fine">Monthly, spread across days</span></div>
+          {H.allowances.map(a => { const cut = sc.cuts?.[a.id] || 0; return <div className="hbar" key={a.id}><span>{a.label}</span><div className="t"><i className="cut" style={{ width: a.monthly / 700 * 100 + '%' }}></i><i style={{ width: (a.monthly - cut) / 700 * 100 + '%' }}></i></div><span className="num" style={{ textAlign: 'right' }}>{cut ? <><span className="muted" style={{ textDecoration: 'line-through' }}>{$(a.monthly)}</span> {$(a.monthly - cut)}</> : $(a.monthly)}</span></div>; })}
+          <div className="fine">Learned from three months of transactions. Trimmed allowances show the old amount struck through.</div></div>
+      </div>
+    </>
+  );
+}
+function GoalsPage({ sc, cap, goal, applied, open }) {
+  const [tr, setTr] = useState(null);
+  return (
+    <>
+      <div className="topbar"><div><h1>Goals</h1><div className="sub">Actual progress, contribution plan, and projected outcome</div></div><button className="btn ghost sm">+ New goal</button></div>
+      <div className="grid g32">
+        <div className="grid" style={{ gap: 18 }}>
+          <div className="card">
+            <div className="hd"><div className="cat"><i className="rec"><I n="shield" s={14} /></i><h2>{H.goal.label} · {$(H.goal.target)} by {goal.targetLabel}</h2></div><span className={'pill ' + (goal.gap ? 'bad' : 'good')}>{goal.gap ? `${$(goal.gap)} short` : 'On track'}</span></div>
+            <div className="progress"><i className="proj" style={{ width: Math.min(100, goal.projected / H.goal.target * 100) + '%' }}></i><i className="saved" style={{ width: H.goal.saved / H.goal.target * 100 + '%' }}></i></div>
+            <div className="row between fine"><span><span className="dot" style={{ background: 'var(--accent)' }}></span> Saved {$(H.goal.saved)}</span><span><span className="dot" style={{ background: '#C7CBE0' }}></span> Projected {$(goal.projected)}</span><span>Target {$(H.goal.target)}</span></div>
+            <GoalChart cap={applied ? sc.contribution : cap} />
+            <table><thead><tr><th>Plan</th><th className="r">Original</th><th className="r">Updated</th></tr></thead><tbody>
+              <tr><td>Already saved</td><td className="r">{$(H.goal.saved)}</td><td className="r">{$(H.goal.saved)}</td></tr>
+              <tr><td>Required contribution for the date</td><td className="r">{$((H.goal.target - H.goal.saved) / H.goal.left)}</td><td className="r">{$((H.goal.target - H.goal.saved) / H.goal.left)}</td></tr>
+              <tr><td>Contribution the plan can support</td><td className="r">{$(H.goal.planned)}</td><td className="r"><b>{$(cap)}</b></td></tr>
+              <tr><td>{goal.left} future contributions</td><td className="r">{$(H.goal.planned * H.goal.left)}</td><td className="r">{$(goal.contributions)}</td></tr>
+              <tr><td>Projected balance</td><td className="r">{$(H.goal.target)}</td><td className="r"><b>{$(goal.projected)}</b></td></tr>
+              <tr><td>Gap at target date</td><td className="r">$0</td><td className="r"><b style={{ color: goal.gap ? 'var(--bad)' : 'var(--good)' }}>{$(goal.gap)}</b></td></tr>
+            </tbody></table>
+            <div className="row" style={{ gap: 8 }}><button className="btn" onClick={() => open('compare')}>Compare options</button>{applied && <span className="pill good"><I n="check" s={11} />{applied.label}</span>}</div>
+          </div>
+        </div>
+        <div className="grid" style={{ gap: 18 }}>
+          <div className="card"><div className="hd"><h2>Savings account</h2><span className="pill teal">Nessie</span></div><div className="row between"><span className="muted">Actual balance</span><b className="num" style={{ fontSize: 22, fontFamily: 'var(--display)' }}>{$(H.savings + (tr === 'done' ? sc.contribution : 0))}</b></div><div className="fine">Counted toward one goal. Accepting a plan never moves money.</div>
+            {tr === null && <button className="btn ghost" onClick={() => setTr('pending')}>Move {$(sc.contribution)} to savings (sandbox)</button>}
+            {tr === 'pending' && <div className="alert"><b>Transfer requested</b><p>Waiting to read back its status from the sandbox before showing it as complete.</p><div><button className="btn sm" onClick={() => setTr('done')}>Read back status</button></div></div>}
+            {tr === 'done' && <span className="pill good"><I n="check" s={11} />Completed · confirmed by the sandbox</span>}</div>
+          <div className="card"><h2>Contribution schedule</h2><table><tbody>{H.goal.months.map((m, i) => <tr key={m}><td style={{ paddingLeft: 0 }} className="muted">{m}</td><td>Contribution {i + 1} of {goal.left}</td><td className="r" style={{ paddingRight: 0 }}><b>{$(sc.contribution)}</b></td></tr>)}</tbody></table></div>
+          <div className="card"><h2>Cushion</h2><div className="row between"><span className="muted">Keep checking above</span><b className="num">{$(H.cushion)}</b></div><div className="fine">Every status on the dashboard comes from this number and the projected balance.</div></div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* =============== drawers =============== */
+function BillDrawer({ sc, setSc, cap, onCompare, onClose }) {
+  const r = H.recurring.find(x => x.id === 'internet'); const inc = sc.increase; const g = goalAt(cap);
+  return (
+    <div className="drawer-bg" onClick={onClose}><div className="drawer" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Bill change details">
+      <div className="row between"><div className="cat"><i className="rec"><I n="repeat" s={14} /></i><h2>{r.label}</h2></div><button className="btn ghost sm" onClick={onClose} aria-label="Close"><I n="x" s={16} /></button></div>
+      <div className="row wrap" style={{ gap: 6 }}><span className="pill warn"><I n="up" s={11} />Upcoming increase</span><span className="pill good"><I n="check" s={11} />Confirmed from a notice</span></div>
+      <div className="kv"><span className="k">Previous recurring amount</span><span className="v">{$(r.amount)}/month</span><span className="k">New recurring amount</span><span className="v">{$(r.amount + inc)}/month</span><span className="k">Increase</span><span className="v" style={{ fontWeight: 700 }}>{$(inc)}/month</span><span className="k">Explanation</span><span className="v">{r.change.why}</span><span className="k">Next affected payment</span><span className="v">October 1</span></div>
+      <h3>Evidence</h3>
+      <div className="notice">{NOTICE.split('\n').map((line, i) => { const hit = /renew at \$90\.00 starting with your October 1 bill/.test(line) || /promotional credit of \$25\.00 ended/.test(line); return <div key={i}>{hit ? <mark>{line}</mark> : (line || ' ')}</div>; })}</div>
+      <div className="fine">A price change, not higher usage, a longer billing period, or a one-time fee. The next posted charge will confirm it.</div>
+      <h3>What it changes in your plan</h3>
+      <div className="ba"><div><span className="k">Supported contribution</span><b>{$(cap)}</b><span className="fine">was {$(H.goal.planned)}</span></div><div><span className="k">Goal at target date</span><b>{$(g.projected)}</b><span className="fine">{g.gap ? `${$(g.gap)} short of ${$(H.goal.target)}` : 'on target'}</span></div></div>
+      <h3>For the judges: change the increase</h3>
+      <div className="row"><span className="muted">Increase of</span><input type="number" min="0" step="5" value={inc} onChange={e => setSc(s => ({ ...s, increase: Math.max(0, Number(e.target.value) || 0) }))} aria-label="Increase amount" /><span className="muted">per month. Everything recomputes.</span></div>
+      <div className="row wrap" style={{ gap: 8 }}><button className="btn" onClick={onCompare}>Compare options <I n="arrow" s={15} /></button><button className="btn ghost sm"><I n="mail" s={14} />View notice</button><button className="btn ghost sm"><I n="ext" s={14} />Provider support</button><button className="btn ghost sm">Prepare a question</button></div>
+      <div className="fine">RainCheck does not promise to negotiate this, and does not call every increase an error.</div>
+    </div></div>
+  );
+}
+function CompareDrawer({ sc, cap, onApply, onClose }) {
+  const [pick, setPick] = useState('keep'); const [prot, setProt] = useState({ groceries: true });
+  const base = goalAt(cap);
+  const cands = H.allowances.filter(a => !prot[a.id]).sort((a, b) => FLEX_ORDER.indexOf(a.id) - FLEX_ORDER.indexOf(b.id));
+  let reduce = null; for (const a of cands) { const cut = cutNeeded(sc, a.id, H.goal.planned); if (cut !== null && cut <= a.monthly) { reduce = { a, cut }; break; } }
+  const gym = H.recurring.find(r => r.id === 'gym'); const capNoGym = capacity({ ...sc, cancelled: { ...sc.cancelled, gym: true } }); const later = base.monthsNeeded;
+  const options = [
+    { id: 'keep', title: 'Keep everyday spending as it is', p: `Contribute ${$(cap)} a month instead of ${$(H.goal.planned)}.`, b: ['Goal by ' + H.goal.targetLabel, $(H.goal.target)], a: ['Goal by ' + H.goal.targetLabel, $(base.projected), base.gap ? `${$(base.gap)} short` : 'on target'], x: `Checking stays above the ${$(H.cushion)} cushion.`, apply: { contribution: cap, label: `Plan set to ${$(cap)}/month` } },
+    reduce ? { id: 'reduce', title: `Reduce ${reduce.a.label.toLowerCase()} by ${$(reduce.cut)} a month`, p: `${$(reduce.a.monthly)} → ${$(reduce.a.monthly - reduce.cut)}. Keeps the ${$(H.goal.planned)} contribution.`, b: [reduce.a.label, $(reduce.a.monthly) + '/mo'], a: ['Contribution', $(H.goal.planned), 'goal on target'], x: 'Only allowances you have not protected are offered.', apply: { cuts: { [reduce.a.id]: reduce.cut }, contribution: H.goal.planned, label: `${reduce.a.label} trimmed ${$(reduce.cut)}/month` } }
+      : { id: 'reduce', title: 'Reduce an allowance', p: 'Every allowance is protected, so there is nothing to trim.', disabled: true },
+    { id: 'renewal', title: `Review the gym renewal (${$(gym.amount)} on Oct 15)`, p: `If cancelled before it charges, the plan supports ${$(capNoGym)} a month.`, b: ['Contribution', $(cap)], a: ['Contribution', $(Math.min(capNoGym, H.goal.planned)), 'if cancelled'], x: 'A scenario until the provider confirms.', cond: true, apply: { cancelled: { gym: true }, contribution: Math.min(capNoGym, H.goal.planned), label: 'Gym cancellation pending' } },
+    { id: 'date', title: 'Move the target date', p: isFinite(later) ? `Keep ${$(cap)} a month and reach ${$(H.goal.target)} after ${later} contributions instead of ${H.goal.left}.` : 'No contribution is supported right now.', b: ['Target', H.goal.targetLabel], a: ['Target', isFinite(later) ? monthLabel(later) : '—', isFinite(later) ? `${later - H.goal.left} month${later - H.goal.left === 1 ? '' : 's'} later` : ''], x: 'Nothing else changes.', disabled: !isFinite(later), apply: { contribution: cap, label: `Target moved to ${isFinite(later) ? monthLabel(later) : '—'}` } },
+  ];
+  const chosen = options.find(o => o.id === pick);
+  return (
+    <div className="drawer-bg" onClick={onClose}><div className="drawer" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Compare options">
+      <div className="row between"><h2>Compare options</h2><button className="btn ghost sm" onClick={onClose} aria-label="Close"><I n="x" s={16} /></button></div>
+      <p style={{ margin: 0, color: 'var(--ink-2)' }}>The {$(sc.increase)} increase leaves your plan <b className="num">{base.gap ? $(base.gap) : '$0'}</b> short of {$(H.goal.target)}. Preview a response. Nothing moves until you confirm.</p>
+      <div><h3 style={{ marginBottom: 8 }}>Protect</h3><div className="row wrap" style={{ gap: 12 }}>{H.allowances.map(a => <Toggle key={a.id} on={!!prot[a.id]} onChange={v => setProt(p => ({ ...p, [a.id]: v }))}>{a.label}</Toggle>)}</div></div>
+      {options.map(o => <div key={o.id} className={'option' + (pick === o.id ? ' on' : '')} style={{ opacity: o.disabled ? .6 : 1 }}>
+        <div className="row between"><h3>{o.title}</h3>{o.cond && <span className="pill neutral">Conditional</span>}</div><p>{o.p}</p>
+        {!o.disabled && <div className="ba"><div><span className="k">Before · {o.b[0]}</span><b>{o.b[1]}</b></div><div><span className="k">After · {o.a[0]}</span><b>{o.a[1]}</b><span className="fine">{o.a[2]}</span></div></div>}
+        {!o.disabled && <div className="row between"><span className="fine">{o.x}</span><button className={'btn sm' + (pick === o.id ? '' : ' ghost')} onClick={() => setPick(o.id)}>{pick === o.id ? 'Selected' : 'Preview'}</button></div>}
+      </div>)}
+      <div className="alert good"><b>No option hides a cost.</b><p>Moving money from savings would fix checking but shrink the goal, so it is not offered here.</p></div>
+      <button className="btn" disabled={!chosen || chosen.disabled} onClick={() => onApply(chosen)}>Apply this plan <I n="arrow" s={15} /></button>
+    </div></div>
+  );
+}
+
+/* =============== shell =============== */
+function App() {
+  const [page, setPage] = useState('dashboard');
+  const [drawer, setDrawer] = useState(null);
+  const [sc, setSc] = useState({ increase: 25, contribution: 300, cuts: {}, cancelled: {} });
+  const [confirm, setConfirm] = useState(null);
+  const [applied, setApplied] = useState(null);
+  const [found, setFound] = useState(true);
+  const sim = useMemo(() => simulate(sc), [sc]);
+  const cap = useMemo(() => capacity(sc), [sc]);
+  const goal = useMemo(() => { const c = applied ? sc.contribution : cap; const g = goalAt(c); return applied?.id === 'date' && isFinite(g.monthsNeeded) ? goalAt(c, g.monthsNeeded) : g; }, [sc, cap, applied]);
+  const open = what => what.startsWith('page:') ? setPage(what.slice(5)) : setDrawer(what);
+  const alerts = useMemo(() => {
+    const a = []; const fits = sc.contribution <= cap; const g = goalAt(cap);
+    if (sc.increase > 0 && !applied) a.push({ tone: 'warn', title: `Your internet bill increased by ${$(sc.increase)}.`, body: `${!fits ? `Your planned ${$(sc.contribution)} contribution would leave ${$(sim.low.balance)} on ${pretty(sim.low.date)}, below your ${$(H.cushion)} cushion. ` : ''}${g.gap ? `Your goal would end ${$(g.gap)} short. ` : ''}Review the effect on your goal.`, actions: [{ label: 'See what changed', go: () => setDrawer('bill') }, { label: 'Compare options', primary: true, go: () => setDrawer('compare') }] });
+    if (sim.worst === 'over' || sim.worst === 'below') a.push({ tone: 'bad', title: `Projected balance falls to ${$(sim.low.balance)} on ${pretty(sim.low.date)}.`, body: `That is below your ${$(H.cushion)} cushion before payday.` });
+    if (applied) a.push({ tone: 'good', title: 'Plan updated.', body: `${applied.label}. Nothing was transferred; complete it on the Goals page when you are ready.` });
+    return a;
+  }, [sc, cap, sim, applied]);
+  const reallyApply = () => { setSc(s => ({ ...s, ...confirm.apply, cuts: { ...s.cuts, ...(confirm.apply.cuts || {}) }, cancelled: { ...s.cancelled, ...(confirm.apply.cancelled || {}) } })); setApplied({ id: confirm.id, label: confirm.apply.label }); setConfirm(null); setDrawer(null); };
+  const NAV = [['dashboard', 'Dashboard', 'dash'], ['forecast', 'Forecast', 'trend'], ['transactions', 'Transactions', 'list'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Cash flow', 'bars'], ['goals', 'Goals', 'target']];
+  const Nav = () => NAV.map(([id, l, ic]) => <button key={id} className={'nav' + (page === id ? ' on' : '')} onClick={() => setPage(id)}><I n={ic} s={17} />{l}{id === 'recurring' && <span className="badge">1</span>}{id === 'transactions' && <span className="badge">2</span>}</button>);
+  return (
+    <div className="app">
+      <aside>
+        <div className="brand"><span className="mark"><I n="spark" s={16} c="#fff" /></span><b>RainCheck</b></div>
+        <Nav />
+        <div className="side-foot"><div className="acct"><span className="avatar">A</span>Alex Rivera</div>Everyday Checking · Savings<br />Mock data · Capital One Nessie sandbox</div>
+      </aside>
+      <main>
+        <div className="tabs"><Nav /></div>
+        {page === 'dashboard' && <Dashboard sc={sc} setSc={setSc} sim={sim} cap={cap} goal={goal} alerts={alerts} open={open} applied={applied} found={found} setFound={setFound} />}
+        {page === 'forecast' && <ForecastPage sc={sc} setSc={setSc} sim={sim} cap={cap} />}
+        {page === 'transactions' && <TransactionsPage />}
+        {page === 'recurring' && <RecurringPage sc={sc} setSc={setSc} open={open} />}
+        {page === 'cashflow' && <CashFlowPage sc={sc} sim={sim} />}
+        {page === 'goals' && <GoalsPage sc={sc} cap={cap} goal={goal} applied={applied} open={open} />}
+      </main>
+      {drawer === 'bill' && <BillDrawer sc={sc} setSc={setSc} cap={cap} onCompare={() => setDrawer('compare')} onClose={() => setDrawer(null)} />}
+      {drawer === 'compare' && <CompareDrawer sc={sc} cap={cap} onApply={o => setConfirm(o)} onClose={() => setDrawer(null)} />}
+      {confirm && <div className="modal-bg" role="dialog" aria-modal="true" aria-labelledby="ct"><div className="modal"><h2 id="ct">Apply this plan?</h2><div className="option on"><h3>{confirm.title}</h3><p>{confirm.p}</p></div><div className="alert"><b>This updates your plan. It does not move money.</b><p>Savings stay at {$(H.savings)} until you complete a transfer on the Goals page.</p></div><div className="row" style={{ gap: 8 }}><button className="btn" onClick={reallyApply}><I n="check" s={15} />Apply</button><button className="btn ghost" onClick={() => setConfirm(null)}>Cancel</button></div></div></div>}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>

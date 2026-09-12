@@ -1,0 +1,597 @@
+<title>Table Stakes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Geist:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --felt: #0E4B3A; --felt-deep: #08322A; --felt-light: #16624C; --rail: #3B2416; --rail-light: #6B4423;
+    --gold: #E3B54A; --gold-deep: #B8892B; --gold-ink: #4A3608;
+    --cream: #FBF4E4; --cream-2: #F3E9D2; --card: #FFFFFF; --ink: #1B1F1D; --muted: #5E6B66; --line: #E0D6BE;
+    --deep: #1F8A5B; --deep-bg: #DDF3E7; --short: #C98A12; --short-bg: #FFF1CF; --allin: #C8323A; --allin-bg: #FBE0E1; --busted: #7A1F26; --busted-bg: #F3D1D4;
+    --suit-red: #C8323A; --suit-black: #1B1F1D;
+    --display: "Playfair Display", Georgia, serif; --body: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.45; -webkit-font-smoothing: antialiased;
+    background: var(--felt-deep); background-image: radial-gradient(120% 80% at 50% 0%, var(--felt-light) 0%, var(--felt) 45%, var(--felt-deep) 100%); }
+  button { font-family: inherit; }
+  .room { max-width: 1400px; margin: 0 auto; padding: 22px 24px 56px; }
+  .marquee { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 6px 10px 18px; color: var(--cream); flex-wrap: wrap; }
+  .marquee h1 { font-family: var(--display); font-weight: 900; font-size: 40px; line-height: 1; margin: 0; color: var(--gold); text-shadow: 0 2px 0 var(--gold-deep); letter-spacing: -0.5px; }
+  .marquee .tag { font-size: 14px; color: #CFE3D8; margin-top: 6px; }
+  .tabs { display: flex; gap: 6px; background: rgba(0,0,0,.25); padding: 6px; border-radius: 16px; }
+  .tab { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 10px 16px; border-radius: 12px; border: 0; background: none; color: #CFE3D8; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .tab.on { background: var(--gold); color: var(--gold-ink); } .tab:hover:not(.on) { background: rgba(255,255,255,.08); }
+  .table { background: var(--cream); border-radius: 30px; padding: 26px 26px 28px; box-shadow: 0 30px 60px rgba(0,0,0,.4), inset 0 0 0 1px #E8D9B0, inset 0 0 0 6px var(--cream), inset 0 0 0 8px var(--rail-light), inset 0 0 0 9px var(--rail); }
+  .top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+  .top h2.head { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1.08; letter-spacing: -0.4px; margin: 0; text-wrap: balance; max-width: 780px; }
+  .top .date { color: var(--muted); font-size: 15px; margin-top: 6px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 22px; align-items: start; }
+  .stack { display: flex; flex-direction: column; gap: 18px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .card h2 { font-family: var(--display); font-weight: 700; font-size: 21px; margin: 0; line-height: 1.2; }
+  .label { font-size: 12px; font-weight: 600; letter-spacing: .9px; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; gap: 10px; } .between { justify-content: space-between; } .wrap { flex-wrap: wrap; }
+  .fine { font-size: 13px; color: var(--muted); } .muted { color: var(--muted); } .num { font-variant-numeric: tabular-nums; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 11px 18px; border-radius: 13px; border: 0; background: var(--gold); color: var(--gold-ink); font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 0 var(--gold-deep); }
+  .btn:hover { filter: brightness(1.04); } .btn:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--gold-deep); }
+  .btn.felt { background: var(--felt); color: #fff; box-shadow: 0 2px 0 var(--felt-deep); }
+  .btn.ghost { background: #fff; color: var(--ink); border: 1.5px solid var(--line); box-shadow: none; } .btn.ghost:hover { background: var(--cream-2); filter: none; }
+  .btn.sm { min-height: 38px; padding: 8px 12px; font-size: 14px; border-radius: 10px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn:focus-visible, .tab:focus-visible, .day:focus-visible, .link:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .link { background: none; border: 0; padding: 0; color: var(--felt); font-weight: 600; font-size: 15px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; line-height: 1.2; }
+  .pill.deep { background: var(--deep-bg); color: var(--deep); } .pill.short { background: var(--short-bg); color: #8A5A12; } .pill.allin { background: var(--allin-bg); color: var(--allin); } .pill.busted { background: var(--busted-bg); color: var(--busted); }
+  .pill.neutral { background: var(--cream-2); color: var(--muted); } .pill.gold { background: #FBEFC9; color: var(--gold-ink); } .pill.raise { background: var(--allin-bg); color: var(--allin); }
+  .hero { border-radius: 20px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; background: var(--felt); color: #fff; box-shadow: inset 0 0 0 2px var(--felt-deep); }
+  .hero .fine { color: #BFE0D0; } .hero .label { color: #BFE0D0; }
+  .board { display: flex; align-items: flex-end; gap: 3px; height: 130px; }
+  .day { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; border: 0; background: none; padding: 0 0 2px; cursor: pointer; border-radius: 6px; }
+  .day.sel { background: rgba(255,255,255,.12); }
+  .day .t { font-size: 9px; font-weight: 700; color: var(--gold); line-height: 1; height: 10px; }
+  .day .n { font-size: 10.5px; font-weight: 600; color: #CFE3D8; }
+  .chips { width: 100%; max-width: 18px; border-radius: 4px 4px 2px 2px; min-height: 3px; background-color: var(--deep); background-image: repeating-linear-gradient(to top, rgba(255,255,255,0) 0 6px, rgba(255,255,255,.55) 6px 8px); }
+  .chips.short { background-color: var(--short); } .chips.allin { background-color: var(--allin); } .chips.busted { background-color: var(--busted); border-radius: 2px 2px 4px 4px; }
+  .baseline { height: 2px; background: rgba(255,255,255,.35); border-radius: 2px; margin-top: 2px; }
+  .weeks { display: flex; gap: 3px; margin-top: 4px; } .weeks span { flex: 1; font-size: 11px; color: #BFE0D0; padding-top: 4px; }
+  .legend { display: flex; gap: 14px; font-size: 12.5px; color: #CFE3D8; flex-wrap: wrap; } .legend span { display: inline-flex; align-items: center; gap: 6px; } .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .callout { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: var(--cream-2); font-size: 14.5px; }
+  .hero .callout { background: rgba(255,255,255,.1); color: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12.5px; letter-spacing: .4px; text-transform: uppercase; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  td { padding: 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; } tr:last-child td { border-bottom: 0; } td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .list { display: flex; flex-direction: column; }
+  .item { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); } .item:last-child { border-bottom: 0; }
+  .item .when { width: 64px; font-size: 13px; color: var(--muted); flex: none; } .item .what { flex: 1; min-width: 0; } .item .what small { display: block; font-size: 13px; color: var(--muted); }
+  .item .amt { font-weight: 600; font-variant-numeric: tabular-nums; } .amt.in { color: var(--deep); }
+  .pcard { width: 54px; height: 74px; border-radius: 7px; background: #fff; border: 1.5px solid var(--line); box-shadow: 0 2px 0 var(--line); display: flex; flex-direction: column; justify-content: space-between; padding: 5px 6px; flex: none; }
+  .pcard .idx { font-family: var(--display); font-weight: 800; font-size: 16px; line-height: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+  .pcard .idx.b { align-self: flex-end; transform: rotate(180deg); }
+  .pcard.red { color: var(--suit-red); } .pcard.black { color: var(--suit-black); }
+  .pcard.back { background: repeating-linear-gradient(45deg, var(--felt) 0 6px, var(--felt-deep) 6px 12px); border-color: var(--gold); }
+  .option { border: 1.5px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; background: #fff; }
+  .option.on { border-color: var(--gold-deep); box-shadow: 0 0 0 3px #FBEFC9; }
+  .option h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 19px; line-height: 1.2; } .option p { margin: 0; font-size: 14.5px; color: var(--muted); }
+  .option .move { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--gold-deep); }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ba > div { border-radius: 12px; padding: 10px 12px; background: var(--cream-2); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+  .ba b { font-size: 18px; font-variant-numeric: tabular-nums; font-family: var(--display); font-weight: 700; } .ba .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+  mark { background: #FFE8A8; color: inherit; padding: 0 2px; border-radius: 3px; }
+  .notice { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 13.5px; line-height: 1.55; background: var(--cream-2); border-radius: 12px; padding: 14px; white-space: pre-wrap; }
+  .field { display: flex; align-items: center; gap: 8px; }
+  input[type=number], input[type=date] { font: 500 15px var(--body); padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; width: 120px; background: #fff; color: var(--ink); } input[type=date] { width: 150px; }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; position: relative; }
+  .toggle i { width: 36px; height: 20px; border-radius: 999px; background: var(--line); position: relative; display: inline-block; transition: background .15s; }
+  .toggle i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .toggle.on i { background: var(--felt); } .toggle.on i::after { left: 18px; }
+  .bar { height: 12px; border-radius: 6px; background: var(--line); overflow: hidden; position: relative; }
+  .bar > i { display: block; height: 100%; background: var(--gold); border-radius: 6px; background-image: repeating-linear-gradient(90deg, rgba(0,0,0,0) 0 10px, rgba(0,0,0,.12) 10px 12px); } .bar > i.proj { position: absolute; top: 0; left: 0; opacity: .35; }
+  .tell { border-left: 4px solid var(--gold); background: #fff; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; box-shadow: inset 0 0 0 1px var(--line); }
+  .sheet-bg { position: fixed; inset: 0; background: rgba(8,50,42,.7); display: grid; place-items: center; padding: 20px; z-index: 10; }
+  .sheet { background: var(--cream); border-radius: 22px; padding: 24px; max-width: 500px; width: 100%; display: flex; flex-direction: column; gap: 14px; box-shadow: inset 0 0 0 4px var(--cream), inset 0 0 0 6px var(--gold); }
+  .sheet h2 { font-family: var(--display); font-weight: 800; font-size: 26px; margin: 0; }
+  .suit { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; }
+  @media (max-width: 1000px) { .room { padding: 14px 12px 40px; } .table { padding: 16px; border-radius: 20px; } .cols { grid-template-columns: 1fr; } .top h2.head { font-size: 26px; } .marquee h1 { font-size: 30px; } .tab { padding: 8px 12px; font-size: 14px; } }
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.4/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useMemo } = React;
+const APP = 'Table Stakes';
+
+/* =============== sample household (Nessie would supply the records) =============== */
+const TODAY = new Date(2026, 8, 28);           // Monday, September 28, 2026
+const WINDOW = 34;                              // through October 31
+const H = {
+  checking: 1260, savings: 800, cushion: 200,
+  income: [
+    { id: 'p1', label: 'Paycheck', date: '2026-10-02', amount: 1700, status: 'confirmed' },
+    { id: 'p2', label: 'Paycheck', date: '2026-10-16', amount: 1700, status: 'estimated' },
+    { id: 'p3', label: 'Paycheck', date: '2026-10-30', amount: 1700, status: 'estimated' },
+  ],
+  recurring: [
+    { id: 'rent', label: 'Rent', amount: 1150, day: 5 },
+    { id: 'internet', label: 'Internet', amount: 65, day: 1, change: { to: 90, effective: '2026-10-01', why: 'Promotional credit ended', source: 'notice' } },
+    { id: 'streaming', label: 'Streaming', amount: 30, day: 3, cancellable: true },
+    { id: 'electric', label: 'Electric', amount: 110, day: 6, lastPosted: 128, unexplained: true },
+    { id: 'car', label: 'Car insurance', amount: 120, day: 10 },
+    { id: 'phone', label: 'Phone', amount: 45, day: 12 },
+    { id: 'gym', label: 'Gym', amount: 40, day: 15, renews: '2026-10-15', cancellable: true },
+  ],
+  allowances: [
+    { id: 'groceries', label: 'Groceries', monthly: 700 }, { id: 'takeout', label: 'Takeout', monthly: 180 }, { id: 'rides', label: 'Rides', monthly: 60 },
+    { id: 'household', label: 'Household', monthly: 260 }, { id: 'fun', label: 'Fun & other', monthly: 300 },
+  ],
+  goal: { label: 'Emergency fund', target: 2000, saved: 800, left: 4, planned: 300, targetLabel: 'January 2027', months: ['Oct 2', 'Nov 2', 'Dec 2', 'Jan 4'] },
+};
+const NOTICE = `From: Northline Internet <billing@northline.example>
+Subject: Your October bill
+
+Hi Alex,
+
+Your Internet 300 plan will renew at $90.00 starting with your October 1 bill.
+Your 12-month promotional credit of $25.00 ended on September 30.
+Your speed and service are unchanged.
+
+Questions? Visit support.northline.example or call the number on your bill.`;
+const TRANSACTIONS = [
+  { d: 'Sep 26', what: 'Kroger', amt: -84.12, cat: 'Table money' }, { d: 'Sep 25', what: 'Transfer to Savings', amt: -300, cat: 'Chips to the pot', note: 'Your own savings account, not spending' },
+  { d: 'Sep 24', what: 'Uber', amt: -18.4, cat: 'Table money', note: '4th ride this month. Not treated as a blind.' }, { d: 'Sep 22', what: 'Amazon', amt: -48.3, cat: 'Table money', review: 'Matches the receipt you forwarded. Counted once.' },
+  { d: 'Sep 18', what: 'Paycheck · Rice Coffee Co', amt: 1700, cat: 'Payout' }, { d: 'Sep 15', what: 'Gym', amt: -40, cat: 'Blind' },
+  { d: 'Sep 12', what: 'Phone', amt: -45, cat: 'Blind' }, { d: 'Sep 10', what: 'Car insurance', amt: -120, cat: 'Blind' },
+  { d: 'Sep 8', what: 'Venmo from Sam', amt: 60, cat: 'Transfer', review: 'Money back from a friend, or a payout?' }, { d: 'Sep 6', what: 'Electric', amt: -128, cat: 'Blind', note: 'Higher than usual ($110). Not confirmed why.' },
+  { d: 'Sep 5', what: 'Rent', amt: -1150, cat: 'Blind' }, { d: 'Sep 3', what: 'Streaming', amt: -30, cat: 'Blind' },
+];
+
+/* =============== helpers =============== */
+const $ = n => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
+const iso = d => d.toISOString().slice(0, 10);
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const pretty = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const long = d => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+const stateOf = (b, cushion) => b < 0 ? 'busted' : b < cushion ? 'allin' : b < cushion + 100 ? 'short' : 'deep';
+const STATE = { deep: 'Deep stack', short: 'Short stack', allin: 'All in', busted: 'Busted' };
+const MONTHS = ['October 2026', 'November 2026', 'December 2026', 'January 2027', 'February 2027', 'March 2027', 'April 2027', 'May 2027', 'June 2027', 'July 2027'];
+const monthLabel = n => MONTHS[Math.min(MONTHS.length, Math.max(1, n)) - 1];
+const FLEX_ORDER = ['takeout', 'fun', 'rides', 'household', 'groceries'];
+const rankFor = amt => amt >= 1000 ? 'K' : amt >= 500 ? 'Q' : amt >= 100 ? 'J' : amt >= 50 ? '10' : String(Math.max(2, Math.min(9, Math.round(amt / 10))));
+
+/* =============== the engine: one day-by-day pass =============== */
+function simulate(sc) {
+  const income = sc.income || H.income;
+  const dailySpend = (H.allowances.reduce((a, x) => a + x.monthly - (sc.cuts?.[x.id] || 0), 0)) / 30;
+  const days = []; let b = H.checking;
+  for (let i = 0; i < WINDOW; i++) {
+    const date = addDays(TODAY, i), key = iso(date), events = [];
+    for (const p of income) if (p.date === key) { b += p.amount; events.push({ label: p.label + (p.status === 'estimated' ? ' (estimated)' : ''), amt: p.amount, pay: true }); }
+    for (const r of H.recurring) {
+      if (date.getDate() !== r.day || sc.cancelled?.[r.id]) continue;
+      let amt = r.amount;
+      if (r.change && key >= r.change.effective) amt = r.amount + sc.increase;
+      if (r.id === 'electric' && sc.treatElectricAsNew) amt = r.lastPosted;
+      b -= amt; events.push({ label: r.label, amt: -amt, blind: true, rent: r.id === 'rent' });
+    }
+    if (key === '2026-10-02' && sc.contribution > 0) { b -= sc.contribution; events.push({ label: 'Chips to the pot', amt: -sc.contribution, transfer: true }); }
+    b -= dailySpend; events.push({ label: 'Table money (everyday spending)', amt: -dailySpend });
+    days.push({ date, key, balance: b, events, state: stateOf(b, H.cushion) });
+  }
+  const low = days.reduce((a, x) => (x.balance < a.balance ? x : a));
+  const worst = ['busted', 'allin', 'short', 'deep'].find(s => days.some(d => d.state === s));
+  return { days, low, worst, dailySpend };
+}
+function capacity(sc) { for (let c = 600; c >= 0; c -= 5) if (simulate({ ...sc, contribution: c }).low.balance >= H.cushion) return c; return 0; }
+function goalAt(c, left = H.goal.left) {
+  const projected = H.goal.saved + left * c, gap = Math.max(0, H.goal.target - projected);
+  const monthsNeeded = c > 0 ? Math.ceil((H.goal.target - H.goal.saved) / c) : Infinity;
+  return { projected, gap, monthsNeeded, contributions: left * c, left, targetLabel: monthLabel(left) };
+}
+function cutNeeded(sc, allowanceId, want) { for (let cut = 0; cut <= 400; cut += 5) if (capacity({ ...sc, cuts: { ...sc.cuts, [allowanceId]: cut } }) >= want) return cut; return null; }
+
+/* =============== icons and suits (SVG, no emoji) =============== */
+const Icon = ({ name, size = 18, color = 'currentColor' }) => {
+  const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  switch (name) {
+    case 'chip': return <svg {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3" /></svg>;
+    case 'cards': return <svg {...p}><rect x="3" y="6" width="12" height="16" rx="2" /><path d="M9 3h10a2 2 0 0 1 2 2v12" /></svg>;
+    case 'pot': return <svg {...p}><path d="M4 10h16l-1.5 9a2 2 0 0 1-2 1.7h-9a2 2 0 0 1-2-1.7L4 10z" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>;
+    case 'arrow': return <svg {...p}><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
+    case 'back': return <svg {...p}><path d="M15 5l-7 7 7 7" /></svg>;
+    case 'check': return <svg {...p}><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>;
+    case 'eye': return <svg {...p}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>;
+    case 'mail': return <svg {...p}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg>;
+    case 'raise': return <svg {...p}><path d="M12 19V5M6 11l6-6 6 6" /></svg>;
+    case 'x': return <svg {...p}><path d="M6 6l12 12M18 6L6 18" /></svg>;
+    default: return null;
+  }
+};
+const Suit = ({ s, size = 14 }) => {
+  const red = s === 'heart' || s === 'diamond';
+  const d = { spade: 'M12 2C9 7 5 9 5 13a4 4 0 0 0 7 2.6A4 4 0 0 0 19 13c0-4-4-6-7-11zM11 17h2l1 5h-4z', heart: 'M12 21s-7-4.5-9-9a4.5 4.5 0 0 1 9-2 4.5 4.5 0 0 1 9 2c-2 4.5-9 9-9 9z', diamond: 'M12 2l7 10-7 10-7-10z', club: 'M12 2a4 4 0 0 0-3.5 6A4 4 0 1 0 11 15.5L10 22h4l-1-6.5A4 4 0 1 0 15.5 8 4 4 0 0 0 12 2z' }[s];
+  return <svg className="suit" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><path d={d} fill={red ? 'var(--suit-red)' : 'var(--suit-black)'} /></svg>;
+};
+const PlayingCard = ({ suit, rank, back }) => (
+  <div className={'pcard ' + (back ? 'back' : (suit === 'heart' || suit === 'diamond') ? 'red' : 'black')} aria-hidden="true">
+    {!back && <><div className="idx">{rank}<Suit s={suit} size={13} /></div><div className="idx b">{rank}<Suit s={suit} size={13} /></div></>}
+  </div>
+);
+const COLOR = { deep: 'var(--deep)', short: 'var(--short)', allin: 'var(--allin)', busted: 'var(--busted)' };
+
+/* =============== shared pieces =============== */
+function Board({ sim, selected, onSelect }) {
+  const days = sim.days, max = Math.max(...days.map(d => Math.abs(d.balance)), 1);
+  const tag = d => d.events.some(e => e.pay) ? 'PAY' : d.events.some(e => e.rent) ? 'RENT' : d.events.some(e => e.transfer) ? 'POT' : '';
+  return (
+    <div>
+      <div className="board" role="group" aria-label="Chip stack for each of the next 34 days">
+        {days.map(d => (
+          <button key={d.key} className={'day' + (selected === d.key ? ' sel' : '')} onClick={() => onSelect(d.key)} aria-label={`${long(d.date)}: ${STATE[d.state]}, ${$(d.balance)}`}>
+            <span className="t">{tag(d)}</span>
+            <span className={'chips ' + d.state} style={{ height: Math.max(3, Math.round(Math.abs(d.balance) / max * 88)) }}></span>
+            <span className="n">{d.date.getDate()}</span>
+          </button>
+        ))}
+      </div>
+      <div className="baseline"></div>
+      <div className="weeks"><span>Sep 28</span><span>Oct 5</span><span>Oct 12</span><span>Oct 19</span><span>Oct 26</span></div>
+      <div className="legend" style={{ marginTop: 8 }}>
+        <span><i style={{ background: 'var(--deep)' }}></i>Deep stack</span><span><i style={{ background: 'var(--short)' }}></i>Short stack (within $100 of the minimum)</span><span><i style={{ background: 'var(--allin)' }}></i>All in (below the {$(H.cushion)} table minimum)</span><span><i style={{ background: 'var(--busted)' }}></i>Busted (below zero)</span>
+      </div>
+    </div>
+  );
+}
+function DayDetail({ sim, dayKey }) {
+  const d = sim.days.find(x => x.key === dayKey); if (!d) return null;
+  const morning = d.balance - d.events.reduce((a, e) => a + e.amt, 0);
+  return (
+    <div className="callout" style={{ flexDirection: 'column', gap: 6 }}>
+      <div className="row between"><strong>{long(d.date)}</strong><span className={'pill ' + d.state}>{STATE[d.state]}</span></div>
+      <div className="row between" style={{ opacity: .8 }}><span>Stack that morning</span><span className="num">{$(morning)}</span></div>
+      {d.events.map((e, i) => <div className="row between" key={i}><span>{e.label}</span><span className="num" style={{ color: e.amt > 0 ? 'var(--gold)' : undefined }}>{e.amt > 0 ? '+' : ''}{$(e.amt)}</span></div>)}
+      <div className="row between" style={{ fontWeight: 700 }}><span>End of day</span><span className="num">{$(d.balance)}</span></div>
+    </div>
+  );
+}
+function PotBar({ saved, projected, target }) {
+  return <div className="bar" role="img" aria-label={`${$(saved)} in the pot, ${$(projected)} projected, of ${$(target)}`}><i className="proj" style={{ width: Math.min(100, projected / target * 100) + '%' }}></i><i style={{ width: Math.min(100, saved / target * 100) + '%' }}></i></div>;
+}
+function Toggle({ on, onChange, children }) {
+  return <label className={'toggle' + (on ? ' on' : '')}><input type="checkbox" checked={on} onChange={e => onChange(e.target.checked)} style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }} /><i></i>{children}</label>;
+}
+
+/* =============== pages =============== */
+function TablePage({ sc, setSc, sim, cap, goal, tells, go, applied, found, setFound }) {
+  const [day, setDay] = useState(null);
+  const internet = H.recurring.find(r => r.id === 'internet');
+  const headline = sim.worst === 'busted' ? 'You would bust before the next payout.' :
+    sim.worst === 'allin' ? 'Your blinds are covered, but your plan goes all in before payday.' :
+    goal.gap > 0 ? 'Your blinds are covered, but the pot comes up short.' : 'Blinds covered. The pot is on track.';
+  return (
+    <>
+      <div className="top"><div><h2 className="head">{headline}</h2><div className="date">{long(TODAY)} · next payout Friday, Oct 2</div></div>
+        <span className="pill gold"><Icon name="eye" size={14} />{tells.length} tell{tells.length === 1 ? '' : 's'}</span></div>
+      <div className="cols">
+        <div className="stack">
+          {found && (
+            <div className="card" style={{ background: 'var(--cream-2)' }}>
+              <div className="row between"><h2>Reading the table</h2><button className="link" onClick={() => setFound(false)}>Dismiss</button></div>
+              <div className="row wrap" style={{ gap: 8 }}>
+                <span className="pill deep"><Icon name="check" size={13} />Payout about every two weeks</span>
+                <span className="pill deep"><Icon name="check" size={13} />7 blinds (recurring bills)</span>
+                <span className="pill gold">2 cards need a second look</span>
+              </div>
+              <div><button className="btn ghost sm" onClick={() => go({ page: 'hand' })}>Review my hand</button></div>
+            </div>
+          )}
+          <section className="hero">
+            <div className="row between wrap">
+              <span className={'pill ' + sim.worst}><Icon name="chip" size={13} />{sim.worst === 'deep' ? 'Deep stack through October' : STATE[sim.worst] + ' ahead'}</span>
+              <span className="fine">Lowest stack: <b className="num" style={{ color: '#fff' }}>{$(sim.low.balance)}</b> on {pretty(sim.low.date)} · table minimum {$(H.cushion)}</span>
+            </div>
+            <Board sim={sim} selected={day} onSelect={k => setDay(k === day ? null : k)} />
+            {day ? <DayDetail sim={sim} dayKey={day} /> : <div className="fine">Tap a day to see what lands on it. Stack colors follow your balance against the table minimum, nothing else.</div>}
+          </section>
+
+          <div className="card">
+            <div className="row between"><h2>Someone raised</h2><span className="pill raise"><Icon name="raise" size={13} />1 raise this month</span></div>
+            <div className="row" style={{ gap: 16 }}>
+              <PlayingCard suit="diamond" rank={rankFor(internet.amount + sc.increase)} />
+              <div style={{ flex: 1 }}><strong style={{ fontSize: 17 }}>{internet.label} raised you {$(sc.increase)}: {$(internet.amount)} → {$(internet.amount + sc.increase)} a month</strong>
+                <div className="fine" style={{ marginTop: 4 }}>Takes effect Oct 1 · {internet.change.why}, according to the notice{sc.increase !== 25 ? ' · amount edited for the demo' : ''}</div></div>
+              <button className="btn ghost sm" onClick={() => go({ panel: 'raise' })}>See the raise <Icon name="arrow" size={14} /></button>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="row between"><h2>The pot · {H.goal.label}</h2><span className={'pill ' + (goal.gap > 0 ? 'raise' : 'deep')}>{goal.gap > 0 ? `${$(goal.gap)} short by ${goal.targetLabel}` : 'On track'}</span></div>
+            <PotBar saved={H.goal.saved} projected={goal.projected} target={H.goal.target} />
+            <div className="row between wrap fine"><span>In the pot <b className="num">{$(H.goal.saved)}</b> · projected <b className="num">{$(goal.projected)}</b> of {$(H.goal.target)}</span><span>Monthly buy-in the table supports: <b className="num">{$(cap)}</b></span></div>
+            <div className="row" style={{ gap: 8 }}><button className="btn" onClick={() => go({ panel: 'outs' })}>See your outs <Icon name="arrow" size={16} /></button>{applied && <span className="pill deep"><Icon name="check" size={13} />{applied.label}</span>}</div>
+          </div>
+        </div>
+
+        <div className="stack">
+          <div className="card">
+            <h2>Tells</h2>
+            {tells.length === 0 && <div className="fine">No tells. Nothing needs you right now.</div>}
+            {tells.map((a, i) => <div className="tell" key={i}><strong>{a.title}</strong><span style={{ fontSize: 14.5 }}>{a.body}</span>{a.action && <div><button className="link" onClick={a.action.go}>{a.action.label}</button></div>}</div>)}
+            <div className="fine">One event, one tell. Spending trends go in the weekly recap instead.</div>
+          </div>
+          <PayoutsPanel sc={sc} setSc={setSc} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function PayoutsPanel({ sc, setSc }) {
+  const [editing, setEditing] = useState(null);
+  const income = sc.income || H.income;
+  const update = (id, patch) => setSc(s => ({ ...s, income: income.map(p => p.id === id ? { ...p, ...patch } : p) }));
+  return (
+    <div className="card">
+      <div className="row between"><h2>Payouts</h2><span className="fine">You can edit these</span></div>
+      <div className="list">
+        {income.map(p => (
+          <div className="item" key={p.id}>
+            <Suit s="heart" size={16} />
+            <div className="what"><strong>{p.label} · {new Date(p.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</strong>
+              <small><span className={'pill ' + (p.status === 'confirmed' ? 'deep' : 'neutral')} style={{ marginTop: 4 }}>{p.status === 'confirmed' ? 'Confirmed by your bank' : p.status === 'edited' ? 'Edited by you' : 'Estimated from your pattern'}</span></small></div>
+            {editing === p.id ? (
+              <div className="field"><input type="number" value={p.amount} onChange={e => update(p.id, { amount: Number(e.target.value) || 0, status: 'edited' })} aria-label="Amount" /><input type="date" value={p.date} onChange={e => update(p.id, { date: e.target.value, status: 'edited' })} aria-label="Date" /><button className="btn sm" onClick={() => setEditing(null)}>Done</button></div>
+            ) : (<><span className="amt in num">+{$(p.amount)}</span><button className="btn ghost sm" onClick={() => setEditing(p.id)}>Edit</button></>)}
+          </div>
+        ))}
+      </div>
+      <div className="fine">New job, odd payday, smaller check? Change it here and the table re-deals. {APP} does not guess irregular income.</div>
+    </div>
+  );
+}
+
+function RaisePanel({ sc, setSc, cap, goal, onOuts, onClose }) {
+  const r = H.recurring.find(x => x.id === 'internet'); const inc = sc.increase;
+  return (
+    <div className="card">
+      <div className="row between"><div className="row" style={{ gap: 14 }}><PlayingCard suit="diamond" rank={rankFor(r.amount + inc)} /><h2>The raise: Internet</h2></div><button className="btn ghost sm" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button></div>
+      <table><tbody>
+        <tr><td className="muted">Previous blind</td><td className="r num">{$(r.amount)}/month</td></tr>
+        <tr><td className="muted">New blind</td><td className="r num">{$(r.amount + inc)}/month</td></tr>
+        <tr><td className="muted">Raise</td><td className="r num" style={{ fontWeight: 700 }}>{$(inc)}/month</td></tr>
+        <tr><td className="muted">Explanation</td><td className="r">{r.change.why}, according to the supplied notice</td></tr>
+        <tr><td className="muted">Next affected payment</td><td className="r">October 1</td></tr>
+        <tr><td className="muted">Type</td><td className="r"><span className="pill raise">Upcoming raise, from a notice</span></td></tr>
+      </tbody></table>
+      <div className="label">Evidence</div>
+      <div className="notice">{NOTICE.split('\n').map((line, i) => { const hit = /renew at \$90\.00 starting with your October 1 bill/.test(line) || /promotional credit of \$25\.00 ended/.test(line); return <div key={i}>{hit ? <mark>{line}</mark> : (line || ' ')}</div>; })}</div>
+      <div className="callout"><Icon name="cards" size={18} /><span>A real raise: the price changed, not your usage, and it is not a one-time fee. The next posted charge will confirm it. Electric, by contrast, posted higher last month and {APP} has <b>not</b> confirmed why.</span></div>
+      <div className="label">What it does to your game</div>
+      <div className="ba">
+        <div><span className="k">Monthly buy-in the table supports</span><b className="num">{$(cap)}</b><span className="fine">was {$(H.goal.planned)}</span></div>
+        <div><span className="k">Pot at the target date</span><b className="num">{$(goal.projected)}</b><span className="fine">{goal.gap > 0 ? `${$(goal.gap)} short of ${$(H.goal.target)}` : 'on target'}</span></div>
+      </div>
+      <div className="label">For the judges: change the raise</div>
+      <div className="field"><span>Raise of</span><input type="number" min="0" step="5" value={inc} onChange={e => setSc(s => ({ ...s, increase: Math.max(0, Number(e.target.value) || 0) }))} aria-label="Raise amount" /><span>per month</span></div>
+      <div className="row wrap" style={{ gap: 8 }}>
+        <button className="btn" onClick={onOuts}>See your outs <Icon name="arrow" size={16} /></button>
+        <button className="btn ghost sm"><Icon name="mail" size={14} />View notice</button><button className="btn ghost sm">Provider support</button><button className="btn ghost sm">Prepare a question</button>
+      </div>
+      <div className="fine">{APP} does not promise to talk the provider down, and does not call every raise a mistake.</div>
+    </div>
+  );
+}
+
+function OutsPanel({ sc, cap, onApply, onClose }) {
+  const [pick, setPick] = useState('call');
+  const [off, setOff] = useState({ groceries: true });
+  const base = goalAt(cap);
+  const candidates = H.allowances.filter(a => !off[a.id]).sort((a, b) => FLEX_ORDER.indexOf(a.id) - FLEX_ORDER.indexOf(b.id));
+  let fold = null; for (const a of candidates) { const cut = cutNeeded(sc, a.id, H.goal.planned); if (cut !== null && cut <= a.monthly) { fold = { a, cut }; break; } }
+  const gym = H.recurring.find(r => r.id === 'gym'); const capNoGym = capacity({ ...sc, cancelled: { ...sc.cancelled, gym: true } });
+  const later = base.monthsNeeded;
+  const options = [
+    { id: 'call', move: 'Call', title: 'Call the raise', p: `Pay the new blind and buy in ${$(cap)} a month instead of ${$(H.goal.planned)}.`, before: { k: 'Pot by ' + H.goal.targetLabel, v: $(H.goal.target) }, after: { k: 'Pot by ' + H.goal.targetLabel, v: $(base.projected), note: base.gap ? `${$(base.gap)} short` : 'on target' }, extra: `Your stack never drops below the ${$(H.cushion)} table minimum.`, apply: { contribution: cap, label: `Buy-in set to ${$(cap)}/month` } },
+    fold ? { id: 'fold', move: 'Fold', title: `Fold ${$(fold.cut)} of ${fold.a.label.toLowerCase()} a month`, p: `${$(fold.a.monthly)} → ${$(fold.a.monthly - fold.cut)}. Keeps the ${$(H.goal.planned)} buy-in.`, before: { k: fold.a.label, v: $(fold.a.monthly) + '/mo' }, after: { k: 'Buy-in', v: $(H.goal.planned), note: 'pot on target' }, extra: 'Only table money you have not put off limits is offered.', apply: { cuts: { [fold.a.id]: fold.cut }, contribution: H.goal.planned, label: `${fold.a.label} folded ${$(fold.cut)}/month` } }
+      : { id: 'fold', move: 'Fold', title: 'Fold some table money', p: 'Everything is off limits, so there is nothing to fold. Put one allowance back in play to see this out.', disabled: true },
+    { id: 'check', move: 'Check', title: `Check the ${gym.label.toLowerCase()} renewal (${$(gym.amount)} on Oct 15)`, p: `If it is cancelled before it charges, the table supports a ${$(capNoGym)} buy-in.`, before: { k: 'Buy-in', v: $(cap) }, after: { k: 'Buy-in', v: $(Math.min(capNoGym, H.goal.planned)), note: 'if cancelled' }, extra: 'A scenario until the provider confirms the cancellation.', conditional: true, apply: { cancelled: { gym: true }, contribution: Math.min(capNoGym, H.goal.planned), label: 'Gym cancellation pending confirmation' } },
+    { id: 'session', move: 'Play on', title: 'Play a longer session', p: isFinite(later) ? `Keep the ${$(cap)} buy-in and fill the ${$(H.goal.target)} pot after ${later} buy-ins instead of ${H.goal.left}.` : 'The table cannot support a buy-in right now, so no date works yet.', before: { k: 'Pot full by', v: H.goal.targetLabel }, after: { k: 'Pot full by', v: isFinite(later) ? monthLabel(later) : '—', note: isFinite(later) ? `${later - H.goal.left} month${later - H.goal.left === 1 ? '' : 's'} later` : '' }, extra: 'Nothing else changes.', disabled: !isFinite(later), apply: { contribution: cap, label: `Pot target moved to ${isFinite(later) ? monthLabel(later) : '—'}` } },
+  ];
+  const chosen = options.find(o => o.id === pick);
+  return (
+    <div className="card">
+      <div className="row between"><h2>Your outs</h2><button className="btn ghost sm" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button></div>
+      <p style={{ margin: 0 }}>The {$(sc.increase)} raise leaves the pot <b className="num">{base.gap ? $(base.gap) : '$0'}</b> short of {$(H.goal.target)}. Pick a play and preview it. No chips move until you lock it in.</p>
+      <div className="row wrap" style={{ gap: 12 }}><span className="label">Off limits</span>{H.allowances.map(a => <Toggle key={a.id} on={!!off[a.id]} onChange={v => setOff(p => ({ ...p, [a.id]: v }))}>{a.label} {$(a.monthly)}</Toggle>)}</div>
+      {options.map(o => (
+        <div key={o.id} className={'option' + (pick === o.id ? ' on' : '')} style={{ opacity: o.disabled ? .6 : 1 }}>
+          <div className="row between"><span className="move">{o.move}</span>{o.conditional && <span className="pill neutral">Conditional</span>}</div>
+          <h3>{o.title}</h3><p>{o.p}</p>
+          {!o.disabled && <div className="ba"><div><span className="k">Before · {o.before.k}</span><b>{o.before.v}</b></div><div><span className="k">After · {o.after.k}</span><b>{o.after.v}</b><span className="fine">{o.after.note}</span></div></div>}
+          {!o.disabled && <div className="row between"><span className="fine">{o.extra}</span><button className={'btn sm' + (pick === o.id ? '' : ' ghost')} onClick={() => setPick(o.id)}>{pick === o.id ? 'Selected' : 'Preview'}</button></div>}
+        </div>
+      ))}
+      <div className="callout"><Icon name="chip" size={18} /><span>No out hides a cost. Pulling chips out of the pot would fix your stack but shrink the pot, so it is not offered here.</span></div>
+      <button className="btn" disabled={!chosen || chosen.disabled} onClick={() => onApply(chosen)}>Lock in this play <Icon name="arrow" size={16} /></button>
+    </div>
+  );
+}
+
+function PotPage({ sc, cap, goal, applied, go }) {
+  const [cashout, setCashout] = useState(null);
+  return (
+    <>
+      <div className="top"><div><h2 className="head">The pot: {$(H.goal.saved)} in, {$(goal.projected)} projected.</h2><div className="date">Chips in the pot and planned buy-ins are kept separate.</div></div></div>
+      <div className="cols">
+        <div className="stack">
+          <div className="card">
+            <div className="row between"><h2>{H.goal.label} · {$(H.goal.target)} by {goal.targetLabel}</h2><span className={'pill ' + (goal.gap > 0 ? 'raise' : 'deep')}>{goal.gap > 0 ? `${$(goal.gap)} short` : 'On track'}</span></div>
+            <PotBar saved={H.goal.saved} projected={goal.projected} target={H.goal.target} />
+            <table>
+              <thead><tr><th>Plan</th><th className="r">Original</th><th className="r">After the raise</th></tr></thead>
+              <tbody>
+                <tr><td>Already in the pot</td><td className="r">{$(H.goal.saved)}</td><td className="r">{$(H.goal.saved)}</td></tr>
+                <tr><td>Buy-in needed to make the date</td><td className="r">{$((H.goal.target - H.goal.saved) / H.goal.left)}</td><td className="r">{$((H.goal.target - H.goal.saved) / H.goal.left)}</td></tr>
+                <tr><td>Buy-in the table supports</td><td className="r">{$(H.goal.planned)}</td><td className="r" style={{ fontWeight: 700 }}>{$(cap)}</td></tr>
+                <tr><td>{goal.left} future buy-ins</td><td className="r">{$(H.goal.planned * H.goal.left)}</td><td className="r">{$(goal.contributions)}</td></tr>
+                <tr><td>Projected pot</td><td className="r">{$(H.goal.target)}</td><td className="r" style={{ fontWeight: 700 }}>{$(goal.projected)}</td></tr>
+                <tr><td>Short at the target date</td><td className="r">$0</td><td className="r" style={{ fontWeight: 700, color: goal.gap ? 'var(--allin)' : 'var(--deep)' }}>{$(goal.gap)}</td></tr>
+              </tbody>
+            </table>
+            <div className="fine">Supported buy-in = the largest monthly amount that keeps your stack at or above the {$(H.cushion)} table minimum on every forecast day. It moves when the blinds move.</div>
+            <div className="row" style={{ gap: 8 }}><button className="btn" onClick={() => go({ page: 'table', panel: 'outs' })}>See your outs</button>{applied && <span className="pill deep"><Icon name="check" size={13} />{applied.label}</span>}</div>
+          </div>
+          <div className="card">
+            <h2>Buy-in schedule</h2>
+            <div className="list">{H.goal.months.map((m, i) => <div className="item" key={m}><span className="when">{m}</span><Icon name="chip" size={16} color="var(--gold-deep)" /><div className="what">Buy-in {i + 1} of {goal.left}<small>{i === 0 ? 'Planned on the next payout' : 'Planned'}</small></div><span className="amt num">{$(sc.contribution)}</span></div>)}</div>
+          </div>
+        </div>
+        <div className="stack">
+          <div className="card">
+            <h2>Your stack (savings)</h2>
+            <div className="row between"><span>Actual balance</span><b className="num" style={{ fontSize: 24, fontFamily: 'var(--display)' }}>{$(H.savings + (cashout === 'done' ? sc.contribution : 0))}</b></div>
+            <div className="fine">Counted toward one pot only. Locking in a play never moves chips.</div>
+            <div className="label">Optional: make this month's buy-in</div>
+            {cashout === null && <button className="btn ghost" onClick={() => setCashout('pending')}>Push {$(sc.contribution)} into the pot (mock transfer)</button>}
+            {cashout === 'pending' && <div className="callout"><span>Transfer requested in the Nessie sandbox. Waiting to read back its status before showing it as done.</span><button className="btn sm" onClick={() => setCashout('done')}>Status: completed</button></div>}
+            {cashout === 'done' && <span className="pill deep"><Icon name="check" size={13} />Completed · read back from the sandbox</span>}
+            <div className="fine">Mock financial data from Capital One's Nessie sandbox.</div>
+          </div>
+          <div className="card"><h2>Table minimum</h2><div className="row between"><span>Never let the stack fall below</span><b className="num">{$(H.cushion)}</b></div><div className="fine">Stack colors are set by this number and your projected balance, not by a score.</div></div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function HandPage({ sc, setSc }) {
+  const [tab, setTab] = useState('history');
+  const suitFor = r => r.change ? 'diamond' : r.cancellable ? 'club' : 'spade';
+  return (
+    <>
+      <div className="top"><div><h2 className="head">Your hand</h2><div className="date">Hand history, the blinds you post every month, and your table money.</div></div>
+        <div className="tabs" style={{ background: 'var(--cream-2)' }}>{[['history', 'Hand history'], ['blinds', 'Blinds'], ['money', 'Table money']].map(([id, l]) => <button key={id} className={'tab' + (tab === id ? ' on' : '')} style={{ color: tab === id ? undefined : 'var(--ink)' }} onClick={() => setTab(id)}>{l}</button>)}</div></div>
+      {tab === 'history' && (
+        <div className="card">
+          <div className="row between"><h2>Hand history</h2><span className="pill gold">2 cards need a second look</span></div>
+          <div className="fine">House rules: a transfer is not a payout, a receipt and its transaction count once, and repeat purchases are not automatically a blind.</div>
+          <div className="list">
+            {TRANSACTIONS.map((t, i) => (
+              <div className="item" key={i}>
+                <span className="when">{t.d}</span>
+                <Suit s={t.cat === 'Payout' ? 'heart' : t.cat === 'Blind' ? 'spade' : t.cat.startsWith('Chips') || t.cat === 'Transfer' ? 'club' : 'diamond'} size={16} />
+                <div className="what"><strong>{t.what}</strong>{(t.note || t.review) && <small>{t.review || t.note}</small>}</div>
+                <span className={'pill ' + (t.review ? 'gold' : 'neutral')}>{t.review ? 'Second look' : t.cat}</span>
+                <span className={'amt num' + (t.amt > 0 ? ' in' : '')}>{t.amt > 0 ? '+' : ''}{$(t.amt)}</span>
+                {t.review && <button className="btn ghost sm">Correct</button>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {tab === 'blinds' && (
+        <div className="card">
+          <div className="row between"><h2>Blinds</h2><span className="fine"><Suit s="spade" /> must post on the day · <Suit s="club" /> can be moved or cancelled · <Suit s="diamond" /> raised</span></div>
+          <table>
+            <thead><tr><th>Blind</th><th>Next</th><th className="r">Amount</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {H.recurring.map(r => (
+                <tr key={r.id}>
+                  <td><span className="row" style={{ gap: 8 }}><Suit s={suitFor(r)} size={15} /><strong>{r.label}</strong></span></td>
+                  <td>Oct {r.day}</td>
+                  <td className="r">{r.change ? <>{$(r.amount)} → <b>{$(r.amount + sc.increase)}</b></> : r.id === 'electric' && sc.treatElectricAsNew ? <b>{$(r.lastPosted)}</b> : $(r.amount)}{sc.cancelled?.[r.id] && <span className="fine"> · cancel pending</span>}</td>
+                  <td>{r.change ? <span className="pill raise">Raised, from a notice</span> : r.unexplained ? <span className="pill short">Posted {$(r.lastPosted)} in Sep · not confirmed why</span> : <span className="pill neutral">Steady</span>}</td>
+                  <td className="r">{r.unexplained && <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
+                    <button className={'btn sm' + (sc.treatElectricAsNew ? ' ghost' : '')} onClick={() => setSc(s => ({ ...s, treatElectricAsNew: false }))}>One-time</button>
+                    <button className={'btn sm' + (sc.treatElectricAsNew ? '' : ' ghost')} onClick={() => setSc(s => ({ ...s, treatElectricAsNew: true }))}>New price</button></div>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="fine">"The amount changed. We have not confirmed why." is an honest state. Your correction re-deals the table immediately.</div>
+        </div>
+      )}
+      {tab === 'money' && (
+        <div className="card">
+          <h2>Table money</h2>
+          <div className="fine">Monthly amounts learned from three months of spending. {APP} spreads them across the days of the forecast.</div>
+          <table><thead><tr><th>Allowance</th><th className="r">Monthly</th><th className="r">This plan</th></tr></thead>
+            <tbody>{H.allowances.map(a => <tr key={a.id}><td>{a.label}</td><td className="r">{$(a.monthly)}</td><td className="r">{sc.cuts?.[a.id] ? <b>{$(a.monthly - sc.cuts[a.id])}</b> : $(a.monthly)}</td></tr>)}</tbody></table>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* =============== app shell =============== */
+function App() {
+  const [page, setPage] = useState('table');
+  const [panel, setPanel] = useState(null);         // 'raise' | 'outs' | null
+  const [sc, setSc] = useState({ increase: 25, contribution: 300, cuts: {}, cancelled: {} });
+  const [confirm, setConfirm] = useState(null);
+  const [applied, setApplied] = useState(null);
+  const [found, setFound] = useState(true);
+
+  const sim = useMemo(() => simulate(sc), [sc]);
+  const cap = useMemo(() => capacity(sc), [sc]);
+  const goal = useMemo(() => { const c = applied ? sc.contribution : cap; const g = goalAt(c); return applied?.id === 'session' && isFinite(g.monthsNeeded) ? goalAt(c, g.monthsNeeded) : g; }, [sc, cap, applied]);
+
+  const tells = useMemo(() => {
+    const a = []; const planFits = sc.contribution <= cap; const g = goalAt(cap);
+    if (sc.increase > 0 && !applied) a.push({
+      title: `Internet raised you ${$(sc.increase)} a month.`,
+      body: `${!planFits ? `Your planned ${$(sc.contribution)} buy-in would leave ${$(sim.low.balance)} on ${pretty(sim.low.date)}, below the ${$(H.cushion)} table minimum. ` : ''}${g.gap ? `The pot would end ${$(g.gap)} short. ` : ''}See your outs.`,
+      action: { label: 'See your outs', go: () => { setPage('table'); setPanel('outs'); } },
+    });
+    if (sim.worst === 'busted' || sim.worst === 'allin') a.push({ title: `Your stack falls to ${$(sim.low.balance)} on ${pretty(sim.low.date)}.`, body: `That is below the ${$(H.cushion)} table minimum before the next payout.` });
+    return a;
+  }, [sc, cap, sim, applied]);
+
+  const go = ({ page: p, panel: pn }) => { if (p) setPage(p); if (pn !== undefined) setPanel(pn); };
+  const reallyApply = () => { setSc(s => ({ ...s, ...confirm.apply, cuts: { ...s.cuts, ...(confirm.apply.cuts || {}) }, cancelled: { ...s.cancelled, ...(confirm.apply.cancelled || {}) } })); setApplied({ id: confirm.id, label: confirm.apply.label }); setConfirm(null); setPanel(null); };
+
+  return (
+    <div className="room">
+      <header className="marquee">
+        <div><h1>{APP}</h1><div className="tag">Cover your table stakes. Play the rest. Blinds, raises, outs and the pot, from your real transactions.</div></div>
+        <nav className="tabs" aria-label="Main">
+          {[['table', 'The table', 'chip'], ['hand', 'Your hand', 'cards'], ['pot', 'The pot', 'pot']].map(([id, label, ic]) => <button key={id} className={'tab' + (page === id ? ' on' : '')} onClick={() => setPage(id)}><Icon name={ic} size={18} />{label}</button>)}
+        </nav>
+      </header>
+      <main className="table">
+        {page === 'table' && (panel ? (
+          <div className="cols">
+            <div className="stack">
+              <button className="link" onClick={() => setPanel(null)} style={{ alignSelf: 'flex-start' }}>← Back to the table</button>
+              {panel === 'raise' && <RaisePanel sc={sc} setSc={setSc} cap={cap} goal={goalAt(cap)} onOuts={() => setPanel('outs')} onClose={() => setPanel(null)} />}
+              {panel === 'outs' && <OutsPanel sc={sc} cap={cap} onApply={o => setConfirm(o)} onClose={() => setPanel(null)} />}
+            </div>
+            <div className="stack">
+              <section className="hero">
+                <div className="row between wrap"><span className={'pill ' + sim.worst}><Icon name="chip" size={13} />Current plan · {$(sc.contribution)} buy-in</span><span className="fine">Lowest stack {$(sim.low.balance)} on {pretty(sim.low.date)}</span></div>
+                <Board sim={sim} selected={null} onSelect={() => {}} />
+              </section>
+              <div className="card"><h2>The pot</h2><PotBar saved={H.goal.saved} projected={goalAt(cap).projected} target={H.goal.target} /><div className="fine">Projected {$(goalAt(cap).projected)} of {$(H.goal.target)} at a {$(cap)} buy-in. Your stack stays at {$(H.savings)} until a transfer completes.</div></div>
+            </div>
+          </div>
+        ) : <TablePage sc={sc} setSc={setSc} sim={sim} cap={cap} goal={goal} tells={tells} go={go} applied={applied} found={found} setFound={setFound} />)}
+        {page === 'pot' && <PotPage sc={sc} cap={cap} goal={goal} applied={applied} go={go} />}
+        {page === 'hand' && <HandPage sc={sc} setSc={setSc} />}
+        <div className="fine" style={{ marginTop: 22 }}>Sample household. Estimates use scheduled blinds and typical daily table money from bank history. {APP} never moves chips on its own.</div>
+      </main>
+      {confirm && (
+        <div className="sheet-bg" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+          <div className="sheet">
+            <div className="row" style={{ gap: 12 }}><PlayingCard back /><h2 id="confirm-title">Lock in this play?</h2></div>
+            <div className="option on"><span className="move">{confirm.move}</span><h3>{confirm.title}</h3><p>{confirm.p}</p></div>
+            <div className="callout"><Icon name="chip" size={18} /><span>This updates your plan. It does not move chips. Your stack stays at {$(H.savings)} until you push a buy-in into the pot on the Pot page.</span></div>
+            <div className="row" style={{ gap: 8 }}><button className="btn felt" onClick={reallyApply}><Icon name="check" size={16} />Lock it in</button><button className="btn ghost" onClick={() => setConfirm(null)}>Cancel</button></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>

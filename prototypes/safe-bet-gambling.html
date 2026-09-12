@@ -1,0 +1,408 @@
+<title>Safe Bet</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Geist:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --felt: #0E4B3A; --felt-deep: #08322A; --felt-light: #16624C;
+    --gold: #E3B54A; --gold-deep: #B8892B; --gold-ink: #4A3608;
+    --cream: #FBF4E4; --cream-2: #F3E9D2; --ink: #1B1F1D; --muted: #5E6B66; --line: #E0D6BE;
+    --safe: #1F8A5B; --safe-bg: #DDF3E7; --close: #C98A12; --close-bg: #FFF1CF; --bust: #C8323A; --bust-bg: #FBE0E1;
+    --display: "Bricolage Grotesque", "Geist", system-ui, sans-serif;
+    --body: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.45;
+    background: var(--felt-deep);
+    background-image: radial-gradient(120% 90% at 50% 0%, var(--felt-light) 0%, var(--felt) 45%, var(--felt-deep) 100%);
+    -webkit-font-smoothing: antialiased;
+  }
+  .table { max-width: 470px; margin: 0 auto; padding: 28px 16px 40px; }
+  .marquee { text-align: center; color: var(--cream); margin-bottom: 18px; }
+  .marquee h1 { font-family: var(--display); font-weight: 800; font-size: 40px; line-height: 1; letter-spacing: -0.5px; margin: 0; color: var(--gold); text-shadow: 0 2px 0 var(--gold-deep); }
+  .marquee p { margin: 6px 0 0; font-size: 15px; color: #CFE3D8; }
+  .card {
+    background: var(--cream); border-radius: 28px; padding: 22px 20px 20px; box-shadow: 0 30px 60px rgba(0,0,0,.35), inset 0 0 0 1px #E8D9B0, inset 0 0 0 5px var(--cream), inset 0 0 0 6px var(--gold);
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .between { justify-content: space-between; }
+  .stack { display: flex; flex-direction: column; gap: 8px; }
+  .date { font-size: 14px; color: var(--muted); }
+  .brand { font-family: var(--display); font-weight: 800; font-size: 22px; line-height: 1; }
+  .chip-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 8px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 13px; font-weight: 500; color: var(--muted); }
+  .label { font-size: 12px; font-weight: 600; letter-spacing: .9px; text-transform: uppercase; color: var(--muted); }
+  .hero { border-radius: 20px; padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .hero.safe { background: var(--safe-bg); } .hero.close { background: var(--close-bg); } .hero.bust { background: var(--bust-bg); }
+  .hero .state { font-family: var(--display); font-weight: 800; font-size: 32px; line-height: 1.05; letter-spacing: -0.3px; text-wrap: balance; }
+  .hero.safe .state { color: var(--safe); } .hero.close .state { color: var(--close); } .hero.bust .state { color: var(--bust); }
+  .hero .big { font-family: var(--display); font-weight: 800; font-size: 54px; line-height: 1; letter-spacing: -1.5px; font-variant-numeric: tabular-nums; }
+  .hero p { margin: 0; font-size: 16px; }
+  .btn { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 54px; padding: 14px 20px; border-radius: 16px; border: 0; font: 600 17px/1.2 var(--body); cursor: pointer; width: 100%; color: var(--gold-ink); background: var(--gold); box-shadow: 0 2px 0 var(--gold-deep); }
+  .btn:hover { filter: brightness(1.04); } .btn:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--gold-deep); }
+  .btn:focus-visible, .link:focus-visible, .col:focus-visible { outline: 3px solid var(--felt); outline-offset: 2px; }
+  .btn.felt { background: var(--felt); color: #fff; box-shadow: 0 2px 0 var(--felt-deep); }
+  .btn.ghost { background: #fff; color: var(--ink); border: 1.5px solid var(--line); box-shadow: none; }
+  .link { background: none; border: 0; padding: 10px; font: 600 15px var(--body); color: var(--felt); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .board { display: flex; align-items: flex-end; gap: 4px; height: 150px; padding: 0 2px; }
+  .col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; gap: 5px; background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--body); border-radius: 8px; }
+  .col.selected { background: var(--cream-2); }
+  .stackbar { width: 100%; max-width: 22px; border-radius: 6px 6px 3px 3px; background-color: var(--safe); background-image: repeating-linear-gradient(to top, rgba(255,255,255,0) 0 7px, rgba(255,255,255,.55) 7px 9px); min-height: 4px; }
+  .stackbar.close { background-color: var(--close); } .stackbar.bust { background-color: var(--bust); border-radius: 3px 3px 6px 6px; }
+  .col .d { font-size: 11px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .col .tag { font-size: 10px; font-weight: 700; color: var(--ink); line-height: 1; }
+  .baseline { height: 2px; background: var(--line); border-radius: 2px; margin: -2px 2px 0; }
+  .legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; } .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .list { display: flex; flex-direction: column; }
+  .line { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .line:last-child { border-bottom: 0; }
+  .line .when { width: 56px; font-size: 13px; color: var(--muted); }
+  .line .what { flex: 1; font-size: 16px; }
+  .line .amt { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .amt.in { color: var(--safe); } .amt.out { color: var(--ink); } .amt.neg { color: var(--bust); }
+  .panel { border-radius: 18px; background: #fff; border: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .panel.felt { background: var(--felt); color: #fff; border-color: var(--felt-deep); }
+  .panel.felt .label { color: #BFE0D0; }
+  .bar { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; } .bar > i { display: block; height: 100%; background: var(--gold); border-radius: 5px; }
+  .fix { border: 1.5px solid var(--line); border-radius: 18px; background: #fff; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .fix.best { border-color: var(--felt); box-shadow: 0 0 0 3px rgba(14,75,58,.12); }
+  .fix h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 20px; line-height: 1.15; }
+  .fix p { margin: 0; font-size: 15px; color: var(--muted); }
+  .outcome { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; padding: 6px 10px; border-radius: 10px; width: fit-content; }
+  .outcome.safe { background: var(--safe-bg); color: var(--safe); } .outcome.close { background: var(--close-bg); color: var(--close); } .outcome.bust { background: var(--bust-bg); color: var(--bust); }
+  .dice { display: flex; gap: 10px; }
+  .die { width: 44px; height: 44px; border-radius: 10px; background: #fff; border: 2px solid var(--ink); display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 5px; gap: 2px; }
+  .die i { border-radius: 50%; background: var(--ink); opacity: 0; } .die i.on { opacity: 1; }
+  .rolling .die { animation: tumble .7s ease-in-out; }
+  @keyframes tumble { 0% { transform: rotate(0) translateY(0); } 40% { transform: rotate(140deg) translateY(-14px); } 100% { transform: rotate(360deg) translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { .rolling .die { animation: none; } }
+  .toast { border-radius: 14px; background: var(--felt-deep); color: #fff; padding: 12px 14px; font-size: 15px; display: flex; gap: 10px; align-items: center; }
+  .foot { font-size: 12px; color: var(--muted); }
+  .fine { font-size: 13px; color: var(--muted); }
+  h2 { font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1.05; margin: 0; letter-spacing: -0.3px; text-wrap: balance; }
+  .shield { width: 72px; height: 72px; border-radius: 50%; background: var(--safe-bg); display: grid; place-items: center; }
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.4/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useMemo } = React;
+
+/* ---------- sample household (Nessie would supply this) ---------- */
+const TODAY = 11, PAYDAY = 26, LAST_DAY = 26;
+const BASE = {
+  balance: 1391, savings: 420, savingsGoal: 1000, dailySpend: 18, cushion: 100,
+  bills: [
+    { id: 'electric', label: 'Electric', day: 18, amount: 162, movable: false },
+    { id: 'internet', label: 'Internet', day: 22, amount: 89, movable: true },
+    { id: 'rent', label: 'Rent', day: 24, amount: 850, movable: false },
+    { id: 'car', label: 'Car insurance', day: 24, amount: 120, movable: true },
+  ],
+  deposits: [{ id: 'pay', label: 'Paycheck', day: PAYDAY, amount: 1850 }],
+  log: [],
+};
+const SURPRISES = [
+  { label: 'Parking ticket', amount: 65 }, { label: 'Vet visit', amount: 140 }, { label: 'Cracked phone screen', amount: 220 },
+  { label: "Friend's birthday dinner", amount: 48 }, { label: 'Flat tire', amount: 130 }, { label: 'Textbook you forgot', amount: 95 },
+];
+const WEEKDAY = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'];
+const dayName = d => new Date(2026, 8, d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+const money = n => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
+const ordinal = d => d + (d % 10 === 1 && d !== 11 ? 'st' : d % 10 === 2 && d !== 12 ? 'nd' : d % 10 === 3 && d !== 13 ? 'rd' : 'th');
+
+/* ---------- the ledger: one pass, day by day ---------- */
+function project(s) {
+  const days = []; let b = s.balance;
+  for (let d = TODAY; d <= LAST_DAY; d++) {
+    const bills = s.bills.filter(x => x.day === d), deposits = s.deposits.filter(x => x.day === d);
+    const morning = b;
+    b = b - s.dailySpend - bills.reduce((a, x) => a + x.amount, 0) + deposits.reduce((a, x) => a + x.amount, 0);
+    days.push({ day: d, morning, balance: b, bills, deposits, state: b < 0 ? 'bust' : b < s.cushion ? 'close' : 'safe' });
+  }
+  const before = days.filter(x => x.day < PAYDAY);
+  const low = before.reduce((a, x) => (x.balance < a.balance ? x : a));
+  const bustDay = before.find(x => x.balance < 0)?.day ?? null;
+  const closeDay = before.find(x => x.balance < s.cushion)?.day ?? null;
+  return { days, low, bustDay, closeDay, safeToSpend: Math.max(0, low.balance), state: low.state };
+}
+
+/* ---------- fixes are simulated, never guessed ---------- */
+function makeFixes(s) {
+  const r = project(s); const need = Math.max(0, -r.low.balance) + s.cushion; const fixes = [];
+  const amt = Math.ceil(need / 10) * 10;
+  if (amt <= s.savings) fixes.push({
+    id: 'move', verify: true, title: `Move ${money(amt)} from house money`,
+    detail: `Your buffer has ${money(s.savings)}. The money lands the day before, so rent still clears.`, cta: `Move ${money(amt)}`,
+    apply: st => ({ ...st, balance: st.balance + amt, savings: st.savings - amt, log: [...st.log, `Moved ${money(amt)} from house money.`] }),
+  });
+  const movable = s.bills.filter(b => b.movable && r.bustDay && b.day <= r.bustDay).sort((a, b) => b.amount - a.amount);
+  for (const m of movable) {
+    const apply = st => ({ ...st, bills: st.bills.map(b => b.id === m.id ? { ...b, day: PAYDAY + 1 } : b), log: [...st.log, `Moved ${m.label} to the ${ordinal(PAYDAY + 1)}.`] });
+    if (project(apply(s)).low.balance >= 0) { fixes.push({ id: 'move-' + m.id, title: `Pay ${m.label.toLowerCase()} on the ${ordinal(PAYDAY + 1)}`, detail: `Reschedule it to the day after payday. Everything else goes out on time.`, cta: 'Reschedule', apply }); break; }
+  }
+  const daysLeft = PAYDAY - TODAY; const perDay = Math.ceil(need / daysLeft);
+  if (s.dailySpend - perDay >= 5) fixes.push({
+    id: 'trim', title: `Spend ${money(perDay)} less a day until payday`, detail: `You average ${money(s.dailySpend)} a day on food and small stuff. Skip the takeout and it adds up to ${money(perDay * daysLeft)}.`, cta: 'Set a limit',
+    apply: st => ({ ...st, dailySpend: st.dailySpend - perDay, log: [...st.log, `Spending ${money(perDay)} less a day until payday.`] }),
+  });
+  return fixes.map(f => ({ ...f, outcome: project(f.apply(s)) }));
+}
+
+/* ---------- little drawings, no emoji ---------- */
+const Icon = ({ name, size = 20, color = 'currentColor' }) => {
+  const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  switch (name) {
+    case 'chip': return <svg {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3" /></svg>;
+    case 'arrow': return <svg {...p}><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
+    case 'back': return <svg {...p}><path d="M15 5l-7 7 7 7" /></svg>;
+    case 'check': return <svg {...p}><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>;
+    case 'shield': return <svg {...p}><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" /><path d="M9 12l2 2 4-4" /></svg>;
+    case 'dice': return <svg {...p}><rect x="4" y="4" width="16" height="16" rx="3" /><circle cx="9" cy="9" r="1.2" fill={color} /><circle cx="15" cy="15" r="1.2" fill={color} /><circle cx="12" cy="12" r="1.2" fill={color} /></svg>;
+    case 'card': return <svg {...p}><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h.01M15 16h.01" /></svg>;
+    default: return null;
+  }
+};
+const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+const Die = ({ n }) => <div className="die" aria-hidden="true">{[...Array(9)].map((_, i) => <i key={i} className={PIPS[n].includes(i) ? 'on' : ''} />)}</div>;
+
+/* ---------- odds board: 16 days of chip stacks ---------- */
+function Board({ days, cushion, selected, onPick }) {
+  const max = Math.max(...days.map(d => Math.abs(d.balance)), 1);
+  const tag = d => d.day === TODAY ? 'Today' : d.deposits.length ? 'Pay' : d.bills.some(b => b.id === 'rent') ? 'Rent' : d.bills.some(b => b.surprise) ? 'Dice' : '';
+  return (
+    <div className="stack">
+      <div className="board" role="group" aria-label="Balance for each of the next 16 days">
+        {days.map(d => {
+          const h = Math.max(4, Math.round(Math.abs(d.balance) / max * 96));
+          return (
+            <button key={d.day} className={'col' + (selected === d.day ? ' selected' : '')} onClick={() => onPick(d.day)}
+              aria-label={`${dayName(d.day)}: ${money(d.balance)}, ${d.state === 'bust' ? 'bust' : d.state === 'close' ? 'close call' : 'safe'}`}>
+              <span className="tag">{tag(d)}</span>
+              <span className={'stackbar ' + d.state} style={{ height: h }}></span>
+              <span className="d">{d.day}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="baseline"></div>
+      <div className="legend">
+        <span><i style={{ background: 'var(--safe)' }}></i>Safe (above {money(cushion)})</span>
+        <span><i style={{ background: 'var(--close)' }}></i>Close call</span>
+        <span><i style={{ background: 'var(--bust)' }}></i>Bust (below zero)</span>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- screens ---------- */
+function Home({ s, r, onCover, onPick, onRoll, rolling, dice, lastRoll, onReset }) {
+  const fund = Math.round(s.savings / s.savingsGoal * 100);
+  const bustish = r.state !== 'safe';
+  return (
+    <>
+      <div className="row between">
+        <div className="stack" style={{ gap: 2 }}>
+          <div className="brand">Safe Bet</div>
+          <div className="date">Thursday, September 11</div>
+        </div>
+        <span className="chip-pill"><Icon name="chip" size={16} color="var(--muted)" />Checking</span>
+      </div>
+
+      <section className={'hero ' + r.state} aria-live="polite">
+        {r.state === 'bust' && <>
+          <div className="state">The {ordinal(r.bustDay)} is a bust.</div>
+          <p>You'd be <strong>{money(-r.low.balance)} short</strong> {PAYDAY - r.bustDay} days before payday. Rent and car insurance land the same day.</p>
+        </>}
+        {r.state === 'close' && <>
+          <div className="state">Close call on the {ordinal(r.closeDay)}.</div>
+          <p>You stay above zero, but only <strong>{money(r.low.balance)}</strong> stands between you and a bust.</p>
+        </>}
+        {r.state === 'safe' && <>
+          <div className="state">Safe bet.</div>
+          <div className="big">{money(r.safeToSpend)}</div>
+          <p>Safe to spend before payday, with every bill covered.</p>
+        </>}
+        {bustish && <button className="btn" onClick={onCover}>Cover it <Icon name="arrow" size={18} /></button>}
+      </section>
+
+      <section className="stack" style={{ gap: 10 }}>
+        <div className="label">The odds board · next 16 days</div>
+        <Board days={r.days} cushion={s.cushion} selected={null} onPick={onPick} />
+        <div className="fine">Tap a day to see what lands on it.</div>
+      </section>
+
+      <section className="stack" style={{ gap: 4 }}>
+        <div className="label">On the table</div>
+        <div className="list">
+          {[...s.bills.map(b => ({ ...b, dir: 'out' })), ...s.deposits.map(d => ({ ...d, dir: 'in' }))].sort((a, b) => a.day - b.day).map(x => (
+            <div className="line" key={x.id}>
+              <span className="when">Sep {x.day}</span>
+              {x.surprise ? <Icon name="dice" size={18} color="var(--bust)" /> : <Icon name={x.dir === 'in' ? 'chip' : 'card'} size={18} color="var(--muted)" />}
+              <span className="what">{x.label}</span>
+              <span className={'amt ' + x.dir}>{x.dir === 'in' ? '+' : ''}{money(x.amount)}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="row between">
+          <div className="row" style={{ gap: 8 }}><Icon name="chip" size={20} color="var(--gold-deep)" /><strong style={{ fontSize: 17 }}>House money</strong></div>
+          <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{money(s.savings)} of {money(s.savingsGoal)}</span>
+        </div>
+        <div className="bar" role="progressbar" aria-valuenow={fund} aria-valuemin="0" aria-valuemax="100"><i style={{ width: fund + '%' }}></i></div>
+        <p className="fine" style={{ margin: 0 }}>Your buffer. When life rolls the dice, this is what you play with, never the rent.</p>
+      </section>
+
+      <section className="panel felt">
+        <div className="label">For the judges · roll the dice</div>
+        <div className="row between" style={{ alignItems: 'flex-start', gap: 14 }}>
+          <p style={{ margin: 0, fontSize: 15, flex: 1 }}>Life rolls the dice. Add a surprise expense on a random day and watch the plan absorb it.</p>
+          <div className={'dice' + (rolling ? ' rolling' : '')}><Die n={dice[0]} /><Die n={dice[1]} /></div>
+        </div>
+        {lastRoll && <div className="toast"><Icon name="dice" size={18} color="var(--gold)" />Rolled: {lastRoll.label}, {money(lastRoll.amount)} on Sep {lastRoll.day}.</div>}
+        <div className="row" style={{ gap: 8 }}>
+          <button className="btn" onClick={onRoll} disabled={rolling}>Roll the dice</button>
+          <button className="btn ghost" style={{ width: 'auto' }} onClick={onReset}>Reset</button>
+        </div>
+      </section>
+
+      <p className="foot" style={{ margin: 0 }}>Sample household. Estimates use scheduled bills and typical daily spending from bank history. Safe Bet never moves money on its own.</p>
+    </>
+  );
+}
+
+function Day({ s, r, day, onBack, onChoose }) {
+  const d = r.days.find(x => x.day === day);
+  const fixes = day === r.bustDay || day === r.closeDay || (r.state !== 'safe' && day >= (r.bustDay || r.closeDay)) ? makeFixes(s) : [];
+  const spendLine = { label: 'Everyday spending', amount: s.dailySpend };
+  return (
+    <>
+      <div className="row">
+        <button className="btn ghost" style={{ width: 44, minHeight: 44, padding: 0, borderRadius: 999 }} onClick={onBack} aria-label="Back to the table"><Icon name="back" /></button>
+        <strong style={{ fontSize: 17 }}>{dayName(day)}</strong>
+      </div>
+
+      <section className={'hero ' + d.state}>
+        <div className="state">{d.state === 'bust' ? 'Bust.' : d.state === 'close' ? 'Close call.' : 'Safe bet.'}</div>
+        <p>{d.state === 'bust' ? <>About <strong>{money(-d.balance)} short</strong> after the day's bills.</> : <>You end the day with <strong>{money(d.balance)}</strong>.</>}</p>
+      </section>
+
+      <section className="panel" style={{ gap: 0, paddingTop: 6, paddingBottom: 6 }}>
+        <div className="line"><span className="what" style={{ color: 'var(--muted)' }}>Balance that morning</span><span className="amt out">{money(d.morning)}</span></div>
+        {d.bills.map(b => <div className="line" key={b.id}><span className="what">{b.label}{b.surprise ? ' (surprise)' : ''}</span><span className="amt out">−{money(b.amount)}</span></div>)}
+        <div className="line"><span className="what">{spendLine.label}</span><span className="amt out">−{money(spendLine.amount)}</span></div>
+        {d.deposits.map(x => <div className="line" key={x.id}><span className="what">{x.label}</span><span className="amt in">+{money(x.amount)}</span></div>)}
+        <div className="line"><span className="what" style={{ fontWeight: 600 }}>End of day</span><span className={'amt ' + (d.balance < 0 ? 'neg' : 'out')} style={{ fontWeight: 700 }}>{money(d.balance)}</span></div>
+      </section>
+
+      {fixes.length > 0 && (
+        <section className="stack" style={{ gap: 12 }}>
+          <h2>Hedge it.</h2>
+          <p style={{ margin: 0, color: 'var(--muted)' }}>Pick one. Nothing moves until you say so.</p>
+          {fixes.map((f, i) => (
+            <div className={'fix' + (i === 0 ? ' best' : '')} key={f.id}>
+              <h3>{f.title}</h3>
+              <p>{f.detail}</p>
+              <span className={'outcome ' + f.outcome.state}>
+                <Icon name={f.outcome.state === 'safe' ? 'check' : 'chip'} size={16} />
+                {f.outcome.state === 'safe' ? `Safe bet: ${money(f.outcome.safeToSpend)} to spend before payday` : f.outcome.state === 'close' ? `Close call: ${money(f.outcome.low.balance)} to spare` : `Still ${money(-f.outcome.low.balance)} short`}
+              </span>
+              <button className={'btn' + (i === 0 ? '' : ' ghost')} onClick={() => onChoose(f)}>{f.cta}</button>
+            </div>
+          ))}
+        </section>
+      )}
+      {fixes.length === 0 && r.state !== 'safe' && day !== r.bustDay && (
+        <p className="fine" style={{ margin: 0 }}>The tight day is the {ordinal(r.bustDay || r.closeDay)}. Open it to see your options.</p>
+      )}
+      {fixes.length === 0 && r.state === 'safe' && <p className="fine" style={{ margin: 0 }}>Nothing to fix here. Every bill is covered.</p>}
+    </>
+  );
+}
+
+function Verify({ fix, onConfirm, onCancel }) {
+  return (
+    <>
+      <div className="shield"><Icon name="shield" size={36} color="var(--safe)" /></div>
+      <h2>Prove it's you.</h2>
+      <p style={{ margin: 0, fontSize: 17 }}>Money only moves after a real person confirms it. This is the one step Safe Bet will always ask for.</p>
+      <div className="panel"><strong>{fix.title}</strong><span className="fine">{fix.detail}</span></div>
+      <button className="btn felt" onClick={onConfirm}><Icon name="check" size={18} /> It's me, do it</button>
+      <button className="link" onClick={onCancel}>Cancel</button>
+      <p className="foot" style={{ margin: 0 }}>In the real app this screen is Persona's identity check. In the demo it's one tap.</p>
+    </>
+  );
+}
+
+function Done({ s, r, onBack }) {
+  const fund = Math.round(s.savings / s.savingsGoal * 100);
+  return (
+    <>
+      <div className="shield" style={{ background: 'var(--safe-bg)' }}><Icon name="check" size={36} color="var(--safe)" /></div>
+      <h2>{r.state === 'safe' ? 'Covered. Safe bet.' : r.state === 'close' ? 'Covered, just barely.' : 'Not enough yet.'}</h2>
+      <p style={{ margin: 0, fontSize: 17 }}>{s.log[s.log.length - 1]} {r.state === 'safe' ? <>You now have <strong>{money(r.safeToSpend)}</strong> safe to spend before payday.</> : r.state === 'close' ? <>You stay above zero with <strong>{money(r.low.balance)}</strong> to spare.</> : <>The {ordinal(r.bustDay)} is still <strong>{money(-r.low.balance)}</strong> short. Pick another hedge.</>}</p>
+      <section className="stack" style={{ gap: 10 }}>
+        <div className="label">The odds board · next 16 days</div>
+        <Board days={r.days} cushion={s.cushion} selected={null} onPick={() => {}} />
+      </section>
+      <section className="panel">
+        <div className="row between">
+          <div className="row" style={{ gap: 8 }}><Icon name="chip" size={20} color="var(--gold-deep)" /><strong style={{ fontSize: 17 }}>House money</strong></div>
+          <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{money(s.savings)} of {money(s.savingsGoal)}</span>
+        </div>
+        <div className="bar"><i style={{ width: fund + '%' }}></i></div>
+        <p className="fine" style={{ margin: 0 }}>On safe days, Safe Bet can set aside $5 to rebuild your buffer.</p>
+      </section>
+      <button className="btn" onClick={onBack}>Back to the table</button>
+    </>
+  );
+}
+
+function App() {
+  const [s, setS] = useState(BASE);
+  const [screen, setScreen] = useState('home');
+  const [day, setDay] = useState(null);
+  const [pending, setPending] = useState(null);
+  const [dice, setDice] = useState([5, 2]);
+  const [rolling, setRolling] = useState(false);
+  const [lastRoll, setLastRoll] = useState(null);
+  const r = useMemo(() => project(s), [s]);
+
+  const roll = () => {
+    setRolling(true);
+    const pick = SURPRISES[Math.floor(Math.random() * SURPRISES.length)];
+    const d = 12 + Math.floor(Math.random() * 12);
+    setTimeout(() => {
+      setDice([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]);
+      setS(st => ({ ...st, bills: [...st.bills, { id: 'surprise-' + Date.now(), label: pick.label, day: d, amount: pick.amount, movable: false, surprise: true }] }));
+      setLastRoll({ ...pick, day: d });
+      setRolling(false);
+    }, 700);
+  };
+  const choose = f => { if (f.verify) { setPending(f); setScreen('verify'); } else { setS(f.apply(s)); setScreen('done'); } };
+  const confirm = () => { setS(pending.apply(s)); setPending(null); setScreen('done'); };
+  const reset = () => { setS(BASE); setLastRoll(null); setScreen('home'); };
+
+  return (
+    <div className="table">
+      <header className="marquee">
+        <h1>Safe Bet</h1>
+        <p>Know your odds before payday. Never gamble with the rent.</p>
+      </header>
+      <main className="card">
+        {screen === 'home' && <Home s={s} r={r} onCover={() => { setDay(r.bustDay || r.closeDay); setScreen('day'); }} onPick={d => { setDay(d); setScreen('day'); }} onRoll={roll} rolling={rolling} dice={dice} lastRoll={lastRoll} onReset={reset} />}
+        {screen === 'day' && <Day s={s} r={r} day={day} onBack={() => setScreen('home')} onChoose={choose} />}
+        {screen === 'verify' && <Verify fix={pending} onConfirm={confirm} onCancel={() => setScreen('day')} />}
+        {screen === 'done' && <Done s={s} r={r} onBack={() => setScreen('home')} />}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
