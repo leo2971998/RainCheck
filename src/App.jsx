@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { useReducedMotion } from './hooks/useMotion.js';
 import { useHousehold } from './hooks/useHousehold.js';
 import { useTransfer } from './hooks/useTransfer.js';
 import { usePersistentState, clearPersisted, hasPersisted } from './hooks/usePersistentState.js';
@@ -36,7 +38,21 @@ export default function App() {
 }
 
 function Workspace({ household: base, transactions, notice, source, discovered: candidates = [], pendingNotices = [] }) {
-  const [page, setPage] = useState('dashboard');
+  const [page, setPageRaw] = useState('dashboard');
+  const reducedMotion = useReducedMotion();
+
+  /**
+   * Cross-fade between sections where the browser supports it.
+   *
+   * Navigation is the one path a demo cannot afford to break, so every failure mode — no View
+   * Transitions API, a reader who asked for reduced motion, an exception inside the callback —
+   * falls through to an ordinary state change.
+   */
+  const setPage = useCallback(next => {
+    const go = () => setPageRaw(next);
+    if (reducedMotion || typeof document.startViewTransition !== 'function') return go();
+    try { document.startViewTransition(() => flushSync(go)); } catch { go(); }
+  }, [reducedMotion]);
   const [drawer, setDrawer] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [previewId, setPreviewId] = useState(null);      // an option's identity, not a snapshot of it

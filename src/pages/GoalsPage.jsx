@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Icon, money, prettyIso, monthOf } from '../components/ui.jsx';
+import { Icon, Num, money, prettyIso, monthOf } from '../components/ui.jsx';
 import { GoalChart } from '../components/charts.jsx';
 
 /**
@@ -69,11 +69,11 @@ export default function GoalsPage({ h, base, plan, change, cap, goal, history, o
             )}
 
             <div className="grid g4" style={{ gap: 10 }}>
-              <Measure label="Already saved" value={money(goal.saved)} sub="Actually in the account" />
-              <Measure label="That date asks for" value={`${money(goal.required)}/mo`} sub={`${goal.left} contribution${goal.left === 1 ? '' : 's'}`} />
-              <Measure label="Your plan can carry" value={`${money(goal.supported)}/mo`} sub="Alongside bills and cushion"
+              <Measure label="Already saved" value={<Num v={goal.saved} />} sub="Actually in the account" />
+              <Measure label="That date asks for" value={<><Num v={goal.required} />/mo</>} sub={`${goal.left} contribution${goal.left === 1 ? '' : 's'}`} />
+              <Measure label="Your plan can carry" value={<><Num v={goal.supported} />/mo</>} sub="Alongside bills and cushion"
                 tone={goal.feasible ? 'good' : 'bad'} />
-              <Measure label="Projected result" value={money(goal.projected)} sub={goal.onTarget ? 'Reaches the target' : `${money(goal.gap)} short`} />
+              <Measure label="Projected result" value={<Num v={goal.projected} />} sub={goal.onTarget ? 'Reaches the target' : `${money(goal.gap)} short`} />
             </div>
 
             <div className={'alert ' + (goal.feasible ? 'good' : '')}>

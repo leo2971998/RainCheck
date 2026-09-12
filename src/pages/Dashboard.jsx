@@ -1,4 +1,4 @@
-import { Icon, Kpi, STATE, money, prettyDate, longDate, prettyIso, weekdayIso } from '../components/ui.jsx';
+import { Icon, Kpi, Num, STATE, money, prettyDate, longDate, prettyIso, weekdayIso } from '../components/ui.jsx';
 import { AreaChart, GoalChart, CashBars } from '../components/charts.jsx';
 import IncomeList from '../components/IncomeList.jsx';
 import Alerts from '../components/Alerts.jsx';
@@ -45,16 +45,16 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
       </div>
       <div className="top-actions"><span className="pill teal"><Icon n="bank" s={13} />{sourceLabel}</span><span className="pill neutral" title="Items needing attention"><Icon n="bell" s={13} />{alerts.filter(a => a.tone !== 'good').length}</span></div>
       <div className="grid g4" style={{ marginBottom: 18 }}>
-        <Kpi label="Checking balance" value={money(h.checking)} sub="Everyday Checking" />
-        <Kpi label="Lowest projected balance" value={money(sim.low.balance)} sub={`${prettyDate(sim.low.date)} · cushion ${money(h.cushion)}`} pill={<span className={'pill ' + tone}>{st}</span>} />
-        <Kpi label="Contribution the plan supports" value={`${money(cap)}/mo`} sub={`Planned ${money(h.goal.planned)} · ${cap < h.goal.planned ? `${money(h.goal.planned - cap)} less after the bill change` : 'unchanged'}`} pill={cap < h.goal.planned ? <span className="pill warn"><Icon n="down" s={11} />{money(h.goal.planned - cap)}</span> : <span className="pill good">OK</span>} />
-        <Kpi label={h.goal.label} value={money(goal.projected)} sub={`Projected of ${money(h.goal.target)} by ${goal.targetLabel}`} pill={goal.gap ? <span className="pill bad">{money(goal.gap)} short</span> : <span className="pill good">On track</span>} />
+        <Kpi label="Checking balance" value={<Num v={h.checking} />} sub="Everyday Checking" />
+        <Kpi label="Lowest projected balance" value={<Num v={sim.low.balance} />} sub={`${prettyDate(sim.low.date)} · cushion ${money(h.cushion)}`} pill={<span className={'pill ' + tone}>{st}</span>} />
+        <Kpi label="Contribution the plan supports" value={<><Num v={cap} />/mo</>} sub={`Planned ${money(h.goal.planned)} · ${cap < h.goal.planned ? `${money(h.goal.planned - cap)} less after the bill change` : 'unchanged'}`} pill={cap < h.goal.planned ? <span className="pill warn"><Icon n="down" s={11} />{money(h.goal.planned - cap)}</span> : <span className="pill good">OK</span>} />
+        <Kpi label={h.goal.label} value={<Num v={goal.projected} />} sub={`Projected of ${money(h.goal.target)} by ${goal.targetLabel}`} pill={goal.gap ? <span className="pill bad">{money(goal.gap)} short</span> : <span className="pill good">On track</span>} />
       </div>
       <div className="grid g32">
         <div className="grid" style={{ gap: 18 }}>
           <div className="card">
             <div className="hd"><div><h2>Projected checking balance</h2><div className="fine">{preview ? `Dashed line: ${preview.title.toLowerCase()}. Solid line: your current plan.` : `Next ${h.windowDays} days · scheduled bills, expected income, everyday spending and your ${money(sc.contribution)} contribution`}</div></div>
-              <div className="legend"><span><i style={{ background: '#4F46E5' }}></i>Balance</span><span><i style={{ background: '#0D9488', borderRadius: '50%' }}></i>Paycheck</span><span><i style={{ background: '#fff', border: '2px solid #4F46E5', borderRadius: '50%', width: 8, height: 8 }}></i>Bill ≥ $100</span><span><i style={{ background: '#D97706', height: 2, width: 14 }}></i>Cushion</span></div></div>
+              <div className="legend"><span><i style={{ background: 'var(--rain)' }}></i>Balance</span><span><i style={{ background: 'var(--mint)', borderRadius: '50%' }}></i>Paycheck</span><span><i style={{ background: 'var(--surface)', border: '2px solid var(--rain)', borderRadius: '50%', width: 8, height: 8 }}></i>Bill ≥ $100</span><span><i style={{ background: 'var(--warn)', height: 2, width: 14 }}></i>Cushion</span></div></div>
             <AreaChart h={h} sim={sim} preview={previewSim} id="dash" />
           </div>
           <div className="grid g2">
@@ -115,7 +115,7 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
           </div>
         </div>
         <div className="grid" style={{ gap: 18 }}>
-          {found && <div className="card" style={{ background: 'linear-gradient(135deg, #EEF0FF, #F6F7FB)' }}><div className="hd"><h2>Here is what we found</h2><button className="link" onClick={() => setFound(false)}>Dismiss</button></div>
+          {found && <div className="card" style={{ background: 'var(--insight-bg)' }}><div className="hd"><h2>Here is what we found</h2><button className="link" onClick={() => setFound(false)}>Dismiss</button></div>
             <div className="row wrap" style={{ gap: 6 }}><span className="pill good"><Icon n="check" s={11} />Paycheck about every {cadenceWords(h.income)}</span><span className="pill good"><Icon n="check" s={11} />{h.recurring.length} recurring commitments</span>{reviewCount > 0 && <span className="pill warn">{reviewCount} charge{reviewCount === 1 ? ' needs' : 's need'} review</span>}</div>
             <div><button className="btn ghost sm" onClick={() => open('page:transactions')}>Review my plan</button></div></div>}
           <Alerts alerts={alerts} open={open} />

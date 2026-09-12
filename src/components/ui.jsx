@@ -1,3 +1,4 @@
+import { useCountUp } from '../hooks/useMotion.js';
 export const money = n => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
 export const moneyPrecise = n => (n < 0 ? '−$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const prettyDate = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -33,6 +34,17 @@ export const Icon = ({ n, s = 18, c = 'currentColor' }) => {
   }[n];
   return <svg {...p}>{d}</svg>;
 };
+
+/**
+ * A number that travels to its new value instead of teleporting.
+ *
+ * `format` receives a partway number during the tween, so anything rounded stays readable the
+ * whole way across rather than flickering through decimals.
+ */
+export function Num({ v, format = money }) {
+  const shown = useCountUp(v);
+  return <>{format(Math.round(shown))}</>;
+}
 
 export function Kpi({ label, value, sub, pill }) { return <div className="card kpi" style={{ gap: 6 }}><div className="row between"><span className="l">{label}</span>{pill}</div><div className="v">{value}</div><div className="s">{sub}</div></div>; }
 export function Toggle({ on, onChange, children }) { return <label className={'toggle' + (on ? ' on' : '')}><input type="checkbox" checked={on} onChange={e => onChange(e.target.checked)} style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }} /><i></i>{children}</label>; }

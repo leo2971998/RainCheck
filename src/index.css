@@ -198,3 +198,63 @@
     .weather-hero .sub { max-width: 230px; }
     .hero-weather { right: -45px; bottom: -5px; }
   }
+
+  /* ===== Motion =============================================================================
+     Movement here is for legibility, not ornament. Cards arrive in reading order so the eye has
+     somewhere to start; numbers and chart lines travel so a change has a visible cause; hover and
+     press feedback confirms that a control is a control. Everything switches off together under
+     prefers-reduced-motion, which is handled in one block at the end rather than per rule. */
+
+  :root { --ease-out: cubic-bezier(.2,.8,.2,1); --ease-soft: cubic-bezier(.4,0,.2,1); }
+
+  /* --- Cards arrive in sequence -------------------------------------------------------------
+     fill-mode is `backwards`, not `both`: `both` would keep the final transform pinned and the
+     hover lift below would never apply. */
+  @keyframes card-rise { from { opacity: 0; transform: translateY(14px) scale(.992); } to { opacity: 1; transform: none; } }
+  .card { animation: card-rise .46s var(--ease-out) backwards; }
+  .grid > *:nth-child(2) .card, .grid > .card:nth-child(2) { animation-delay: .04s; }
+  .grid > *:nth-child(3) .card, .grid > .card:nth-child(3) { animation-delay: .08s; }
+  .grid > *:nth-child(4) .card, .grid > .card:nth-child(4) { animation-delay: .12s; }
+  .grid > *:nth-child(5) .card, .grid > .card:nth-child(5) { animation-delay: .16s; }
+  .grid > *:nth-child(6) .card, .grid > .card:nth-child(6) { animation-delay: .2s; }
+
+  /* --- Surfaces respond to the pointer ------------------------------------------------------ */
+  .card { transition: transform .26s var(--ease-soft), box-shadow .26s var(--ease-soft), border-color .26s; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 2px 4px oklch(.35 .06 240 / .05), 0 18px 44px oklch(.45 .08 230 / .12); }
+  .kpi:hover { border-color: color-mix(in oklab, var(--rain) 34%, var(--line)); }
+  .btn, .chip, .nav, .link { transition: transform .16s var(--ease-soft), background .18s, color .18s, box-shadow .18s; }
+  .btn:hover, .chip:hover { transform: translateY(-1px); }
+  .btn:active, .chip:active, .nav:active { transform: translateY(0) scale(.975); }
+  .nav:hover { transform: translateX(2px); }
+  .option { transition: transform .26s var(--ease-soft), box-shadow .26s var(--ease-soft); }
+  .option:hover { transform: translateY(-3px); box-shadow: 0 14px 32px oklch(.45 .08 230 / .12); }
+
+  /* --- Consequences announce themselves -----------------------------------------------------
+     Only the pills that carry bad news, so the effect stays meaningful rather than ambient. */
+  @keyframes pill-pop { 0% { opacity: 0; transform: scale(.82); } 60% { transform: scale(1.06); } 100% { opacity: 1; transform: none; } }
+  .pill.bad, .pill.warn { animation: pill-pop .42s var(--ease-out) backwards; }
+  .alert { animation: card-rise .4s var(--ease-out) backwards; }
+
+  /* --- Charts ------------------------------------------------------------------------------- */
+  .ch-line { stroke: var(--rain); }
+  .ch-line.muted { stroke: var(--cloud-deep); }
+  .ch-preview { stroke: var(--rain); }
+  .ch-area { transition: opacity .3s; }
+  .ch-dot { transition: cx .5s var(--ease-out), cy .5s var(--ease-out), fill .3s; }
+  /* Drawn once on mount. pathLength="1" normalises the dash to the whole line whatever its shape. */
+  @keyframes draw-line { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  .ch-draw { stroke-dasharray: 1; animation: draw-line 1.15s var(--ease-soft) backwards; }
+
+  /* --- Between sections --------------------------------------------------------------------- */
+  ::view-transition-old(root) { animation: vt-out .22s var(--ease-soft) both; }
+  ::view-transition-new(root) { animation: vt-in .3s var(--ease-out) both; }
+  @keyframes vt-out { to { opacity: 0; transform: translateY(-6px); } }
+  @keyframes vt-in { from { opacity: 0; transform: translateY(10px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card, .alert, .pill.bad, .pill.warn, .ch-draw { animation: none; }
+    .ch-draw { stroke-dasharray: none; }
+    .card, .btn, .chip, .nav, .link, .option, .ch-dot { transition: none; }
+    .card:hover, .option:hover, .btn:hover, .chip:hover, .nav:hover { transform: none; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+  }
