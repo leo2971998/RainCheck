@@ -16,7 +16,7 @@ npm run dev          # http://127.0.0.1:5176
 It starts on sample data with no setup. `npm run dev` also serves the `api/` folder the way Vercel does, so the live path can be tested locally.
 
 ```bash
-npm test             # 60 tests, locked against the real sandbox snapshot
+npm test             # engine, API, and dataset regression tests
 npm run build
 ```
 
@@ -29,6 +29,54 @@ npm run build
 The base URL is `https://api.nessieisreal.com`. The `http://` address in Nessie's own docs times out.
 
 Without a key the app reads `data/nessie-snapshot.json`, a real read-back from the sandbox, so it still works with no network.
+
+## Larger backend test dataset
+
+The separate **RC Backend V1** household contains 12 months of synthetic activity: 426 transactions,
+three accounts (checking, emergency savings, travel savings), 18 merchants, and seven recurring bills.
+It includes a payroll raise, bill postings, refunds, cash withdrawals, and 24 paired savings transfers.
+It does not replace the published Alex Rivera demo, UI, or bundled sample files.
+
+```bash
+npm run data:preview  # deterministic summary; no writes or network
+npm run data:seed     # create/resume ONLY the separate test household, then read back and reconcile
+```
+
+The seeder loads `NESSIE_KEY` from `.env.local`. It never deletes or overwrites existing records,
+and stops on conflicts. Run only one seed process at a time. A lost response can be recovered by
+rerunning: matching records are read before any new POST. Do not use the older `seed-nessie.mjs`
+to expand existing data: that legacy script can rebuild the original checking account.
+
+Generated `output/nessie-backend-v1/` contains native-ID mappings (`manifest.json`), a read-back
+export (`snapshot.json`), and a balance/income check (`verification.json`). These ignored files contain
+test data, not API keys. The persistent records live in Nessie, not in the export files.
+
+Set the optional `NESSIE_TEST_*` values in `.env.local` from the manifest and restart the dev server.
+The default website still uses its original `NESSIE_*` account IDs.
+
+Backend reads:
+
+- `GET /api/household?dataset=backend`: forecast inputs from the larger dataset; income includes source transaction IDs.
+- `GET /api/transactions?dataset=backend&limit=50&offset=0`: checking history, ISO dates, native IDs, merchant and bill links.
+- Add `accountId` from the response's account list to read a savings account.
+- Optional filters: `kind=income`, `from=2026-09-01`, `to=2026-09-28`. Filtering happens before pagination; totals cover the entire filtered result.
+- `dataset=demo` (default) selects the original demo. Other dataset names/accounts are rejected. The transaction route never substitutes sample records when live reads fail.
+
+Income comparisons must use the same period: the original $1,700 biweekly payroll produces
+$3,400 in September 2026 but $5,100 in October (three paydays). The larger test household's latest
+$1,800 payroll produces a $1,800-per-payday estimate, linked to the deposits that supplied it.
+Estimates are not confirmed future deposits. Recognition currently uses payroll-description rules
+and the dominant observed income series; irregular/multiple-source income needs further work.
+
+Future CRUD must preserve customer/account ownership, native IDs, and paired-transfer relationships.
+The manifest explicitly links refunds to purchases and both transfer legs; API transfer matching is
+an inference from descriptions, amounts and dates, and reports ambiguous pairs instead of guessing.
+Nessie's stored balances do not automatically re-total after transaction writes: seed-time balances
+are reconciled to opening funds plus posted history. A later CRUD service will need ledger reconciliation,
+per-user authorization, and durable idempotency. No new public write endpoints are enabled here.
+
+API shape reference: [Nessie's official SDK](https://github.com/nessieisreal/nessie-javascript-sdk).
+Older SDK routes can differ from the deployed sandbox; creation and read-back are verified live by the new seeder.
 
 ## How it works
 

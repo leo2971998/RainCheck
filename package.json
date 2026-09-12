@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4176 --strictPort",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "data:preview": "node scripts/seed-backend.mjs",
+    "data:seed": "node scripts/seed-backend.mjs --apply"
   },
   "dependencies": {
     "react": "19.2.8",
