@@ -1,11 +1,13 @@
 import { householdVersion, readReviewPlan } from './_review.js';
 import { budgetImpact, readSubscription, subscriptionPatch } from '../src/engine/budget.js';
 import { householdFor, scenarioFor } from '../src/engine/plan.js';
-import { amountFor, nextChargeDate, round2 } from '../src/engine/forecast.js';
+import { amountFor, nextChargeDate, round2, simulate } from '../src/engine/forecast.js';
+import { forecastEvidenceDocuments } from '../src/engine/forecast-explanation.js';
 
 const object = (value, keys) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(k => keys.includes(k));
 export function calculateChat(base, body) {
-  if (!object(body, ['consent', 'baseVersion', 'plan', 'tool', 'args']) || body.consent !== true) throw new Error('Invalid request');
+  if (!object(body, ['consent', 'baseVersion', 'plan', 'tool', 'args', 'dataset']) || body.consent !== true
+    || (body.dataset !== undefined && !['demo', 'history'].includes(body.dataset))) throw new Error('Invalid request');
   if (body.baseVersion !== householdVersion(base)) throw Object.assign(new Error('The bank data changed. Refresh RainCheck before asking again.'), { status: 409 });
   const plan = readReviewPlan(body.plan, base);
   const h = householdFor(base, plan), sc = scenarioFor(h, plan), args = body.args;
@@ -31,6 +33,7 @@ export function calculateChat(base, body) {
     patch = subscriptionPatch(id, item);
     preview = { label: item.label, amount: item.amount, startsOn: item.startsOn, applied: false };
   } else throw new Error('This chat cannot perform that action');
-  return { impact: budgetImpact(base, plan, patch), bills, preview,
+  return { impact: budgetImpact(base, plan, patch), bills, preview, ...(base.spendingModel ? { history: base.spendingModel } : {}),
+    forecastEvidence: forecastEvidenceDocuments(h, simulate(h, sc)),
     assumptions: ['Nessie sandbox data, not a real bank account.', 'Forecasts are estimates based on the current plan.', 'Any preview is separate from your saved plan. No payment or budget changes have been made.'] };
 }

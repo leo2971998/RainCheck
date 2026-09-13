@@ -1,16 +1,32 @@
 import { useState } from 'react';
 import Drawer, { DrawerHeader } from '../components/Drawer.jsx';
 import BudgetImpact, { budgetMoney, budgetDate } from '../components/BudgetImpact.jsx';
+import PurchaseSteps from '../components/PurchaseSteps.jsx';
 import ReviewPanel from '../components/ReviewPanel.jsx';
 import { purchaseImpact } from '../engine/purchase-impact.js';
 import { readPurchase, purchaseSchedule, withPurchase } from '../engine/purchases.js';
 import { householdFor, scenarioFor } from '../engine/plan.js';
+import { budgetStatus } from '../engine/review-status.js';
 import { toast } from '../components/Toast.jsx';
 
-export default function PurchaseDrawer({ id, base, baseVersion, plan, refresh, onClose }) {
+const monthName = iso => new Date(`${iso.slice(0, 7)}-01T12:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+export function purchaseSaveToast({ matching = false, removing = false, editing = false, status, previewMonth, onOpenAlerts }) {
+  if (matching) return { title: 'Purchase completed', body: 'Matched to a posted charge. The future estimate is no longer counted.', tone: 'neutral', actions: [] };
+  if (removing) return { title: 'Purchase removed from the plan', body: 'The estimate no longer affects your forecast. No bank payment changed.', tone: 'neutral', actions: [] };
+  if (status?.tone === 'warn' || status?.tone === 'bad') return {
+    title: `${previewMonth} budget alert added`,
+    body: 'This purchase puts the current plan under pressure. Review the alert to adjust the purchase or compare another plan.',
+    tone: status.tone,
+    actions: onOpenAlerts ? [{ label: 'Review alert', run: onOpenAlerts }] : [],
+  };
+  return { title: editing ? 'Purchase updated' : `Added to ${previewMonth}`, body: 'The purchase is now included in that month’s plan. No bank payment changed.', tone: 'good', actions: [] };
+}
+
+export default function PurchaseDrawer({ id, initialDate, base, baseVersion, plan, refresh, onOpenAlerts, onClose }) {
   const existing = base.plannedPurchases?.find(p => p.id === id);
   const [itemId] = useState(() => id || crypto.randomUUID());
-  const [draft, setDraft] = useState(() => existing || { label: '', merchant: '', amount: '', date: base.today, accountId: base.checkingId, allowanceId: '' });
+  const [draft, setDraft] = useState(() => existing || { label: '', amount: '', date: initialDate || base.today, accountId: base.checkingId, allowanceId: '' });
   const [preview, setPreview] = useState(null), [matches, setMatches] = useState(null), [selected, setSelected] = useState('');
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const close = () => { if (!busy) onClose(); };
@@ -35,8 +51,7 @@ export default function PurchaseDrawer({ id, base, baseVersion, plan, refresh, o
           ...(matching ? { action: 'match', transactionId: selected, confirmed: true } : { draft: preview?.patch.draft }) }) });
       const result = await response.json(); if (!response.ok) throw new Error(result.message);
       if (await refresh()) {
-        toast.push({ title: matching ? 'Purchase completed' : removing ? 'Purchase removed from the plan' : 'Purchase saved',
-          body: matching ? 'Matched to a posted charge. The future estimate is no longer counted.' : 'Your forecast has been updated. No bank payment changed.', tone: 'neutral' });
+        toast.push(purchaseSaveToast({ matching, removing, editing: Boolean(existing), status, previewMonth, onOpenAlerts }));
         onClose();
       }
     } catch(e) { setError(e.name === 'TimeoutError' || e instanceof TypeError ? 'The save could not be confirmed. Refresh purchases before trying again.' : e.message); }
@@ -52,8 +67,11 @@ export default function PurchaseDrawer({ id, base, baseVersion, plan, refresh, o
     } catch { setError('We couldn’t check for matching charges. Refresh purchases and try again.'); }
     finally { setBusy(false); }
   };
+  const status = preview && budgetStatus(preview.impact.after, base.cushion);
+  const previewMonth = preview && monthName(preview.remove ? existing.date : preview.patch.draft.date);
   return <Drawer label={title} onClose={close} className="purchase-drawer"><DrawerHeader title={title} icon="cart" onClose={close} />
     <p>A one-time estimate for checking. You decide whether to save it; RainCheck never makes the purchase.</p>
+    {!matches && <PurchaseSteps compact current={preview ? 2 : 1} />}
     {!preview && !matches && <>
       <form className="budget-form" onSubmit={showPreview}>
         <label>What are you planning?<input name="label" value={draft.label} onChange={update} maxLength={100} required placeholder="e.g. Concert tickets" disabled={busy} /></label>
@@ -63,8 +81,6 @@ export default function PurchaseDrawer({ id, base, baseVersion, plan, refresh, o
           <option value="">Extra spending — not in my usual budget</option>{base.allowances.map(a => <option key={a.id} value={a.id}>Use my {a.label.toLowerCase()} allowance</option>)}
         </select></label>
         <p className="fine">Using an allowance moves that spending to this date. Any amount above the remaining allowance counts as extra.</p>
-        <details><summary>Merchant for matching (optional)</summary><label>Merchant name<input name="merchant" maxLength={100} value={draft.merchant || ''} onChange={update} disabled={busy} placeholder="Name you expect on the bank charge" /></label>
-          <p className="fine">Later, you can confirm a matching posted charge. We won’t mark it completed automatically.</p></details>
         <button className="btn" disabled={busy} type="submit">Preview impact</button>
       </form>
       {existing && <div className="purchase-secondary"><button className="btn ghost" onClick={findMatches} disabled={busy}>Find a posted charge</button>
@@ -72,25 +88,43 @@ export default function PurchaseDrawer({ id, base, baseVersion, plan, refresh, o
         <p className="fine">Matching uses your last saved purchase details, not unsaved edits above.</p></div>}
     </>}
     {preview && <>
-      <h3>{preview.remove ? `Remove ${existing.label}?` : `${preview.patch.draft.label} · ${budgetMoney(preview.patch.draft.amount)}`}</h3>
-      <p>{preview.remove ? 'Only the estimate leaves your forecast. No order is cancelled; history is kept.' : `Planned for ${budgetDate(preview.patch.draft.date)}.`}</p>
+      <section className={`purchase-preview-head ${status.tone}`}>
+        <div><span className="review-eyebrow">Step 2 · Calculated plan check</span><span className={`pill ${status.tone}`}>{status.label}</span></div>
+        <h3>{preview.remove ? `Remove ${existing.label}?` : `${preview.patch.draft.label} · ${budgetMoney(preview.patch.draft.amount)}`}</h3>
+        <p>{preview.remove ? `This estimate will leave the ${previewMonth} plan. No order is cancelled; history is kept.` : `Planned for ${budgetDate(preview.patch.draft.date)} and included in the ${previewMonth} plan.`}</p>
+      </section>
       {preview.allocation && <p className="purchase-coverage">{preview.allocation.covered > 0
         ? `${budgetMoney(preview.allocation.covered)} comes from the existing allowance. ${budgetMoney(preview.allocation.extra)} is extra spending.` : 'Counted once as extra spending.'}</p>}
+      <section className={`purchase-month-check ${status.tone}`} aria-label={`${previewMonth} alert check`}>
+        <span className="purchase-month-icon" aria-hidden="true">{status.tone === 'good' ? '✓' : '!'}</span>
+        <div><span className="review-eyebrow">{previewMonth} · Alert check</span>
+          <h3>{status.tone === 'good' ? 'No budget warning from this preview' : `This month’s plan needs attention`}</h3>
+          <p>{status.tone === 'good'
+            ? 'The current calculation stays within your checking cushion and savings plan. Saving still adds the purchase to this month.'
+            : 'If you save this purchase, RainCheck will add a calculated warning to Alerts. You can adjust the cost or date before saving.'}</p></div>
+      </section>
       <section className="purchase-week" aria-label="Purchase week impact"><span className="review-eyebrow">That week · {budgetDate(preview.impact.week.startsOn)}–{budgetDate(preview.impact.week.endsOn)}</span>
         <h3>Lowest checking balance</h3><div><span>Now <b>{budgetMoney(preview.impact.week.beforeLow)}</b></span><span aria-hidden="true">→</span><span>Preview <b>{budgetMoney(preview.impact.week.afterLow)}</b></span></div>
         <p className="fine">End-of-day estimate. Your checking cushion is {budgetMoney(base.cushion)}.</p></section>
       <BudgetImpact impact={preview.impact} />
-      <p>Your planned savings contribution stays the same. If the cushion check fails, you may need to adjust the purchase or your plan.</p>
-      <details className="budget-ai-review"><summary>Talk through this with AI</summary><ReviewPanel baseVersion={baseVersion} plan={plan} patch={preview.patch} kind="purchase" /></details>
-      <div className="row wrap budget-actions"><button className="btn" disabled={busy} onClick={() => save()}>{busy ? 'Saving…' : preview.remove ? 'Confirm removal' : 'Save purchase'}</button>
-        <button className="btn ghost" disabled={busy} onClick={() => setPreview(null)}>Back to details</button></div>
-      <p className="fine">Saved to the local demo database, not just this browser. You can edit or remove a planned item later.</p>
+      <section className="purchase-ai-card">
+        <div className="purchase-decision-number" aria-hidden="true">3</div><div><span className="review-eyebrow">Optional explanation</span><h3>Review the plan with AI</h3>
+          <p>AI can explain the calculator’s result and point out assumptions. It cannot change the warning or save anything.</p></div>
+        <details className="budget-ai-review"><summary>Open AI review</summary><ReviewPanel baseVersion={baseVersion} plan={plan} patch={preview.patch} kind="purchase" /></details>
+      </section>
+      <section className="purchase-save-card">
+        <div className="purchase-decision-number" aria-hidden="true">4</div><div><span className="review-eyebrow">Your decision</span><h3>{preview.remove ? 'Remove this estimate?' : `Add this to ${previewMonth}?`}</h3>
+          <p>{preview.remove ? 'Its history stays available, but it stops affecting the forecast.' : 'Saving updates your plan and any related alerts. It never places an order or moves money.'}</p></div>
+        <div className="row wrap budget-actions"><button className="btn" disabled={busy} onClick={() => save()}>{busy ? 'Saving…' : preview.remove ? 'Confirm removal' : 'Save purchase'}</button>
+          <button className="btn ghost" disabled={busy} onClick={() => setPreview(null)}>Back to details</button></div>
+        <p className="fine">Saved to the local demo database, not just this browser. You can edit or remove a planned item later.</p>
+      </section>
     </>}
     {matches && <section aria-label="Match a posted charge"><h3>Is one of these your purchase?</h3>
-      <p>We look for a similar merchant, an amount within 10% (or $1), and a date within 7 days. Only posted checking purchases qualify.</p>
+      <p>We look for a similar purchase description, an amount within 10% (or $1), and a date within 7 days. Only posted checking purchases qualify.</p>
       {matches.length ? <fieldset className="purchase-matches"><legend>Choose the actual charge</legend>{matches.map(t => <label key={t.id}><input type="radio" name="charge" value={t.id} checked={selected === t.id} onChange={() => setSelected(t.id)} disabled={busy} />
         <span><b>{t.description} · {budgetMoney(-t.amount)}</b><small>{budgetDate(t.date)} · Posted</small></span></label>)}</fieldset>
-        : <p className="alert">No close posted charge found. Your purchase stays planned. If the merchant, estimate or date is wrong, edit and save those details first.</p>}
+        : <p className="alert">No close posted charge found. Your purchase stays planned. If the purchase name, estimate or date is wrong, edit and save those details first.</p>}
       {selected && <p className="alert">Confirming completes this plan. The actual charge is already in your bank balance, so the future estimate is removed. We keep both linked in history; no bank transaction is edited.</p>}
       <div className="row wrap budget-actions"><button className="btn" disabled={!selected || busy} onClick={() => save('match')}>{busy ? 'Confirming…' : 'Confirm this is the purchase'}</button>
         <button className="btn ghost" disabled={busy} onClick={() => setMatches(null)}>Back to details</button></div>

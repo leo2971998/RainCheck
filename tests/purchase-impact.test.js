@@ -27,6 +27,6 @@ it('checks a later purchase week even when the expense is beyond the short forec
   expect(impact.after.low).toBe(impact.before.low);
   expect(impact.after.plannedPurchases).toBe(0);
   expect(impact.week.startsOn).toBe('2026-12-07');
-  expect(impact.week.afterLow).toBe(impact.week.beforeLow - 200);
+  expect(impact.week.afterLow).toBeCloseTo(impact.week.beforeLow - 200, 2);
   expect(impact.after.supported).toBeLessThanOrEqual(impact.before.supported);
 });

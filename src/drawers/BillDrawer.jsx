@@ -1,107 +1,63 @@
 import { useState } from 'react';
-import { Icon, money, prettyIso } from '../components/ui.jsx';
+import { money, prettyIso } from '../components/ui.jsx';
 import { goalAt, goalPlan } from '../engine/forecast.js';
 import { scenarioFor } from '../engine/plan.js';
-import { questionFor } from '../engine/changes.js';
-import Drawer from '../components/Drawer.jsx';
+import Drawer, { DrawerHeader } from '../components/Drawer.jsx';
 
-export default function BillDrawer({ h, notice, billId, plan, change, cap, onCompare, onClose }) {
-  const [drafting, setDrafting] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  // Opened for one named bill. It used to always show whichever changed bill came first,
-  // which made a second imported change unreachable.
-  const bill = h.recurring.find(x => x.id === billId && x.change) ?? h.recurring.find(x => x.change);
+// Preserve old planning choices without presenting them as verified company statements.
+export default function BillDrawer({ h, billId, plan, change, cap, notes = {}, saveNote, onCompare, onClose }) {
+  const bill = h.recurring.find(r => r.id === billId && r.change) ?? h.recurring.find(r => r.change);
   if (!bill) return null;
-  const billChange = bill.change;
-  const increase = (plan.whatIf?.[bill?.id] ?? bill?.change?.to) - (bill?.amount ?? 0);
+  return <EstimateEditor key={bill.id} {...{ h, bill, plan, change, cap, notes, saveNote, onCompare, onClose }} />;
+}
+
+function EstimateEditor({ h, bill, plan, change, cap, notes, saveNote, onCompare, onClose }) {
+  const current = plan.whatIf?.[bill.id] ?? bill.change.to;
+  const key = 'bill-estimate:' + bill.id;
+  const [text, setText] = useState(notes[key] || '');
+  const [amount, setAmount] = useState(String(current));
+  const [error, setError] = useState('');
   const goal = h.fundedGoals ? goalPlan(h, scenarioFor(h, plan), h.goal) : goalAt(h, cap);
-  // An amount the user typed is an assumption. The notice establishes its own figure, and the
-  // app must not keep claiming the provider confirmed a number they never wrote.
-  const isWhatIf = increase !== billChange.increase;
-  const question = questionFor(bill, billChange);
-
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(question); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* the textarea is selectable either way */ }
+  const save = e => {
+    e.preventDefault();
+    const value = Number(amount);
+    if (!amount.trim() || !Number.isFinite(value) || value < 0 || value > 1000000 || Math.abs(value * 100 - Math.round(value * 100)) > 1e-6) {
+      setError('Enter an amount with up to two decimal places.'); return;
+    }
+    if (value !== current) change({ whatIf: { [bill.id]: value } }, bill.label + ' forecast estimate updated');
+    saveNote?.(key, text.trim());
+    onClose();
   };
-
-  return (
-    <Drawer label="Bill change details" onClose={onClose}>
-        <div className="row between">
-          <div className="cat"><i className="rec"><Icon n="repeat" s={14} /></i><h2>{bill.label}</h2></div>
-          <button className="btn ghost sm" onClick={onClose} aria-label="Close"><Icon n="x" s={16} /></button>
-        </div>
-
-        <div className="row wrap" style={{ gap: 6 }}>
-          <span className="pill warn"><Icon n="up" s={11} />Upcoming increase</span>
-          {isWhatIf
-            ? <span className="pill accent">What-if scenario · not what the notice says</span>
-            : <span className="pill good"><Icon n="check" s={11} />Confirmed from a notice</span>}
-        </div>
-
-        {isWhatIf && (
-          <div className="alert">
-            <b>You are exploring {money(increase)} a month.</b>
-            <p>The notice itself says {money(billChange.increase)}, taking the bill to {money(bill.amount + billChange.increase)}.
-               The evidence below still shows what the provider actually wrote.
-               <button className="link" style={{ fontSize: 13, marginLeft: 6 }}
-                 onClick={() => change({ whatIf: { [bill.id]: undefined } }, 'Back to the notice amount')}>Use the notice amount</button></p>
-          </div>
-        )}
-
-        <div className="kv">
-          <span className="k">Previous recurring amount</span><span className="v">{money(bill.amount)}/month</span>
-          <span className="k">New recurring amount</span><span className="v">{money(bill.amount + increase)}/month</span>
-          <span className="k">Increase</span><span className="v" style={{ fontWeight: 700 }}>{money(increase)}/month{isWhatIf && <div className="fine">notice says {money(billChange.increase)}</div>}</span>
-          <span className="k">Explanation</span><span className="v">{billChange.why}</span>
-          <span className="k">Next affected payment</span><span className="v">{prettyIso(billChange.effective)}</span>
-        </div>
-
-        <h3>Evidence</h3>
-        <div className="notice">{notice.split('\n').map((line, i) => {
-          const hit = billChange.evidence?.some(e => line.includes(e));
-          return <div key={i}>{hit ? <mark>{line}</mark> : (line || ' ')}</div>;
-        })}</div>
-        <div className="fine">A price change, not higher usage, a longer billing period, or a one-time fee. The next posted charge will confirm it.</div>
-
-        <h3>What it changes in your plan</h3>
-        <div className="ba">
-          <div><span className="k">{goal.shared ? 'Monthly saving that fits' : 'Supported contribution'}</span><b>{money(cap)}</b><span className="fine">{goal.shared ? 'planned' : 'was'} {money(h.goal.planned)}</span></div>
-          <div><span className="k">{goal.shared ? 'Combined goal projection' : 'Goal at target date'}</span><b>{money(goal.projected)}</b>
-            <span className="fine">{goal.gap ? `${money(goal.gap)} short of ${money(h.goal.target)}` : 'on target'}</span></div>
-        </div>
-        {goal.shared && <div className="fine">Each goal is checked at its own deadline. Goal contributions stay unchanged until you edit them; this projection can still leave checking below its buffer.</div>}
-
-        <h3>Try a different amount</h3>
-        <div className="row">
-          <span className="muted">Increase of</span>
-          <input type="number" min="0" step="5" value={increase} aria-label="Increase amount"
-            onChange={e => change({ whatIf: { [bill.id]: Math.max(0, bill.amount + (Number(e.target.value) || 0)) } }, `What-if amount for ${bill.label}`)} />
-          <span className="muted">per month. Everything recomputes.</span>
-        </div>
-
-        <div className="row wrap" style={{ gap: 8 }}>
-          <button className="btn" onClick={onCompare}>Compare options <Icon n="arrow" s={15} /></button>
-          {billChange.support
-            ? <a className="btn ghost sm" href={`https://${billChange.support}`} target="_blank" rel="noopener noreferrer"><Icon n="ext" s={14} />{billChange.support}</a>
-            : <span className="fine">The notice does not name a support address.</span>}
-          <button className="btn ghost sm" aria-expanded={drafting} onClick={() => setDrafting(v => !v)}>
-            <Icon n="mail" s={14} />{drafting ? 'Hide question' : 'Prepare a question'}
-          </button>
-        </div>
-
-        {drafting && (
-          <div className="grid" style={{ gap: 8 }}>
-            <textarea readOnly value={question} rows={12} aria-label="Draft question for the provider"
-              style={{ font: '13px/1.5 ui-monospace, Consolas, monospace', padding: 12, borderRadius: 10, border: '1px solid var(--line)', resize: 'vertical', background: 'var(--bg)', color: 'var(--ink)' }} />
-            <div className="row" style={{ gap: 8 }}>
-              <button className="btn sm" onClick={copy}><Icon n={copied ? 'check' : 'mail'} s={14} />{copied ? 'Copied' : 'Copy question'}</button>
-              <span className="fine">Every figure here comes from your records or the notice. Nothing is invented.</span>
-            </div>
-          </div>
-        )}
-
-        <div className="fine">RainCheck does not promise to negotiate this, and does not call every increase an error.</div>
-    </Drawer>
-  );
+  return <Drawer label={bill.label + ' estimate & notes'} onClose={onClose}>
+    <DrawerHeader title={bill.payee || bill.label} onClose={onClose} />
+    <span className="pill neutral">Saved forecast estimate</span>
+    <div className="ba">
+      <div><span className="k">Previous estimate</span><b>{money(bill.amount)}</b></div>
+      <div><span className="k">Planned from {prettyIso(bill.change.effective)}</span><b>{money(current)}</b></div>
+    </div>
+    <p>This is a saved planning amount, not a recorded payment. Transactions do not establish why a bill changed or what the company will charge next.</p>
+    <form className="budget-form" onSubmit={save}>
+      <h3>Contact the company</h3>
+      <p>Ask what changed and what to expect next time. Use the number on your statement or the company’s official website.</p>
+      <label>Your notes<textarea rows={4} maxLength={2000} value={text} onChange={e => setText(e.target.value)} placeholder="Questions to ask, who you spoke with, and what they told you." /></label>
+      <p className="fine">Notes stay in this browser. They are not sent to AI or the company.</p>
+      <details><summary>Update the forecast estimate</summary>
+        <label>Future bill estimate ($)<input type="number" min="0" max="1000000" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} /></label>
+        <p className="fine">Only a confirmed edit changes the forecast. It does not change the company’s price.</p>
+      </details>
+      <button className="btn" type="submit">Save notes &amp; estimate</button>
+      {error && <p className="alert" role="alert">{error}</p>}
+    </form>
+    <details><summary>Impact on savings</summary>
+      <div className="ba">
+        <div><span className="k">Monthly saving that fits</span><b>{money(cap)}</b></div>
+        <div><span className="k">{goal.shared ? 'Combined goal projection' : 'Goal projection'}</span><b>{money(goal.projected)}</b><span className="fine">{money(goal.gap)} short</span></div>
+      </div>
+      <p className="fine">Goal contributions stay unchanged until you edit them. Each goal keeps its own deadline; this projection can still leave checking below its buffer.</p>
+      <button className="btn ghost sm" onClick={onCompare}>Compare options</button>
+    </details>
+    {plan.billChanges?.[bill.id] && <button className="link" onClick={() => {
+      change({ billChanges: { [bill.id]: null }, whatIf: { [bill.id]: undefined } }, bill.label + ' saved estimate removed'); onClose();
+    }}>Remove saved estimate</button>}
+  </Drawer>;
 }

@@ -14,16 +14,16 @@ it('explains the warning using all forecast events up to the lowest day', () => 
   const h = { ...base, cushion: 350 }, sim = simulate(h, { contribution: 300 });
   const rows = checkingBreakdown(h, sim);
   expect(round2(rows.reduce((sum, row) => sum + row.amount, 0))).toBe(sim.low.balance);
-  expect(rows.find(row => row.label === 'Planned savings').amount).toBe(-300);
+  expect(rows.find(row => row.label === 'Monthly goal savings').amount).toBe(-300);
   const html = renderToStaticMarkup(<ForecastHelpDrawer h={h} sim={sim} open={() => {}} onClose={() => {}} />);
-  for (const text of ['$150', '$350', 'Check the numbers', 'Expected income', 'Compare adjustments', 'No money moves'])
+  for (const text of ['$132.81', '$350', 'Check the numbers', 'Expected income', 'Compare adjustments', 'No money moves'])
     expect(html.includes(text)).toBe(true);
 });
 it('keeps a negative balance warning distinct from the checking target', () => {
   const sim = simulate(base, { contribution: 550 });
   const html = renderToStaticMarkup(<ForecastHelpDrawer h={base} sim={sim} open={() => {}} onClose={() => {}} />);
   expect(html.includes('below $0')).toBe(true);
-  expect(html.includes('$50')).toBe(true);
+  expect(html.includes('$32.81')).toBe(true);
 });
 it('does not promise that an unaffordable adjustment resolves the warning', () => {
   const h = { ...base, cushion: 5000 }, sc = { contribution: 300 };
@@ -39,7 +39,7 @@ it('discloses the savings assumption behind a conditional cancellation preview',
   const cap = capacity(h, sc), options = buildOptions(h, sc, cap, {});
   const html = renderToStaticMarkup(<CompareDrawer h={h} sc={sc} cap={cap} options={options}
     current={currentOutcome(h, sc)} protectedIds={{}} onClose={() => {}} />);
-  expect(html.includes('This preview also assumes $190/month in savings.')).toBe(true);
+  expect(html.includes('This preview also assumes $205/month in savings.')).toBe(true);
 });
 
 it('offers a calculator-checked rainy-day preview without applying it or lowering the target', () => {

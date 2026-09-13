@@ -13,6 +13,25 @@ const snapshot = extra => ({ checkingId: 'checking', savingsId: 'savings', accou
 ], deposits: [deposit('pay1', '2026-09-04'), deposit('pay2', '2026-09-18')], ...extra });
 
 describe('one source for posted activity and expected income', () => {
+  it('keeps the posted payment history for every recurring bill', () => {
+    const s = snapshot({
+      bills: [{ _id: 'bill-internet', nickname: 'Internet', payee: 'Northline Internet',
+        payment_amount: 65, recurring_date: 1 }],
+      merchants: [{ _id: 'internet', name: 'Northline Internet', category: 'Utilities' }],
+      purchases: [
+        { _id: 'jul', merchant_id: 'internet', amount: 60, purchase_date: '2026-07-01', status: 'completed' },
+        { _id: 'sep', merchant_id: 'internet', amount: 65, purchase_date: '2026-09-01', status: 'completed' },
+        { _id: 'aug', merchant_id: 'internet', amount: 65, purchase_date: '2026-08-01', status: 'completed' },
+      ],
+    });
+
+    expect(buildHousehold(s, today).recurring[0].paymentHistory).toEqual([
+      { id: 'sep', date: '2026-09-01', amount: 65 },
+      { id: 'aug', date: '2026-08-01', amount: 65 },
+      { id: 'jul', date: '2026-07-01', amount: 60 },
+    ]);
+  });
+
   it('does not quadruple a monthly subscription when loading a year of history', () => {
     const s = snapshot({ merchants: [{ _id: 'music', name: 'Music Club', category: 'Entertainment' }],
       purchases: Array.from({ length: 12 }, (_, i) => ({ _id: `music-${i}`, merchant_id: 'music', amount: 12,
@@ -68,7 +87,9 @@ describe('one source for posted activity and expected income', () => {
       { _id: 'q', payer_id: 'checking', purchase_date: '2026-10-01', amount: 900, status: 'completed' },
       { _id: 'r', payer_id: 'checking', purchase_date: '2026-09-21', amount: 900, status: 'pending' },
     ] });
-    expect(buildHousehold(s, today).allowances[0].monthly).toBe(30);
+    const h = buildHousehold(s, today);
+    expect(h.allowances[0].monthly).toBe(90);
+    expect(h.spendingEvidence.categories[0].provisional).toBe(true);
   });
 
   it('keeps actual cash withdrawals as spending, not savings contributions', () => {
@@ -78,6 +99,6 @@ describe('one source for posted activity and expected income', () => {
     ] });
     expect(transactionRecords(s, today).find(r => r.id === 'withdrawal:atm').kind).toBe('withdrawal');
     expect(buildHousehold(s, today).history.at(-1).out).toBe(50);
-    expect(buildHousehold(s, today).allowances).toContainEqual({ id: 'cash-withdrawals', label: 'Cash withdrawals', monthly: 17 });
+    expect(buildHousehold(s, today).allowances).toContainEqual({ id: 'cash-withdrawals', label: 'Cash withdrawals', monthly: 50 });
   });
 });

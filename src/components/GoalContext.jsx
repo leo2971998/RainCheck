@@ -7,11 +7,12 @@ const sections = [
   ['purchases', 'Purchases', 'A planned cost changes available checking and what saving can fit. Confirming a matching posted payment removes the planned duplicate.'],
   ['forecast', 'Forecast', 'The day-by-day forecast combines paydays, bills, living costs and planned savings. The goal check looks further ahead, through your deadline.'],
   ['alerts', 'Alerts', 'When checking or your goal needs attention, review the cause and compare changes. Dismissing an alert does not add money or repair a shortfall.'],
-  ['cashflow', 'Cash flow', 'See income and costs together. A positive monthly total does not rule out running short before a payday.'],
+  ['cashflow', 'Spending & Savings', 'Compare recorded spending with category budgets, then preview changes before planning extra savings.'],
 ];
 
 /** A small, shared goal anchor; details stay out of the dashboard's main reading path. */
 export default function GoalContext({ page, h, goal, open }) {
+  if (page === 'recurring' || page === 'forecast' || page === 'purchases' || page === 'cashflow') return null;
   const section = sections.find(([id]) => id === page);
   if (!section) return null;
   const status = !goal.fits ? 'Savings plan needs review' : goal.gap > 0 ? `${money(goal.gap)} short of goal` : 'On track in this estimate';

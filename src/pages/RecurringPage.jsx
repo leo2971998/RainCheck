@@ -1,122 +1,223 @@
-import { Icon, Kpi, money, prettyIso, listOf } from '../components/ui.jsx';
-import { amountFor, capacity, hypothetical, nextChargeDate, monthlyEquivalent } from '../engine/forecast.js';
+import { useState } from 'react';
+import { Icon, money, prettyIso } from '../components/ui.jsx';
+import { amountFor, nextChargeDate, monthlyEquivalent } from '../engine/forecast.js';
 import Discovered from '../components/Discovered.jsx';
-import { budgetMoney } from '../components/BudgetImpact.jsx';
-import { needsBillReview, reviewForBill, billReviewKey } from '../engine/bill-reviews.js';
-import BillReviews from '../components/BillReviews.jsx';
+import { needsBillReview, NEXT_STEPS } from '../engine/bill-reviews.js';
 
-export default function RecurringPage({ h, sc, plan, change, cap, open, discovered = [], onAdopt, onDismiss, billNotes = {} }) {
-  // Everything on this page is derived, so editing the increase or switching data sources can
-  // never make the page say something false.
-  const withDates = h.recurring.map(r => {
-    const next = nextChargeDate(r, h.today);
+const monthKey = date => date?.slice(0, 7);
+const monthName = key => new Date(`${key}-01T12:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+const monthRangeName = key => new Date(`${key}-01T12:00:00`).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+export function sortPostedPayments(payments = []) {
+  return [...payments].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))
+    || String(b.id || '').localeCompare(String(a.id || '')));
+}
+
+export function recurringYear(items, today) {
+  const current = monthKey(today);
+  const [currentYear, currentNumber] = current.split('-').map(Number);
+  const firstSerial = currentYear * 12 + currentNumber - 12;
+  const months = Array.from({ length: 12 }, (_, index) => {
+    const serial = firstSerial + index;
+    const year = Math.floor(serial / 12);
+    const number = String(serial % 12 + 1).padStart(2, '0');
+    const key = `${year}-${number}`;
+    return { key, label: new Date(`${key}-01T12:00:00`).toLocaleDateString('en-US', { month: 'short' }), total: null, count: 0, current: key === current };
+  });
+  const monthByKey = new Map(months.map(month => [month.key, month]));
+  for (const payment of items) {
+    if (!Number.isFinite(Number(payment.amount))) continue;
+    const month = monthByKey.get(monthKey(payment.date));
+    if (!month) continue;
+    month.total = (month.total ?? 0) + Number(payment.amount);
+    month.count += 1;
+  }
+  return months.map(month => ({ ...month, total: month.total == null ? null : Math.round(month.total * 100) / 100 }));
+}
+
+function reviewsFor(bill, reviews = {}) {
+  return Object.entries(reviews)
+    .filter(([, review]) => review?.billId === bill.id)
+    .sort(([, a], [, b]) => b.postedDate.localeCompare(a.postedDate) || b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export function hasAlertRecord(bill, plan = {}) {
+  return needsBillReview(bill, plan) || reviewsFor(bill, plan.billReviews).length > 0;
+}
+
+export function filterRecurringBills(bills, plan = {}, filter = 'all') {
+  if (filter === 'alerts') return bills.filter(bill => hasAlertRecord(bill, plan));
+  if (filter === 'clear') return bills.filter(bill => !hasAlertRecord(bill, plan));
+  return bills;
+}
+
+function CompanyStatus({ bill, plan, reviews }) {
+  if (bill.cancelled) return <span className="pill neutral">Cancelled</span>;
+  if (bill.pending) return <span className="pill warn">Cancellation pending</span>;
+  if (needsBillReview(bill, plan)) return <span className="pill warn">Charge needs review</span>;
+  if (reviews.length) return <span className="pill good">Follow-up saved</span>;
+  if (!bill.paymentHistory?.length) return <span className="pill neutral">No payments yet</span>;
+  return <span className="pill good">Up to date</span>;
+}
+
+function PaymentHistory({ bill }) {
+  const payments = sortPostedPayments(bill.paymentHistory);
+  const largest = Math.max(...payments.map(payment => payment.amount), 1);
+  return <section className="recurring-history" aria-label={`${bill.label} payment history`}>
+    <div className="section-heading"><div><span className="review-eyebrow">Bank records</span><h3>Payment history</h3></div>
+      {!!payments.length && <span className="fine">{payments.length} posted</span>}</div>
+    {payments.length ? <ol>
+      {payments.map(payment => <li key={payment.id || `${payment.date}-${payment.amount}`}>
+        <time dateTime={payment.date}>{prettyIso(payment.date)}</time>
+        <span className="payment-track" aria-hidden="true"><i style={{ width: `${Math.max(8, payment.amount / largest * 100)}%` }} /></span>
+        <b>{money(payment.amount)}</b>
+      </li>)}
+    </ol> : <div className="recurring-empty-history">
+      <Icon n="list" s={18} /><p>{bill.budgetOnly
+        ? 'This is a planned recurring cost. No payment has posted from the bank.'
+        : 'No posted payments are available for this company yet.'}</p>
+    </div>}
+  </section>;
+}
+
+function YearPaymentChart({ months, currentMonth }) {
+  const largest = Math.max(...months.map(month => month.total ?? 0), 1);
+  const range = months.length ? `${monthRangeName(months[0].key)} – ${monthRangeName(months.at(-1).key)}` : '';
+  return <section className="recurring-year-chart" aria-labelledby="recurring-year-title">
+    <div className="section-heading"><div><span className="review-eyebrow">Payment history</span><h3 id="recurring-year-title">Last 12 months</h3></div>
+      <span className="fine">{range} · Posted bank payments only</span></div>
+    <div className="recurring-chart-scroll">
+      <ol>
+        {months.map(month => {
+          const hasData = month.total != null;
+          const state = month.current ? 'current' : month.key > currentMonth ? 'future' : hasData ? 'recorded' : 'unavailable';
+          const description = `${month.label}: ${hasData ? `${money(month.total)} paid` : 'no payment data available'}`;
+          return <li key={month.key} className={state} aria-label={description} title={description}>
+            <span className="recurring-chart-value" aria-hidden="true">{hasData ? money(month.total) : '—'}</span>
+            <span className="recurring-chart-track" aria-hidden="true"><i style={{ height: hasData ? `${Math.max(6, month.total / largest * 100)}%` : 0 }} /></span>
+            <span className="recurring-chart-month" aria-hidden="true">{month.label}</span>
+          </li>;
+        })}
+      </ol>
+    </div>
+  </section>;
+}
+
+function CompanyFollowUp({ bill, plan, notes, open }) {
+  const reviews = reviewsFor(bill, plan.billReviews);
+  const [latestKey, latest] = reviews[0] || [];
+  const pending = needsBillReview(bill, plan);
+  return <section className={`company-followup${pending ? ' needs-review' : ''}`}>
+    <div className="section-heading"><div><span className="review-eyebrow">Alert record</span><h3>Company follow-up</h3></div></div>
+    {pending && <>
+      <p><b>{money(bill.lastPosted)} posted {prettyIso(bill.lastPostedDate)}</b>, compared with an earlier average of {money(bill.usual ?? bill.amount)}.</p>
+      <p className="fine">The bank record shows the difference, but not why it happened.</p>
+      <button className="btn sm" onClick={() => open('anomaly', bill.id)}>Review charge and save follow-up</button>
+    </>}
+    {!pending && latest && <>
+      <div className="followup-status"><span className="pill neutral">{NEXT_STEPS[latest.nextStep]}</span><span className="fine">Saved {prettyIso((latest.updatedAt || latest.postedDate).slice(0, 10))}</span></div>
+      <p>For the {money(latest.amount)} payment on {prettyIso(latest.postedDate)}.</p>
+      {notes[latestKey] ? <blockquote>{notes[latestKey]}</blockquote> : <p className="fine">No private contact note was saved.</p>}
+      <button className="btn ghost sm" onClick={() => open('anomaly', latestKey)}>View / edit review</button>
+      {reviews.length > 1 && <details className="previous-followups"><summary>{reviews.length - 1} earlier follow-up{reviews.length === 2 ? '' : 's'}</summary>
+        {reviews.slice(1).map(([key, review]) => <button className="previous-followup" key={key} onClick={() => open('anomaly', key)}>
+          <span>{prettyIso(review.postedDate)} · {NEXT_STEPS[review.nextStep]}</span><b>{money(review.amount)}</b>
+        </button>)}
+      </details>}
+    </>}
+    {!pending && !latest && <p className="fine">No alert follow-up has been saved for this company.</p>}
+  </section>;
+}
+
+export default function RecurringPage({ h, sc, plan, change, open, discovered = [], onAdopt, onDismiss, billNotes = {} }) {
+  const [filter, setFilter] = useState('all');
+  const bills = h.recurring.map(bill => {
+    const next = nextChargeDate(bill, h.today);
     return {
-      ...r, next,
-      amount_now: amountFor(r, next, sc),
-      perMonth: monthlyEquivalent(r, amountFor(r, next, sc)),
-      cancelled: !!sc.cancelled?.[r.id],
-      pending: !!sc.pendingCancel?.[r.id] && !sc.cancelled?.[r.id],
+      ...bill,
+      paymentHistory: sortPostedPayments(bill.paymentHistory),
+      next,
+      amountNow: amountFor(bill, next, sc),
+      perMonth: monthlyEquivalent(bill, amountFor(bill, next, sc)),
+      cancelled: !!sc.cancelled?.[bill.id],
+      pending: !!sc.pendingCancel?.[bill.id] && !sc.cancelled?.[bill.id],
     };
-  }).sort((a, b) => a.next.localeCompare(b.next));
-
-  const total = withDates.filter(r => !r.cancelled).reduce((a, r) => a + r.perMonth, 0);
-  const soonCutoff = new Date(new Date(h.today + 'T12:00:00').getTime() + 7 * 864e5).toISOString().slice(0, 10);
-  const soon = withDates.filter(r => !r.cancelled && r.next <= soonCutoff);
-  const unexplained = withDates.filter(r => needsBillReview(r, sc));
-  const pending = withDates.filter(r => r.pending);
+  }).sort((a, b) => a.label.localeCompare(b.label));
+  const posted = bills.flatMap(bill => bill.paymentHistory || []);
+  const currentMonth = monthKey(h.today);
+  const year = recurringYear(posted, h.today);
+  const currentIndex = Number(h.today.slice(5, 7)) - 1;
+  const current = year[currentIndex];
+  const previous = year[currentIndex - 1];
+  const reviews = Object.keys(plan.billReviews || {}).length;
+  const pendingReviews = bills.filter(bill => needsBillReview(bill, sc));
+  const alertRecords = bills.filter(bill => hasAlertRecord(bill, sc));
+  const visibleBills = filterRecurringBills(bills, sc, filter);
 
   const confirmCancelled = id => change({ cancelled: { [id]: true } }, 'Cancellation confirmed');
   const dropPending = id => change({ pendingCancel: { [id]: undefined } }, 'Cancellation withdrawn');
   const restore = id => change({ cancelled: { [id]: undefined } }, 'Commitment restored');
 
-  return (
-    <>
-      <div className="topbar"><div><h1>Recurring</h1>
-        <div className="sub">{withDates.length} commitments · {money(total)} per month · {unexplained.length ? `${unexplained.length} charge to review` : 'charge reviews up to date'}</div></div>
-        <div className="row wrap budget-actions">
-          <button className="btn sm" onClick={() => open('subscription')}>Add subscription</button></div></div>
+  return <>
+    <div className="topbar recurring-topbar"><div><h1>Recurring</h1>
+      <div className="sub">What you paid each month, with company follow-ups kept beside the charge. New costs are previewed before they change your plan.</div></div>
+      <button className="btn sm" onClick={() => open('subscription')}>Add recurring cost</button>
+    </div>
 
-      <div className="grid g4" style={{ marginBottom: 18 }}>
-        <Kpi label="Monthly recurring" value={money(total)} sub={`Across ${withDates.filter(r => !r.cancelled).length} commitments${withDates.some(r => r.everyMonths > 1) ? ", longer cycles counted per month" : ""}`} />
-        <Kpi label="Due in the next 7 days" value={money(soon.reduce((a, r) => a + r.amount_now, 0))}
-          sub={soon.length ? listOf(soon.map(r => `${r.label} ${prettyIso(r.next)}`)) : 'Nothing due this week'} />
-        <Kpi label="Saved reviews" value={String(Object.keys(plan.billReviews || {}).length)}
-          sub="Your decisions, next steps and notes" pill={<span className="pill neutral">History</span>} />
-        <Kpi label="Charges to review" value={String(unexplained.length)}
-          sub={unexplained.length ? listOf(unexplained.map(r => `${r.label} posted ${money(r.lastPosted)}, usually ${money(r.usual ?? r.amount)}`)) : 'No unreviewed charge differences'}
-          pill={unexplained.length ? <span className="pill neutral">Needs a decision</span> : <span className="pill good">Clear</span>} />
+    <section className="recurring-month-summary" aria-label="Recurring payment overview">
+      <div className="recurring-year-overview">
+        <article className="recurring-month-focus">
+          <span className="review-eyebrow">{monthName(currentMonth)} to date</span>
+          <h2>Paid this month</h2>
+          <b>{money(current?.total ?? 0)}</b>
+          <p>{current?.count || 0} posted payment{current?.count === 1 ? '' : 's'}</p>
+          {previous?.total != null && <div className="recurring-previous-month"><span>{previous.label} total</span><strong>{money(previous.total)}</strong></div>}
+        </article>
+        <YearPaymentChart months={year} currentMonth={currentMonth} />
       </div>
+      <div className="recurring-review-summary">
+        <span className={`pill ${pendingReviews.length ? 'warn' : 'good'}`}>{pendingReviews.length ? `${pendingReviews.length} to review` : 'Reviews up to date'}</span>
+        <span className="fine">{reviews ? `${reviews} saved follow-up${reviews === 1 ? '' : 's'}` : 'No company follow-ups saved yet'}</span>
+      </div>
+      <div className="recurring-filter" role="group" aria-label="Filter recurring records">
+        {[
+          ['all', 'All records', bills.length],
+          ['alerts', 'Has alert record', alertRecords.length],
+          ['clear', 'No alert record', bills.length - alertRecords.length],
+        ].map(([value, label, count]) => <button type="button" key={value} aria-pressed={filter === value}
+          onClick={() => setFilter(value)}><span>{label}</span><b>{count}</b></button>)}
+      </div>
+      <p className="recurring-filter-help">Alert records include charges awaiting review and company follow-ups you already saved.</p>
+    </section>
 
-      {pending.length > 0 && (
-        <div className="alert" style={{ marginBottom: 18 }}>
-          <b>{listOf(pending.map(r => r.label))} {pending.length === 1 ? 'is' : 'are'} marked for cancellation, and still counted in your forecast.</b>
-          <p>
-            RainCheck will not assume a provider did what you asked. Until you confirm the cancellation went
-            through, {pending.length === 1 ? 'it stays' : 'they stay'} in the plan. Confirming
-            {pending.length === 1 ? ` frees ${money(capacity(h, hypothetical(sc, { cancelled: { [pending[0].id]: true } })) - cap)} a month` : ' updates the forecast'}.
-          </p>
-        </div>
-      )}
+    <div className="recurring-ledger">
+      {visibleBills.map(bill => {
+        const billReviews = reviewsFor(bill, plan.billReviews);
+        const lastPayment = bill.paymentHistory?.[0];
+        return <details className="recurring-company" key={bill.id} open={needsBillReview(bill, sc)}>
+          <summary>
+            <span className="recurring-company-icon"><Icon n="repeat" s={18} /></span>
+            <span className="recurring-company-name"><b>{bill.label}</b><small>{bill.payee || bill.category || 'Recurring cost'}</small></span>
+            <span className="recurring-company-latest"><small>{lastPayment ? `Paid ${prettyIso(lastPayment.date)}` : 'Expected amount'}</small><b>{money(lastPayment?.amount ?? bill.amountNow)}</b></span>
+            <CompanyStatus bill={bill} plan={sc} reviews={billReviews} />
+          </summary>
+          <div className="recurring-company-body">
+            <PaymentHistory bill={bill} />
+            <CompanyFollowUp bill={bill} plan={sc} notes={billNotes} open={open} />
+          </div>
+          <div className="recurring-company-footer">
+            <span>Next expected {bill.cancelled ? '—' : prettyIso(bill.next)} · {bill.freq || 'Monthly'} · {money(bill.perMonth)}/month</span>
+            <div className="row wrap">
+              {bill.budgetOnly && <button className="btn ghost sm" onClick={() => open('subscription', bill.id)}>Edit estimate</button>}
+              {bill.pending && <><button className="btn sm" onClick={() => confirmCancelled(bill.id)}>It is cancelled</button><button className="btn ghost sm" onClick={() => dropPending(bill.id)}>Keep it</button></>}
+              {bill.cancelled && <button className="btn ghost sm" onClick={() => restore(bill.id)}>Restore</button>}
+            </div>
+          </div>
+        </details>;
+      })}
+      {!visibleBills.length && <div className="recurring-filter-empty"><Icon n="check" s={20} /><div><b>No records in this view</b><p>Choose another filter to see your recurring costs.</p></div></div>}
+    </div>
 
-      <div className="grid" style={{ gap: 18 }}>
-      <BillReviews pending={unexplained} reviews={plan.billReviews} notes={billNotes} open={open} />
-      <div className="card">
-        <div className="hd"><h2>Subscriptions in your budget</h2><span className="pill teal">Your estimates</span></div>
-        <p>Explore new monthly costs here. Adding or removing one changes the forecast, not an actual subscription.</p>
-        {withDates.some(r => r.budgetOnly) ? <ul className="budget-list">{withDates.filter(r => r.budgetOnly).map(r => <li key={r.id}>
-          <div><b>{r.label}</b><span className="fine">{budgetMoney(r.amount)}/month · next {prettyIso(r.next)}</span></div>
-          <button className="btn ghost sm" onClick={() => open('subscription', r.id)} aria-label={`Edit ${r.label}`}>Edit</button>
-        </li>)}</ul> : <div className="fine">No extra subscriptions yet. Use “Add subscription” to preview one.</div>}
-      </div>
-      <Discovered found={discovered} onAdopt={onAdopt} onDismiss={onDismiss} />
-      <div className="card">
-        <div style={{ overflowX: 'auto' }}>
-          <table>
-            <thead><tr><th>Commitment</th><th>Next</th><th>Frequency</th><th className="r">Amount</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              {withDates.filter(r => !r.budgetOnly).map(r => {
-                return (
-                  <tr key={r.id} className="hover" style={{ opacity: r.cancelled ? 0.55 : 1 }}>
-                    <td><div className="cat"><i className="rec"><Icon n="repeat" s={14} /></i><span style={{ fontWeight: 500 }}>{r.label}</span></div></td>
-                    <td>{r.cancelled ? '—' : prettyIso(r.next)}</td>
-                    <td className="muted">{r.freq || 'Monthly'}{r.everyMonths > 1 && <div className="fine">{money(r.perMonth)}/month equivalent</div>}</td>
-                    <td className="r">{r.cancelled
-                      ? <span className="muted" style={{ textDecoration: 'line-through' }}>{money(r.amount)}</span>
-                      : r.amount_now !== r.amount
-                        ? <><span className="muted" style={{ textDecoration: 'line-through' }}>{money(r.amount)}</span> <b>{money(r.amount_now)}</b></>
-                        : money(r.amount)}</td>
-                    <td>{
-                      r.cancelled ? <span className="pill good"><Icon n="check" s={11} />Cancelled</span>
-                      : r.pending ? <span className="pill warn">Cancellation pending · still counted</span>
-                      : r.change ? <span className="pill warn"><Icon n="up" s={11} />Increase from notice</span>
-                      : r.unexplained ? <span className={'pill ' + (needsBillReview(r, sc) ? 'warn' : 'good')}>{needsBillReview(r, sc) ? `Posted ${money(r.lastPosted)} · needs review` : reviewForBill(r, sc) ? 'Charge reviewed' : 'Matches your estimate'}</span>
-                      : r.renews ? <span className="pill neutral">Renews {prettyIso(r.renews)}</span>
-                      : <span className="pill good">Steady</span>
-                    }</td>
-                    <td className="r">
-                      {r.change && <button className="btn sm" onClick={() => open('bill', r.id)}>Review</button>}
-                      {r.pending && <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
-                        <button className="btn sm" onClick={() => confirmCancelled(r.id)}>It is cancelled</button>
-                        <button className="btn ghost sm" onClick={() => dropPending(r.id)}>Never mind</button>
-                      </div>}
-                      {r.cancelled && <button className="btn ghost sm" onClick={() => restore(r.id)}>Restore</button>}
-                      {needsBillReview(r, sc) && <button className="btn sm" onClick={() => open('anomaly', r.id)}>Review charge</button>}
-                      {!needsBillReview(r, sc) && reviewForBill(r, sc) && <button className="btn ghost sm" onClick={() => open('anomaly', billReviewKey(r))}>View notes</button>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="fine">
-          {unexplained.length
-            ? 'Review the charge before choosing what to budget next. The bank record does not explain the difference.'
-            : 'No charge differences are waiting for review. Reviewed charges and follow-ups remain in history.'}
-        </div>
-      </div>
-      <details className="card"><summary>Have an actual company notice?</summary><p>Optional: add a notice you received. A charge difference alone is not a company announcement.</p><button className="btn ghost sm" onClick={() => open('notice')}>Add your notice</button></details>
-      </div>
-    </>
-  );
+    {!!discovered.length && <div className="recurring-discovered"><Discovered found={discovered} onAdopt={onAdopt} onDismiss={onDismiss} /></div>}
+  </>;
 }

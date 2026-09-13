@@ -26,6 +26,8 @@ export function readPurchase(input, h) {
 }
 
 export const purchaseState = (p, today) => p.status === 'planned' && p.date < today ? 'overdue' : p.status;
+export const spendingDayDivisor = (h, date) => h.spendingPeriod === 'calendar-month'
+  ? new Date(Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)), 0)).getUTCDate() : 30;
 
 /** Move covered allowance spending to the known purchase date; only the excess is new spending.
  * Use the full remaining calendar month even for a short forecast, so all horizons agree. */
@@ -40,7 +42,7 @@ export function purchaseSchedule(h, sc = {}) {
     const start = h.today > month + '-01' ? h.today : month + '-01';
     const days = dayNumber(end) - dayNumber(start) + 1;
     const allowance = h.allowances.find(a => a.id === p.allowanceId);
-    if (!(bucket in remaining)) remaining[bucket] = allowance ? Math.max(0, allowance.monthly - (sc.cuts?.[allowance.id] || 0)) / 30 * days : 0;
+    if (!(bucket in remaining)) remaining[bucket] = allowance ? Math.max(0, allowance.monthly - (sc.cuts?.[allowance.id] || 0)) / spendingDayDivisor(h, effectiveDate) * days : 0;
     const covered = money(Math.min(p.amount, remaining[bucket]));
     remaining[bucket] = Math.max(0, remaining[bucket] - covered);
     reductions[month] = (reductions[month] || 0) + covered / days;

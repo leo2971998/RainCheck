@@ -4,17 +4,8 @@ import ReviewPanel from '../components/ReviewPanel.jsx';
 import { prettyDate, prettyIso } from '../components/ui.jsx';
 import { budgetMoney as money } from '../components/BudgetImpact.jsx';
 import { round2 } from '../engine/forecast.js';
-
-export function checkingBreakdown(h, sim) {
-  const events = sim.days.slice(0, sim.days.findIndex(d => d.key === sim.low.key) + 1).flatMap(d => d.events);
-  const rows = [{ label: 'Starting checking balance', amount: h.checking },
-    ...[['pay', 'Expected income'], ['bill', 'Scheduled bills'], ['everyday', 'Everyday spending'],
-      ['purchase', 'Planned purchases'], ['transfer', 'Planned savings']]
-      .map(([flag, label]) => ({ label, amount: round2(events.filter(e => e[flag]).reduce((sum, e) => sum + e.amt, 0)) }))];
-  const rounding = round2(sim.low.balance - rows.reduce((sum, row) => sum + row.amount, 0));
-  if (rounding) rows.push({ label: 'Rounding', amount: rounding });
-  return rows;
-}
+import { checkingBreakdown } from '../engine/forecast-explanation.js';
+export { checkingBreakdown } from '../engine/forecast-explanation.js';
 
 export default function ForecastHelpDrawer({ h, sc, sim, options = [], current, baseVersion, plan, open, onClose }) {
   const [reviewOpen, setReviewOpen] = useState(false);

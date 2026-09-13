@@ -1,8 +1,9 @@
 // src/engine/forecast.js
 // The forecast engine. Pure functions, no React, no wall-clock dates.
-import { purchaseSchedule } from './purchases.js';
+import { purchaseSchedule, spendingDayDivisor } from './purchases.js';
 import { latestBillEstimate } from './bill-reviews.js';
 import { goalPayments, monthlyGoalDates } from './goal-funding.js';
+import { spendingOn } from './history-forecast.js';
 
 export const iso = d => d.toISOString().slice(0, 10);
 export const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
@@ -112,7 +113,7 @@ export function simulate(h, sc = {}, { days: dayCount } = {}) {
       balance -= p.amount;
       events.push({ label: p.label, amt: -p.amount, purchase: true, id: p.id, estimated: true });
     }
-    const everyday = Math.max(0, dailySpend - (purchases.reductions[key.slice(0, 7)] || 0));
+    const everyday = Math.max(0, (h.spendingModel ? spendingOn(h, sc, key) : monthlySpend / spendingDayDivisor(h, key)) - (purchases.reductions[key.slice(0, 7)] || 0));
     balance -= everyday;
     events.push({ label: 'Everyday spending', amt: -everyday, everyday: true });
 

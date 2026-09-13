@@ -29,7 +29,6 @@ export default function Alerts({ alerts, open }) {
         </div>
       ))}
 
-      <div className="fine">One event, one alert. A bill change and the cushion dip it causes arrive together, not twice. Spending trends go in the weekly summary.</div>
     </div>
   );
 }

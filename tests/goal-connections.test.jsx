@@ -20,7 +20,7 @@ const tripPlan = () => applyPatch(emptyPlan(), goalPatch('goal-trip', {
 it('connects goal shortfalls to alerts even when the near-term checking forecast fits', () => {
   const result = evaluate(tripPlan());
   expect(result.goal.gap).toBe(3000);
-  expect(result.sim.low.balance).toBe(200);
+  expect(result.sim.low.balance).toBe(217.19);
   const alert = result.alerts.find(a => a.id === 'goal');
   expect(alert?.body).toContain('$3,000');
   expect(alert?.actions.some(a => a.target === 'page:goals')).toBe(true);
@@ -48,10 +48,11 @@ it('rechecks a purchase without silently changing monthly savings', () => {
 });
 
 it('connects a reviewed bill spike to forecast affordability and alerts without changing the goal', () => {
-  const plan = tripPlan(), before = evaluate(plan), bill = base.recurring.find(r => r.id === 'electric');
+  const household = { ...base, cushion: 220 };
+  const plan = tripPlan(), before = evaluate(plan, household), bill = household.recurring.find(r => r.id === 'electric');
   const review = createBillReview(bill, { forecastAmount: bill.lastPosted, nextStep: 'contact' });
   const next = applyPatch(plan, { billReviews: { [billReviewKey(bill)]: review } }).plan;
-  const after = evaluate(next);
+  const after = evaluate(next, household);
   expect(after.sim.low.balance).toBeLessThan(before.sim.low.balance);
   expect(after.goal.supported).toBeLessThan(before.goal.supported);
   expect(after.goal.contribution).toBe(before.goal.contribution);
@@ -68,4 +69,14 @@ it('anchors each section to the active goal and explains the current data-proces
   const links = renderToStaticMarkup(<PlanConnections open={() => {}} />);
   for (const label of ['Transactions', 'Recurring', 'Purchases', 'Forecast', 'Alerts']) expect(links.includes(label)).toBe(true);
   expect(links).not.toMatch(/<details[^>]*\bopen/);
+});
+
+it('keeps goal status off the recurring payment-history page', () => {
+  const { h, goal } = evaluate(tripPlan());
+  expect(renderToStaticMarkup(<GoalContext page="recurring" h={h} goal={goal} open={() => {}} />)).toBe('');
+});
+
+it('keeps the shared goal banner off the forecast page', () => {
+  const { h, goal } = evaluate(tripPlan());
+  expect(renderToStaticMarkup(<GoalContext page="forecast" h={h} goal={goal} open={() => {}} />)).toBe('');
 });

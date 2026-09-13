@@ -28,13 +28,13 @@ export default function ChatPage(props) {
   return <ConversationProvider textOnly><Chat {...props} /></ConversationProvider>;
 }
 
-function Chat({ baseVersion, plan, visible }) {
+function Chat({ baseVersion, plan, visible, dataset }) {
   const [available, setAvailable] = useState(null);
   const [publicDemo, setPublicDemo] = useState(false), [availabilityMessage, setAvailabilityMessage] = useState(''), [availabilityCheck, setAvailabilityCheck] = useState(0);
   const [messages, setMessages] = useState([]), [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false), [starting, setStarting] = useState(false), [error, setError] = useState('');
   const [started, setStarted] = useState(false), [ready, setReady] = useState(false), [progress, setProgress] = useState('');
-  const current = useRef({ baseVersion, plan }); current.current = { baseVersion, plan };
+  const current = useRef({ baseVersion, plan }); current.current = { baseVersion, plan, ...(dataset ? { dataset } : {}) };
   const list = useRef(null), input = useRef(null), stick = useRef(true), lock = useRef(false);
   const allowed = useRef(false), requests = useRef(new Set()), generation = useRef(0);
   const responseText = useRef(new Map());

@@ -100,6 +100,18 @@ export function readReviewPlan(raw, base) {
 export function calculateReview(base, body) {
   object(body);
   const fields = ['consent', 'baseVersion', 'plan', 'patch', 'kind', 'question'];
+  if (Object.hasOwn(body, 'optimize')) {
+    if (body.optimize !== true || body.focus !== 'spending' || Object.keys(object(body.patch)).length) fail();
+    fields.push('optimize');
+  }
+  if (Object.hasOwn(body, 'focus')) {
+    if (body.focus !== 'spending' || body.kind !== 'plan') fail();
+    fields.push('focus');
+    if (Object.hasOwn(body, 'protectedCategories')) {
+      readSpendingPreferences(base, body);
+      fields.push('protectedCategories');
+    }
+  }
   if (Object.keys(body).length !== fields.length || Object.keys(body).some(k => !fields.includes(k)) || body.consent !== true
     || !['plan', 'goal', 'subscription', 'purchase'].includes(body.kind) || typeof body.question !== 'string'
     || !body.question.trim() || body.question.length > 500 || /[\u0000-\u001f<>]/.test(body.question)) fail();
@@ -110,9 +122,19 @@ export function calculateReview(base, body) {
   object(body.patch);
   if (body.kind === 'purchase') return purchaseImpact(base, plan, body.patch);
   const next = readReviewPlan(applyPatch(plan, body.patch).plan, base);
+  if (body.focus === 'spending') {
+    for (const id of Object.keys(readSpendingPreferences(base, body)))
+      if ((next.cuts[id] || 0) > (plan.cuts[id] || 0)) fail();
+  }
   // Both sides go through the same engine. No forecast supplied by the browser is used.
   const nextImpact = budgetImpact(base, next, {});
   return { ...budgetImpact(base, plan, {}), cushion: nextImpact.cushion, after: nextImpact.after };
+}
+
+export function readSpendingPreferences(base, body) {
+  const ids = body.protectedCategories ?? [];
+  if (!Array.isArray(ids) || ids.length > 50 || ids.some(id => typeof id !== 'string' || !base.allowances.some(a => a.id === id))) fail();
+  return Object.fromEntries(ids.map(id => [id, true]));
 }
 
 export function reviewBrief(impact, body, evidence) {

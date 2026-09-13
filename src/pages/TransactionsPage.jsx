@@ -3,6 +3,8 @@ import { Icon, moneyPrecise } from '../components/ui.jsx';
 
 const KIND_ICON = { in: ['dollar', 'in'], rec: ['repeat', 'rec'], tr: ['swap', 'tr'], ev: ['cart', ''] };
 const FILTERS = [['all', 'All'], ['review', 'Needs review'], ['in', 'Income'], ['rec', 'Recurring'], ['ev', 'Everyday'], ['tr', 'Transfers']];
+// Why a row cannot be recategorised, in the same words the engine uses.
+const FIXED_REASON = { tr: 'Your own account', in: 'Income, not a category', rec: 'Set by the bill' };
 
 export default function TransactionsPage({ transactions, allowances = [], corrections: fixes = {}, setCorrections: setFixes }) {
   const [filter, setFilter] = useState('all');
@@ -56,7 +58,7 @@ export default function TransactionsPage({ transactions, allowances = [], correc
                   <td><div className="cat"><i className={t.note ? 'rev' : cls}><Icon n={t.note ? 'warn' : icon} s={14} /></i>
                     <div><div style={{ fontWeight: 500 }}>{t.what}</div>{t.note && <div className="fine">{t.note}</div>}</div></div></td>
                   <td>
-                    {editing === t.key
+                    {editing === t.key && t.k === 'ev'
                       ? <select autoFocus value={t.cat} aria-label={`Category for ${t.what}`}
                           onChange={e => { setFixes(f => ({ ...f, [t.key]: e.target.value })); setEditing(null); }}
                           onBlur={() => setEditing(null)}
@@ -67,9 +69,15 @@ export default function TransactionsPage({ transactions, allowances = [], correc
                   </td>
                   <td className="r" style={{ fontWeight: 600, color: t.amt > 0 ? 'var(--good)' : undefined }}>{t.amt > 0 ? '+' : ''}{moneyPrecise(t.amt)}</td>
                   <td className="r">
-                    {t.corrected
-                      ? <button className="btn ghost sm" onClick={() => setFixes(({ [t.key]: _, ...rest }) => rest)}>Undo</button>
-                      : <button className="btn ghost sm" onClick={() => setEditing(t.key)}>Change category</button>}
+                    {/* Only everyday spending has a category to argue about. A transfer between your
+                        own accounts is not spending, a paycheck is not a category, and a bill's
+                        category comes from the bill itself — offering to reclassify any of them
+                        invited a label that contradicts the rule stated in the row's own note. */}
+                    {t.k !== 'ev'
+                      ? <span className="fine">{FIXED_REASON[t.k]}</span>
+                      : t.corrected
+                        ? <button className="btn ghost sm" onClick={() => setFixes(({ [t.key]: _, ...rest }) => rest)}>Undo</button>
+                        : <button className="btn ghost sm" onClick={() => setEditing(t.key)}>Change category</button>}
                   </td>
                 </tr>
               );

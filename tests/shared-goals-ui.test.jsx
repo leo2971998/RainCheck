@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { household as base, notice } from '../data/household.sample.js';
+import { household as base } from '../data/household.sample.js';
 import { emptyPlan, applyPatch, householdFor, scenarioFor } from '../src/engine/plan.js';
 import { fundGoalPatch } from '../src/engine/budget.js';
 import { goalPlan, simulate, capacity } from '../src/engine/forecast.js';
@@ -10,6 +10,9 @@ import BudgetDrawer from '../src/drawers/BudgetDrawer.jsx';
 import BillDrawer from '../src/drawers/BillDrawer.jsx';
 import NoticeDrawer from '../src/drawers/NoticeDrawer.jsx';
 import ForecastPage from '../src/pages/ForecastPage.jsx';
+
+// A supplied notice is a separate input, not something inferred from bank transactions.
+const notice = 'From: Northline Internet\nYour internet plan will renew at $90.00 starting with your October 1 bill.';
 
 it('shows combined monthly funding and each goal, with the checking buffer tucked into settings', () => {
   const plan = applyPatch(emptyPlan(), fundGoalPatch(base, emptyPlan(), 'goal-trip',
@@ -45,8 +48,11 @@ it('keeps bill previews and forecast assumptions consistent with separate goal c
     expect(html).toContain('$2,250');
     expect(html).toContain('Goal contributions stay unchanged');
   }
+  // Goal savings moved off Forecast: it is a spending page, and every month repeating the goal
+  // made the goal look like a monthly cost. The combined figure still has to be subtracted in the
+  // bottom line, which is what actually matters for "does this month work".
   const forecast = renderToStaticMarkup(<ForecastPage h={h} sc={sc} plan={plan} sim={simulate(h, sc)} cap={cap} />);
-  expect(forecast).toContain('Total monthly goal saving');
-  expect(forecast).toContain('current goal contributions');
+  expect(forecast).toContain('goal savings');
+  expect(forecast).toContain('$350');
   expect(forecast).not.toContain('the largest contribution');
 });

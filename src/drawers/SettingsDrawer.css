@@ -1,0 +1,6 @@
+.settings-entry { display: flex; align-items: center; gap: 7px; min-height: 36px; margin: 4px 0 8px; font-size: 12px; }
+.settings-section { padding: 20px 0; border-bottom: 1px solid var(--line); }
+.settings-section h3 { margin: 0 0 10px; }
+.settings-scenario { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 18px; }
+.settings-scenario p { max-width: 280px; color: var(--ink-2); font-size: 13px; line-height: 1.6; margin: 6px 0 0; }
+.settings-section .row { gap: 10px; }

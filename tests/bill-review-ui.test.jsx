@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import RecurringPage from '../src/pages/RecurringPage.jsx';
+import RecurringPage, { filterRecurringBills, recurringYear } from '../src/pages/RecurringPage.jsx';
 import AlertsPage from '../src/pages/AlertsPage.jsx';
 import Dashboard from '../src/pages/Dashboard.jsx';
 import { household as h } from '../data/household.sample.js';
@@ -24,6 +24,7 @@ it('keeps ordinary upcoming bills out of the actionable alert count', () => {
   const html = renderToStaticMarkup(<Dashboard h={h} source="sample" plan={plan} sc={sc} sim={simulate(h,sc)} cap={0}
     goal={{...goalAt(h,0),fits:true}} alerts={[]} reminders={[{label:'Internet',when:'in 3 days',amount:65}]} open={() => {}} />);
   expect(html.includes('1 needs your attention')).toBe(false);
+  expect(html).toContain('All clear');
   expect(html).toContain('No open budget alerts');
 });
 it('starts the sample workspace without an invented provider announcement', () => {
@@ -35,7 +36,110 @@ it('starts the sample workspace without an invented provider announcement', () =
 it('keeps saved follow-ups and escaped private notes accessible after review', () => {
   const key=billReviewKey(bill), review=createBillReview(bill,{forecastAmount:110,nextStep:'contact'});
   const saved={...emptyPlan(),billReviews:{[key]:review}};
-  const html=renderToStaticMarkup(<RecurringPage h={h} sc={saved} plan={saved} billNotes={{[key]:'Ask about usage <script>alert(1)</script>'}} cap={0} open={() => {}} />);
-  for (const text of ['Saved follow-ups', 'Ask the company', 'View / edit review', 'Ask about usage &lt;script&gt;']) expect(html).toContain(text);
+  const withHistory={...h,recurring:h.recurring.map(r=>r.id===bill.id?{...r,paymentHistory:[
+    {id:'sep',date:'2026-09-06',amount:128},{id:'aug',date:'2026-08-06',amount:110},
+  ]}:r)};
+  const html=renderToStaticMarkup(<RecurringPage h={withHistory} sc={saved} plan={saved} billNotes={{[key]:'Ask about usage <script>alert(1)</script>'}} cap={0} open={() => {}} />);
+  for (const text of ['Payment history', 'Company follow-up', 'Ask the company', 'View / edit review', 'Ask about usage &lt;script&gt;']) expect(html).toContain(text);
+  expect(html).toContain('Paid this month');
+  expect(html).not.toContain('Savings goal');
   expect(html).not.toContain('Every posted charge matched');
+});
+
+it('separates companies with alert records from ordinary recurring records', () => {
+  const reviewedBill = h.recurring.find(r => r.id !== bill.id);
+  const reviewKey = billReviewKey(reviewedBill);
+  const saved = {
+    ...emptyPlan(),
+    billReviews: {
+      [reviewKey]: createBillReview(
+        { ...reviewedBill, unexplained: true, lastPosted: reviewedBill.amount, lastPostedDate: '2026-09-01' },
+        { forecastAmount: reviewedBill.amount, nextStep: 'contact' },
+      ),
+    },
+  };
+
+  const withAlerts = filterRecurringBills(h.recurring, saved, 'alerts');
+  const withoutAlerts = filterRecurringBills(h.recurring, saved, 'clear');
+
+  expect(withAlerts.map(record => record.id)).toContain(bill.id);
+  expect(withAlerts.map(record => record.id)).toContain(reviewedBill.id);
+  expect(withoutAlerts.map(record => record.id)).not.toContain(bill.id);
+  expect(withoutAlerts.map(record => record.id)).not.toContain(reviewedBill.id);
+  expect([...withAlerts, ...withoutAlerts]).toHaveLength(h.recurring.length);
+});
+
+it('keeps completed follow-ups collapsed until the company record is selected', () => {
+  const key = billReviewKey(bill);
+  const saved = { ...emptyPlan(), billReviews: { [key]: createBillReview(bill, { forecastAmount: bill.amount, nextStep: 'contact' }) } };
+  const reviewedHousehold = { ...h, recurring: h.recurring.map(record => ({ ...record, unexplained: false })) };
+
+  const html = renderToStaticMarkup(<RecurringPage h={reviewedHousehold} sc={saved} plan={saved} cap={0} open={() => {}} />);
+
+  expect(html).toContain('Follow-up saved');
+  expect(html).not.toContain('class="recurring-company" open=""');
+});
+
+it('keeps companies with an unresolved charge collapsed on entry', () => {
+  const html = renderToStaticMarkup(<RecurringPage h={h} sc={emptyPlan()} plan={emptyPlan()} cap={0} open={() => {}} />);
+  expect(html).toContain('Charge needs review');
+  expect(html).not.toContain('class="recurring-company" open=""');
+});
+
+it('shows this month as one total and builds a rolling 12-month posted-payment series', () => {
+  const payments = h.recurring.flatMap(record => record.paymentHistory || []);
+  const year = recurringYear(payments, h.today, 'last-12');
+
+  expect(year).toHaveLength(12);
+  expect(year[0]).toMatchObject({ key: '2025-10', label: 'Oct', total: 1554, count: 7 });
+  expect(year[10]).toMatchObject({ key: '2026-08', label: 'Aug', total: 1611, count: 7 });
+  expect(year[11]).toMatchObject({ key: '2026-09', label: 'Sep', total: 1606, count: 6, current: true });
+  expect(year.some(month => month.key > '2026-09')).toBe(false);
+
+  const html = renderToStaticMarkup(<RecurringPage h={h} sc={sc} plan={plan} cap={0} open={() => {}} />);
+  expect(html).toContain('Paid this month');
+  expect(html).toContain('2026 payment history');
+  expect(html).toContain('This year');
+  expect(html).toContain('Last 12 months');
+  expect(html).toContain('September 2026 to date');
+  expect(html).not.toContain('class="recurring-months"');
+});
+
+it('defaults payment history to the current calendar year', () => {
+  const payments = h.recurring.flatMap(record => record.paymentHistory || []);
+  const year = recurringYear(payments, h.today);
+
+  expect(year).toHaveLength(12);
+  expect(year[0].key).toBe('2026-01');
+  expect(year.at(-1).key).toBe('2026-12');
+  expect(year.some(month => month.key.startsWith('2025-'))).toBe(false);
+});
+
+it('sorts each company payment history by full date across calendar years', () => {
+  const record = { ...h.recurring[0], unexplained: false, paymentHistory: [
+    { id: 'old', date: '2025-12-15', amount: 40 },
+    { id: 'new', date: '2026-02-15', amount: 42 },
+    { id: 'middle', date: '2026-01-15', amount: 41 },
+  ] };
+  const household = { ...h, recurring: [record] };
+  const html = renderToStaticMarkup(<RecurringPage h={household} sc={emptyPlan()} plan={emptyPlan()} cap={0} open={() => {}} />);
+
+  expect(html).toContain('Paid Feb 15, 2026');
+  expect(html.indexOf('Feb 15, 2026')).toBeLessThan(html.indexOf('Jan 15, 2026'));
+  expect(html.indexOf('Jan 15, 2026')).toBeLessThan(html.indexOf('Dec 15, 2025'));
+});
+
+it('shows six recent company payments and keeps older years behind one disclosure', () => {
+  const record = { ...h.recurring[0], unexplained: false, paymentHistory: [
+    ...Array.from({ length: 6 }, (_, index) => ({ id: `new-${index}`, date: `2026-0${index + 1}-15`, amount: 40 + index })),
+    { id: 'old-2', date: '2025-12-15', amount: 39 },
+    { id: 'old-1', date: '2025-11-15', amount: 38 },
+  ] };
+  const household = { ...h, recurring: [record] };
+  const html = renderToStaticMarkup(<RecurringPage h={household} sc={emptyPlan()} plan={emptyPlan()} cap={0} open={() => {}} />);
+
+  expect(html).toContain('<h4>2026</h4>');
+  expect(html).toContain('<h4>2025</h4>');
+  expect(html).toContain('Show 2 older payments');
+  expect(html).not.toContain('class="previous-payments" open=""');
 });

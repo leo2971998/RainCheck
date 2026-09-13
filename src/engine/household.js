@@ -1,6 +1,8 @@
 // src/engine/household.js
 // Turns raw Nessie records into the household shape the forecast engine expects.
 import { postedSnapshot, depositKind, withdrawalKind } from './records.js';
+import { spendingBaseline } from './spending-baseline.js';
+import { activitySummary } from './weekly-budget.js';
 
 const groupBy = (xs, f) => xs.reduce((m, x) => { const k = f(x); (m[k] ||= []).push(x); return m; }, {});
 const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -31,16 +33,23 @@ export function buildHousehold(snap, today, opts = {}) {
   if (!checking) throw new Error('No Checking account in the snapshot.');
 
   // --- Recurring commitments: the bank's bills are the source of truth. ---
+  const merchantById = Object.fromEntries((snap.merchants || []).map(m => [m._id, m]));
   const recurring = (snap.bills || []).map(b => {
     const day = b.recurring_date ?? Number(String(b.payment_date).slice(8, 10));
     const cancellable = /gym|fitness|streaming|subscription|membership/i.test(`${b.nickname} ${b.payee}`);
+    const paymentHistory = (snap.purchases || [])
+      .filter(p => merchantById[p.merchant_id]?.name?.toLowerCase() === b.payee?.toLowerCase())
+      .sort((a, b) => b.purchase_date.localeCompare(a.purchase_date))
+      .map(p => ({ id: p._id, date: p.purchase_date, amount: p.amount }));
     return {
       id: slug(b.nickname || b.payee),
       sourceId: b._id,
       sourceAccountId: checking._id,
       label: b.nickname || b.payee,
       payee: b.payee,
+      category: (snap.merchants || []).find(m => m.name?.toLowerCase() === b.payee?.toLowerCase())?.category || 'Bills',
       amount: b.payment_amount,
+      paymentHistory,
       day,
       ...frequencyOf(b, snap),
       cancellable,
@@ -81,20 +90,8 @@ export function buildHousehold(snap, today, opts = {}) {
   }
 
   // --- Everyday allowances: purchases by merchant category, excluding bill postings (rule 2). ---
-  const merchant = Object.fromEntries((snap.merchants || []).map(m => [m._id, m]));
-  const payees = new Set(recurring.map(r => r.payee?.toLowerCase()).filter(Boolean));
-  const isBillPosting = p => payees.has(merchant[p.merchant_id]?.name?.toLowerCase());
-
-  const purchases = snap.purchases || [];
-  const recent = purchases.filter(p => daysBetween(p.purchase_date, today) <= lookbackDays);
-  const spending = recent.filter(p => !isBillPosting(p));
+  const { allowances, evidence: spendingEvidence } = spendingBaseline(snap, today, lookbackDays);
   const monthsCovered = Math.max(1, Math.round(lookbackDays / 30));
-  const allowances = Object.entries(groupBy(spending, p => merchant[p.merchant_id]?.category || 'Other'))
-    .map(([label, list]) => ({ id: slug(label), label, monthly: Math.round(list.reduce((a, p) => a + p.amount, 0) / monthsCovered) }))
-    .sort((a, b) => b.monthly - a.monthly);
-  const cash = (snap.withdrawals || []).filter(w => withdrawalKind(w) !== 'transfer' && daysBetween(w.transaction_date, today) <= lookbackDays);
-  if (cash.length) allowances.push({ id: 'cash-withdrawals', label: 'Cash withdrawals',
-    monthly: Math.round(cash.reduce((sum, w) => sum + w.amount, 0) / monthsCovered) });
 
   // --- History for the cash-flow chart: real money in and out, per calendar month. ---
   const history = monthlyHistory(snap, today, monthsCovered);
@@ -118,11 +115,11 @@ export function buildHousehold(snap, today, opts = {}) {
   };
 
   return {
-    today, windowDays, cushion,
+    today, windowDays, cushion, spendingPeriod: 'calendar-month',
     checking: checking.balance,
     savings: savings?.balance ?? 0,
     accountIds: { checking: checking._id, savings: savings?._id },
-    income, recurring, allowances, history, goal,
+    income, recurring, allowances, spendingEvidence, history, goal, activity: activitySummary(snap, today),
   };
 }
 

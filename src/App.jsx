@@ -33,12 +33,15 @@ import PurchasesPage from './pages/PurchasesPage.jsx';
 import ChatDock, { ChatLauncher } from './components/ChatDock.jsx';
 import { Ambient } from './components/Ambient.jsx';
 import { forecastWeather } from './components/Weather.jsx';
+import { weeklyBudget } from './engine/weekly-budget.js';
+import WeeklyBudgetDrawer from './drawers/WeeklyBudgetDrawer.jsx';
+import SettingsDrawer from './drawers/SettingsDrawer.jsx';
 import { rainDemoPatch, RAIN_DEMO_ID } from './engine/rain-demo.js';
 import { subscriptionPatch } from './engine/budget.js';
 import GoalContext from './components/GoalContext.jsx';
 
 const ChatPage = lazy(() => import('./pages/ChatPage.jsx'));
-const NAV = [['dashboard', 'Today', 'dash'], ['alerts', 'Alerts', 'bell'], ['forecast', 'Forecast', 'trend'], ['purchases', 'Purchases', 'cart'], ['transactions', 'Transactions', 'list', 'Activity'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Cash flow', 'bars'], ['goals', 'Goals', 'target']];
+const NAV = [['dashboard', 'Today', 'dash'], ['alerts', 'Alerts', 'bell'], ['forecast', 'Forecast', 'trend'], ['purchases', 'Purchases', 'cart'], ['transactions', 'Transactions', 'list', 'Activity'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Spending & Savings', 'bars', 'Spending'], ['goals', 'Goals', 'target']];
 
 function Navigation({ page, setPage, badges = {} }) {
   return NAV.map(([id, label, icon, short = label]) => (
@@ -105,6 +108,7 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
   const [confirm, setConfirm] = useState(null);
   const [previewId, setPreviewId] = useState(null);      // an option's identity, not a snapshot of it
   const [billId, setBillId] = useState(null);            // which bill a drawer was opened for
+  const [purchaseDate, setPurchaseDate] = useState(null); // date chosen from the purchase calendar
   const [noticeText, setNoticeText] = useState('');       // a notice handed to the import drawer
 
   // One accepted plan, plus the history that built it. Everything the user decides persists.
@@ -122,6 +126,7 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
   const sc = useMemo(() => scenarioFor(h, plan), [h, plan]);
 
   const sim = useMemo(() => simulate(h, sc), [h, sc]);
+  const weekly = useMemo(() => weeklyBudget(h, sc), [h, sc]);
   const cap = useMemo(() => capacity(h, sc), [h, sc]);
 
   // One goal plan, expressed as an amount by a date, and checked against every bill and paycheck
@@ -168,8 +173,9 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
   const waiting = pendingNotices.filter(n => !reviewedNotices[n.id]);
   const navBadges = { ...badges, alerts: alerts.filter(a => a.tone !== 'good').length };
 
-  const open = (what, id = null) => {
+  const open = (what, id = null, date = null) => {
     if (what.startsWith('page:')) { setDrawer(null); setBackTo(page === 'dashboard' ? 'dashboard' : null); setPage(what.slice(5)); return; }
+    if (what === 'purchase') setPurchaseDate(date);
     setBillId(id); setDrawer(what);
   };
   const reviewNoticeItem = item => { setNoticeText(item?.text || ''); setBillId(item?.id || null); setDrawer('notice'); };
@@ -185,7 +191,7 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
   const toggleRainDemo = () => {
     try {
       if (demoCost) change(subscriptionPatch(RAIN_DEMO_ID, null), 'Local rain test ended');
-      else change(rainDemoPatch(base, plan), 'Local rain test started — sample cost only');
+      else change(rainDemoPatch(base, plan, 'week'), 'Local rain test started — sample cost only');
     } catch (e) { toast.push({ title: 'Rain test not started', body: e.message, tone: 'neutral' }); }
   };
 
@@ -250,56 +256,53 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
 
   return (
     <div className={`app${chatVisible ? ' chat-is-open' : ''}`}>
-      <Ambient state={forecastWeather(sim.worst, alerts)} />
+      <Ambient state={page === 'dashboard' ? weekly.state : forecastWeather(sim.worst, alerts)} />
       <aside>
         <div className="brand"><span className="mark"><span className="weather-mark" aria-hidden="true">☂</span></span><div><b>RainCheck</b><small>Financial forecast</small></div></div>
         <nav aria-label="Main navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
         <div className="side-foot">
           <div className="acct"><span className="avatar">AR</span><span>Alex Rivera</span></div>
+          <button className="link settings-entry" onClick={() => setDrawer('settings')}><Icon n="gear" s={15} />Settings</button>
           Everyday Checking · Savings<br />
           <ThemeSwitch theme={theme} />
-          {hasPersisted() && <><br /><button className="link" style={{ fontSize: 12, marginTop: 6 }} onClick={resetAll}>Reset my decisions</button></>}
         </div>
       </aside>
 
       <main className="workspace">
         <div className="mobile-tools">
-          <div><b>RainCheck</b>{hasPersisted() && <button className="link" onClick={resetAll} title="Clear local decisions only. Bank records do not change.">Reset demo</button>}</div>
+          <div><b>RainCheck</b><button className="link settings-entry" onClick={() => setDrawer('settings')}><Icon n="gear" s={15} />Settings</button></div>
           <ThemeSwitch theme={theme} />
         </div>
         <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
-        {import.meta.env.DEV && page === 'dashboard' && <div className="row wrap local-rain-test">
-          <span className="fine">{demoCost ? `Local test · ${money(demoCost.amount)}/month sample cost added. Other plan choices stay saved.` : 'Local demo tools'}</span>
-          <button className="btn ghost sm" onClick={toggleRainDemo}>{demoCost ? 'End rain test' : 'Test rain'}</button>
-        </div>}
         {backTo && page !== backTo && <button className="back-link" onClick={() => navigate(backTo)}><i className="back-ic"><Icon n="arrow" s={14} /></i>Back to Today</button>}
         <GoalContext page={page} h={h} goal={goal} open={open} />
-        {page === 'dashboard' && <Dashboard h={h} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} options={options} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
+        {page === 'dashboard' && <Dashboard h={h} sc={sc} weekly={weekly} alerts={alerts} open={open} history={history} onUndo={undo} dark={theme.dark} />}
         {page === 'alerts' && <AlertsPage h={h} sc={sc} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} found={found} setFound={setFound} />}
-        {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
+        {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} open={open} />}
         {page === 'purchases' && <PurchasesPage h={h} available={purchasesAvailable} open={open} refresh={refresh} />}
         {page === 'transactions' && <TransactionsPage transactions={transactions} allowances={h.allowances} corrections={corrections} setCorrections={setCorrections} />}
         {page === 'recurring' && <RecurringPage h={h} sc={sc} plan={plan} change={change} cap={cap} open={open} discovered={discovered} onAdopt={adopt} onDismiss={dismiss} billNotes={billNotes} />}
-        {page === 'cashflow' && <CashFlowPage h={h} sc={sc} sim={sim} />}
+        {page === 'cashflow' && <CashFlowPage base={base} baseVersion={baseVersion} h={h} sc={sc} plan={plan} protectedIds={protectedIds} setProtectedIds={setProtectedIds} change={change} open={open} />}
         {page === 'goals' && <GoalsPage h={h} base={base} plan={plan} change={change} cap={cap} goal={goal} history={history} onUndo={undo} open={open} transfer={transfer} />}
-        <footer className="workspace-disclosure"><details><summary>Sample data</summary>
-          <p>No real bank account is connected. Explore a sample household; practice transfers do not move real money.</p>
-        </details></footer>
       </main>
 
       {!chatVisible && !drawer && !confirm && <ChatLauncher onOpen={showChat} />}
       {chatOpened && <ChatDock open={chatVisible} onClose={() => setChatOpen(false)}><Suspense fallback={<p role="status" style={{ padding: 24 }}>Opening chat…</p>}><ChatPage baseVersion={baseVersion} plan={plan} visible={chatVisible} /></Suspense></ChatDock>}
 
       <Toasts />
+      {drawer === 'settings' && <SettingsDrawer demoCost={demoCost} onToggleRain={toggleRainDemo} hasDecisions={hasPersisted()} onReset={resetAll} onClose={() => setDrawer(null)} />}
+      {drawer === 'week-budget' && <WeeklyBudgetDrawer h={h} weekly={weekly} open={open} onClose={() => setDrawer(null)} />}
       {drawer === 'checking-target' && <CheckingTargetDrawer h={h} sim={sim} change={change} onClose={() => setDrawer(null)} />}
       {drawer === 'forecast-help' && <ForecastHelpDrawer h={h} sc={sc} sim={sim} options={options} current={current}
         baseVersion={baseVersion} plan={plan} open={open} onClose={() => setDrawer(null)} />}
       {drawer === 'anomaly' && <BillReviewDrawer id={billId} h={h} plan={plan} notes={billNotes} change={change}
         saveNote={(key,text) => setBillNotes(previous => ({ ...previous, [key]: text }))} onClose={() => setDrawer(null)} />}
       {drawer === 'assistant' && <AssistantDrawer baseVersion={baseVersion} plan={plan} savedId={new URLSearchParams(window.location.search).get('review')} onClose={() => setDrawer(null)} />}
-      {drawer === 'purchase' && purchasesAvailable && <PurchaseDrawer key={`${billId}:${baseVersion}:${JSON.stringify(plan)}`} id={billId} base={base} baseVersion={baseVersion} plan={plan} refresh={refresh} onClose={() => setDrawer(null)} />}
+      {drawer === 'purchase' && purchasesAvailable && <PurchaseDrawer key={`${billId}:${purchaseDate}:${baseVersion}:${JSON.stringify(plan)}`} id={billId} initialDate={purchaseDate} base={base} baseVersion={baseVersion} plan={plan} refresh={refresh}
+        onOpenAlerts={() => navigate('alerts')} onClose={() => { setDrawer(null); setPurchaseDate(null); }} />}
       {(drawer === 'goal' || drawer === 'subscription') && <BudgetDrawer key={`${drawer}:${billId}`} kind={drawer} id={billId} base={base} baseVersion={baseVersion} plan={plan} change={change} onClose={() => setDrawer(null)} />}
-      {drawer === 'bill' && <BillDrawer h={h} notice={notice} billId={billId} plan={plan} change={change} cap={cap} onCompare={() => setDrawer('compare')} onClose={() => setDrawer(null)} />}
+      {drawer === 'bill' && <BillDrawer h={h} billId={billId} plan={plan} change={change} cap={cap} notes={billNotes}
+        saveNote={(key,text) => setBillNotes(previous => ({ ...previous, [key]: text }))} onCompare={() => setDrawer('compare')} onClose={() => setDrawer(null)} />}
       {drawer === 'notice' && <NoticeDrawer h={h} base={base} plan={plan} cap={cap} change={change}
         initialText={noticeText} origin={waiting.find(n => n.id === billId)}
         onDone={() => markNoticeReviewed(billId)} onClose={() => { setDrawer(null); setNoticeText(''); }} />}

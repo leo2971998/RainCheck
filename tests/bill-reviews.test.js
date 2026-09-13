@@ -53,7 +53,7 @@ it('carries earlier one-time decisions into a charge-scoped review once', () => 
   expect(needsBillReview(bill, migrated)).toBe(false);
   expect(migrated.treatAsNewPrice).toEqual({});
   expect(migrateBillReviews(base, migrated)).toBe(migrated);
-  expect(needsBillReview({ ...bill, lastPostedDate: '2026-10-10' }, migrated)).toBe(true);
+  expect(needsBillReview({ ...bill, lastPostedDate: '2026-10-10', lastPostedId: 'later-charge' }, migrated)).toBe(true);
 });
 it('does not count a cancelled bill as a pending review', () => {
   expect(needsBillReview(bill, { ...sc, cancelled: { [bill.id]: true } })).toBe(false);
@@ -68,7 +68,7 @@ it('applies an explicitly chosen estimate even when a notice also exists for tha
   const patch=billReviewPatch(withNotice,bill,record);
   const {plan}=applyPatch(sc,patch);
   expect(amountFor(withNotice,'2026-10-10',plan)).toBe(125);
-  const earlier={...bill,lastPostedDate:'2026-08-06'};
+  const earlier={...bill,lastPostedDate:'2026-08-06',lastPostedId:'earlier-charge'};
   const old=createBillReview(earlier,{forecastAmount:100,nextStep:'done'});
   expect(billReviewPatch(withNotice,earlier,old).whatIf).toBeUndefined();
 });

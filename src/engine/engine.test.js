@@ -43,7 +43,7 @@ describe('reading the bank records', () => {
 
   it('learns the five spending categories, and no phantom ones', () => {
     expect(Object.fromEntries(h.allowances.map(a => [a.label, a.monthly]))).toEqual({
-      'Groceries': 700, 'Fun & other': 300, 'Household': 260, 'Dining & takeout': 180, 'Rides & transit': 60,
+      'Groceries': 718, 'Fun & other': 290, 'Household': 262, 'Dining & takeout': 183, 'Rides & transit': 59,
     });
   });
 
@@ -90,13 +90,14 @@ describe('the forecast', () => {
   const { h, sc } = load();
 
   it('spreads everyday spending at $50 a day', () => {
-    expect(simulate(h, sc).dailySpend).toBe(50);
+    expect(simulate(h, sc).dailySpend).toBe(50.4);
   });
 
-  it('finds the tight day: Oct 15 at $175, below the $200 cushion', () => {
+  it('finds the tight day using calendar-month spending: Oct 15 below the $200 cushion', () => {
     const sim = simulate(h, sc);
     expect(sim.low.key).toBe('2026-10-15');
-    expect(Math.round(sim.low.balance)).toBe(175);
+    // 1260 + 1700 - 1585 - (1500 * 3/30 + 1500 * 15/31) - 300.
+    expect(sim.low.balance).toBe(192.19);
     expect(sim.worst).toBe('below');
   });
 
@@ -105,23 +106,23 @@ describe('the forecast', () => {
     expect(simulate(h, holdAt(sc, 'internet', internet.amount)).low.balance).toBeGreaterThanOrEqual(h.cushion);
   });
 
-  it('supports $300 a month before the increase and $275 after', () => {
+  it('supports $315 a month before the increase and $290 after', () => {
     const internet = h.recurring.find(r => r.id === 'internet');
-    expect(capacity(h, holdAt(sc, 'internet', internet.amount))).toBe(300);
-    expect(capacity(h, sc)).toBe(275);
+    expect(capacity(h, holdAt(sc, 'internet', internet.amount))).toBe(315);
+    expect(capacity(h, sc)).toBe(290);
   });
 
   it('costs one dollar of contribution per dollar of increase', () => {
     const internet = h.recurring.find(r => r.id === 'internet');
-    expect(capacity(h, holdAt(sc, 'internet', internet.amount + 75))).toBe(225);
+    expect(capacity(h, holdAt(sc, 'internet', internet.amount + 75))).toBe(240);
   });
 });
 
 describe('the consequence for the goal', () => {
   const { h, sc } = load();
 
-  it('lands at $1,900, which is $100 short, one month later', () => {
-    expect(goalAt(h, capacity(h, sc))).toMatchObject({ projected: 1900, gap: 100, monthsNeeded: 5 });
+  it('lands at $1,960, which is $40 short, one month later', () => {
+    expect(goalAt(h, capacity(h, sc))).toMatchObject({ projected: 1960, gap: 40, monthsNeeded: 5 });
   });
 });
 
@@ -130,9 +131,10 @@ describe('the options offered', () => {
   const cap = capacity(h, sc);
   const options = buildOptions(h, sc, cap, { groceries: true });
 
-  // Not $25: a monthly cut only partly lands before the tight day, so the search finds the real number.
-  it('asks for a $45 dining trim to restore the $300 plan, not $25', () => {
-    expect(cutNeeded(h, sc, 'dining-takeout', 300)).toBe(45);
+  // Capacity sits at $290 after the increase, so the search climbs in $5 steps until the tight
+  // day clears at $300.
+  it('finds the smallest $5-step dining trim that restores the $300 plan', () => {
+    expect(cutNeeded(h, sc, 'dining-takeout', 300)).toBe(15);
   });
 
   it('offers four responses and never one that raids savings', () => {
@@ -234,7 +236,7 @@ describe('alerts', () => {
     expect(out[0].body).toMatch(/below your \$200 cushion/);
     // The current plan still schedules $300. Its problem is affordability;
     // a $100 goal shortfall belongs to the unaccepted $275 alternative, not this plan.
-    expect(out[0].body).toContain('planned contributions do not keep your checking target intact');
+    expect(out[0].body).toContain('planning estimate, not a new bank charge');
     expect(out[0].body).not.toMatch(/\$100 short/);
   });
 
@@ -263,7 +265,7 @@ describe('alerts', () => {
     const unexplained = alertsFor(sc).find(a => a.id === 'unexplained:electric');
     const ifNew = capacity(h, { ...sc, treatAsNewPrice: { electric: true } });
     expect(ifNew).toBeLessThan(cap);
-    expect(unexplained.body).toContain('choose a future estimate');
+    expect(unexplained.body).toContain('Ask the company about the difference and keep notes');
     expect(unexplained.body).not.toContain('If this is the new price');
   });
 
@@ -272,6 +274,19 @@ describe('alerts', () => {
     const scenario = { ...sc, increase: 0, contribution: 400 };
     const out = buildAlerts(noNotice, scenario, simulate(noNotice, scenario), capacity(noNotice, scenario), null);
     expect(out.some(a => a.id === 'cushion')).toBe(true);
+  });
+
+  it('connects a cushion warning to the month containing a saved purchase', () => {
+    const clean = { ...h,
+      recurring: h.recurring.map(({ change, unexplained, ...r }) => r),
+      plannedPurchases: [{ id: 'concert', label: 'Concert tickets', amount: 5000, date: '2026-10-10', status: 'planned' }],
+    };
+    const scenario = { ...sc, increase: 0, contribution: 300 };
+    const out = buildAlerts(clean, scenario, simulate(clean, scenario), capacity(clean, scenario), null);
+    const alert = out.find(a => a.id === 'cushion');
+    expect(alert.title).toContain('October plan');
+    expect(alert.body).toContain('$5,000 in planned purchases');
+    expect(alert.actions[0]).toMatchObject({ target: 'page:purchases' });
   });
 
   it('confirms an applied plan and says nothing moved', () => {
@@ -315,7 +330,7 @@ describe('keeping the plans apart', () => {
     const applied = { contribution: null };
     const afterAccepting = goalAt(h, applied.contribution ?? cap);
     expect(afterAccepting.projected).toBe(beforeAccepting.projected);
-    expect(afterAccepting.gap).toBe(100);
+    expect(afterAccepting.gap).toBe(40);
   });
 
   it('an accepted contribution is what the goal reports', () => {
@@ -492,7 +507,7 @@ describe('a goal stated as an amount by a date', () => {
   it('separates what the date asks for from what the plan can carry', () => {
     const g = goalPlan(h, sc, GOAL);
     expect(g.required).toBe(300);          // (2000 - 800) / 4
-    expect(g.supported).toBe(300);         // and this household can carry it, before the increase
+    expect(g.supported).toBe(315);         // this household can carry the required 300 before the increase
     expect(g.feasible).toBe(true);
   });
 
@@ -524,10 +539,11 @@ describe('a goal stated as an amount by a date', () => {
     // h here is the plain household, so accepting the notice is the ONLY change applied.
     const after = householdFor(h, plan);
     const g = goalPlan(after, scenarioFor(after, plan), GOAL);
-    expect(g.supported).toBe(275);
+    expect(g.supported).toBe(290);
     expect(g.feasible).toBe(false);
-    expect(g.gap).toBe(100);
-    // …and the other path: keep the spending, move the date.
-    expect(dateToReach(after, scenarioFor(after, plan), { target: 2000, saved: 800, contribution: 275 }).months).toBe(5);
+    expect(g.gap).toBe(40);
+    // …and the other path: keep the spending, move the date. The contribution here is the one the
+    // plan can actually carry after the increase, not the figure it carried before it.
+    expect(dateToReach(after, scenarioFor(after, plan), { target: 2000, saved: 800, contribution: 290 }).months).toBe(5);
   });
 });

@@ -1,36 +1,25 @@
-import { STATE, money, prettyDate } from '../components/ui.jsx';
-import { AreaChart } from '../components/charts.jsx';
-import IncomeList from '../components/IncomeList.jsx';
+import { useMemo, useState } from 'react';
+import { prettyIso } from '../components/ui.jsx';
+import { budgetMoney as money } from '../components/BudgetImpact.jsx';
+import { monthlyOutlook, nextForecastMonth } from '../engine/monthly-outlook.js';
+import MonthsCompare from '../components/MonthsCompare.jsx';
 
-export default function ForecastPage({ h, sc, plan, change, sim, cap }) {
-  const [st, tone] = STATE[sim.worst];
-  return (
-    <>
-      <div className="topbar"><div><h1>Forecast</h1><div className="sub">Day by day through {prettyDate(sim.days[sim.days.length - 1].date)} · lowest {money(sim.low.balance)} on {prettyDate(sim.low.date)} · <span className={'pill ' + tone}>{st}</span></div></div></div>
-      <div className="grid g32">
-        <div className="grid" style={{ gap: 18 }}>
-          <div className="card"><div className="hd"><h2>Projected checking balance</h2><span className="fine">Hover for the day's events</span></div><AreaChart h={h} sim={sim} id="fc" height={300} /></div>
-          <div className="card"><div className="hd"><h2>Day by day</h2><span className="fine">Days with bills, purchases, income or transfers</span></div>
-            <table><thead><tr><th>Date</th><th>Events</th><th className="r">End of day</th><th>Status</th></tr></thead><tbody>
-              {sim.days.filter(d => d.events.length > 1).map(d => <tr key={d.key} className="hover"><td style={{ whiteSpace: 'nowrap' }}>{d.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</td><td>{d.events.filter(e => !e.everyday).map((e, i) => <span key={i} className="pill neutral" style={{ marginRight: 6 }}>{e.purchase ? 'Planned purchase · ' : ''}{e.label} {e.amt > 0 ? '+' : ''}{money(e.amt)}</span>)}</td><td className="r"><b>{money(d.balance)}</b></td><td><span className={'pill ' + STATE[d.state][1]}>{STATE[d.state][0]}</span></td></tr>)}
-            </tbody></table></div>
-        </div>
-        <div className="grid" style={{ gap: 18 }}>
-          <div className="card"><h2>Assumptions</h2>
-            <div className="kv">
-              <span className="k">Checking safety buffer</span><span className="v">{money(h.cushion)}</span>
-              <span className="k">Usual everyday spending</span><span className="v">{money(sim.dailySpend)}/day</span>
-              <span className="k">{h.fundedGoals ? 'Total monthly goal saving' : 'Savings contribution'}</span>
-              <span className="v">{money(sc.contribution)}{!h.fundedGoals && sim.contributionDate ? ` on ${prettyDate(new Date(sim.contributionDate + 'T12:00:00'))}` : ''}</span>
-              <span className="k">{h.fundedGoals ? 'Monthly saving that fits' : 'Supported contribution'}</span><span className="v">{money(cap)}</span>
-            </div>
-            <div className="fine">{h.fundedGoals
-              ? 'The amount that fits is a portion of your current goal contributions, checked together against this forecast. It is not an automatic change. Each goal stops at its target or deadline.'
-              : 'Supported = the largest contribution that keeps every day at or above the cushion.'} Spending covered by an allowance moves to the planned purchase date instead of being counted twice.</div>
-          </div>
-          <IncomeList h={h} plan={plan} change={change} />
-        </div>
-      </div>
-    </>
-  );
+const monthName = month => new Date(month + '-01T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+export default function ForecastPage({ h, sc }) {
+  const [selected, setSelected] = useState(null);
+  const choices = [0, 1, 2, 3].map(i => nextForecastMonth(h.today, i));
+  const month = choices.includes(selected) ? selected : choices[1];
+  const out = useMemo(() => monthlyOutlook(h, sc, month), [h, sc, month]);
+  const evidence = h.spendingEvidence;
+  return <div className="monthly-forecast">
+    <div className="topbar"><div><h1>Forecast</h1><div className="sub">Compare recorded spending with the selected month’s estimate.</div></div>
+      <label className="month-picker">Month<select value={month} onChange={e => setSelected(e.target.value)}>{choices.map(m => <option key={m} value={m}>{monthName(m)}{m === h.today.slice(0, 7) ? ' · remaining days' : ''}</option>)}</select></label>
+    </div>
+    <p className="month-asof">Plan dated {prettyIso(h.today)} · {out.partial ? `Remaining costs from ${prettyIso(out.start)}` : `Planning for ${monthName(month)}`}</p>
+    <section className="month-summary" aria-label="Monthly spending estimate">
+      <div><span>{out.partial ? 'Still expected this month' : 'Expected spending'}</span><strong className="num">{money(out.spending)}</strong><p>Estimated from recorded spending, scheduled bills, and plans you saved.</p></div>
+    </section>
+    <MonthsCompare evidence={evidence} forecastMonth={month} />
+  </div>;
 }

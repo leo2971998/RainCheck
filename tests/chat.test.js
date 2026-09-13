@@ -56,7 +56,7 @@ it('previews by versus to distinctly without applying a decision',()=>{
 it('explains calculator fields to the agent in plain language, without misleading state codes',()=>{
   const result=calculateChat(base,body('preview_bill',{billId:'internet',amount:25,change:'by'}));
   const brief=chatBrief(result);
-  expect(brief).toContain('lowest checking balance $175.00');
+  expect(brief).toContain('lowest checking balance $192.19');
   expect(brief).toContain('NOT fully supported');expect(brief).toContain('not how long money lasts');
   expect(brief).not.toMatch(/fits:|feasible:|state:|"before"|"after"/);
   expect(brief).toContain('No change has been saved or paid');
@@ -71,7 +71,7 @@ it('separates a cushion shortfall from the goal outcome assumed by scheduled con
   const result=calculateChat(base,body('preview_bill',{billId:'internet',amount:25,change:'by'}));
   const brief=chatBrief(result);
   expect(brief).toContain('Projected goal savings if those contributions happen: $2,000.00');
-  expect(brief).toContain('Supported monthly savings while preserving the cushion: $275.00');
+  expect(brief).toContain('Supported monthly savings while preserving the cushion: $290.00');
   expect(brief).toContain('Do not turn a cushion warning into a claim that the goal will be missed');
   expect(brief).toContain('Goal shortfall under the scheduled contributions: $0.00');
   expect(brief).toContain('Never offer to combine previews or change savings contributions');

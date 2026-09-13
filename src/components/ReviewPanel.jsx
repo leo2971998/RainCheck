@@ -7,9 +7,9 @@ const factNames = { lowCents: 'Checking forecast', monthlyBillsCents: 'Monthly b
   goalTargetCents: 'Savings target', goalProjectedCents: 'Goal projection', contributionFits: 'Cushion check',
   goalFeasible: 'Goal feasibility', checkedThrough: 'Goal horizon', goalDate: 'Goal deadline',
   cushionCents: 'Checking cushion', windowDays: 'Forecast window', asOf: 'Data date' };
-const sourceName = path => path.startsWith('evidence.') ? 'Saved bank evidence' : factNames[path.split('.').at(-1)] || 'Calculator';
+const sourceName = path => path.startsWith('evidence.') ? 'Supporting evidence' : factNames[path.split('.').at(-1)] || 'Calculator';
 
-export function ReviewAnswer({ review, retrieval, impact, historical = false }) {
+export function ReviewAnswer({ review, retrieval, impact, historical = false, compact = false }) {
   const f = review.facts, a = f.after;
   const shared = impact?.after?.shared;
   const status = budgetStatus({ low: a.lowCents / 100, fits: a.contributionFits,
@@ -17,7 +17,7 @@ export function ReviewAnswer({ review, retrieval, impact, historical = false }) 
   const evidence = retrieval?.evidence || f.evidence || [];
   return <article className="review-answer">
     {historical && <p className="alert">Saved review — this describes an earlier plan, not necessarily your current decisions.</p>}
-    <div className="review-calculation">
+    {!compact && <div className="review-calculation">
       <span className="review-eyebrow">From the calculator · {budgetDate(f.asOf)}</span>
       <h3>{status.label}</h3>
       <dl className="review-numbers">
@@ -30,7 +30,8 @@ export function ReviewAnswer({ review, retrieval, impact, historical = false }) 
       {f.purchaseWeek && <p>Lowest checking in the purchase week ({budgetDate(f.purchaseWeek.startsOn)}–{budgetDate(f.purchaseWeek.endsOn)}): {budgetMoney(f.purchaseWeek.beforeLowCents / 100)} → {budgetMoney(f.purchaseWeek.afterLowCents / 100)}.</p>}
       <p className="fine">*Assumes the planned contributions are made. {!a.contributionFits && 'The calculator says those contributions do not keep your cushion intact. '}
         {a.checkedThrough && `Goal affordability checked through ${budgetDate(a.checkedThrough)}.`}</p>
-    </div>
+    </div>}
+    {compact && !a.contributionFits && <p className="fine">The calculator still finds a shortfall. Extra planned savings need another adjustment.</p>}
     {review.result ? <div className="review-reading">
       <span className="review-eyebrow">AI explanation · not a guarantee</span>
       <p>{review.result.summary}</p>
@@ -48,7 +49,8 @@ export function ReviewAnswer({ review, retrieval, impact, historical = false }) 
 }
 
 /** Both entry points use this read-only conversation; applying stays outside it. */
-export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'plan', savedId, initialQuestion = '', preview = kind !== 'plan' }) {
+export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'plan', savedId, initialQuestion = '', preview = kind !== 'plan', focus, variant, protectedIds = {} }) {
+  const savings = variant === 'savings';
   const [ready, setReady] = useState(null), [checkError, setCheckError] = useState(false);
   const [consent, setConsent] = useState(false), [busy, setBusy] = useState(false);
   const [question, setQuestion] = useState(initialQuestion), [error, setError] = useState('');
@@ -76,7 +78,8 @@ export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'pla
     const timeout = setTimeout(() => controller.abort(), 115000);
     try {
       const r = await fetch('/api/review', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ consent, baseVersion, plan, patch, kind, question: asked }), signal: controller.signal });
+        body: JSON.stringify({ consent, baseVersion, plan, patch, kind, question: asked,
+          ...(focus === 'spending' ? { focus, protectedCategories: Object.keys(protectedIds).filter(id => protectedIds[id]) } : {}) }), signal: controller.signal });
       const data = await r.json();
       if (!r.ok) throw new Error(data.message || 'The review could not be started.');
       setMessages(m => [...m.slice(-4), { key: crypto.randomUUID(), question: asked, ...data }]);
@@ -85,15 +88,16 @@ export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'pla
       if (active.current === controller) setError(err.name === 'AbortError' ? 'The review took too long. Your plan is unchanged; please try again.' : err.message);
     } finally { clearTimeout(timeout); if (active.current === controller) { setBusy(false); active.current = null; } }
   };
-  const suggestions = !preview ? ['Can my planned saving fit my budget?', 'What assumptions should I check?']
+  const suggestions = savings ? ['Which flexible costs could I reduce?', 'What replacement costs should I consider?', 'How would this affect my savings goals?']
+    : !preview ? ['Can my planned saving fit my budget?', 'What assumptions should I check?']
     : ['What changes in this preview?', 'Will this put my savings goal under pressure?'];
   return <section className="review-panel" aria-label="AI plan conversation">
     <ol className="review-layers" aria-label="How this works"><li>Calculate</li><li>Check evidence</li><li>Explain</li><li>You decide</li></ol>
-    <p>{!preview ? 'Ask about your current plan, in everyday language.' : 'Ask AI to explain this preview before you decide.'} The calculator handles the numbers; AI explains the trade-offs.</p>
+    <p>{savings ? 'ZeroClaw reviews recorded category spending and calculated changes. Ask for practical options—not guaranteed savings.' : <>{!preview ? 'Ask about your current plan, in everyday language.' : 'Ask AI to explain this preview before you decide.'} The calculator handles the numbers; AI explains the trade-offs.</>}</p>
     {saved && <><p className="review-question"><b>Question in this saved review</b>{saved.facts.question || 'Explain this budget preview.'}</p>
-      <ReviewAnswer review={saved} historical /><p><b>Ask about your current plan below.</b> New answers use your current decisions, not the saved preview above.</p></>}
+      <ReviewAnswer review={saved} historical compact={savings} /><p><b>Ask about your current plan below.</b> New answers use your current decisions, not the saved preview above.</p></>}
     <div className="review-conversation" aria-label="Conversation">
-      {messages.map(m => <div key={m.key}><p className="review-question"><b>You</b>{m.question}</p><ReviewAnswer review={m.review} retrieval={m.retrieval} impact={m.impact} /></div>)}
+      {messages.map(m => <div key={m.key}><p className="review-question"><b>You</b>{m.question}</p><ReviewAnswer review={m.review} retrieval={m.retrieval} impact={m.impact} compact={savings} /></div>)}
     </div>
     <div ref={end} />
     {ready === null ? <p role="status">Checking the review connection…</p> : !ready || !baseVersion ? <p className="alert">{checkError ? 'The review connection could not be checked.' : 'AI review is available with bank data in the local test workspace. Your calculator still works.'} {checkError && <button className="link" onClick={check}>Try again</button>}</p> : <form className="review-compose" onSubmit={send}>
@@ -103,11 +107,11 @@ export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'pla
         disabled={busy} placeholder="What should I watch out for in this plan?" />
       <label className="review-consent"><input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsent(e.target.checked)} />
         <span>Allow cloud review of this question and demo budget.</span></label>
-      <details className="fine"><summary>What is shared?</summary><p>Your question, calculated before/after amounts and up to four matching saved bank excerpts go through ZeroClaw to its cloud model. Reviews are saved on your server. No account credentials or full transaction history are sent. Don’t enter private information.</p></details>
+      <details className="fine"><summary>What is shared?</summary><p>Your question, calculated before/after amounts, spending summaries and up to four supporting excerpts go through ZeroClaw to its cloud model. Reviews are saved on your server. No account credentials, private notes or full transaction history are sent. Don’t enter private information.</p></details>
       <button className="btn" disabled={!consent || !question.trim() || busy} type="submit">{busy ? 'Reviewing…' : 'Ask about this plan'}</button>
     </form>}
     {busy && <p role="status" className="review-progress">Recalculating your plan, finding matching evidence and asking AI. This may take about a minute. You don’t need to send it again.</p>}
     {error && <p role="alert" className="alert">{error}</p>}
-    <p className="fine">To test another amount or date, use Plan a purchase, Add goal, Add subscription or Edit details first. This conversation cannot change your budget.</p>
+    <p className="fine">{savings ? 'Use the spending targets above to try an idea, then preview and confirm. ZeroClaw cannot apply changes or move money.' : 'To test another amount or date, use Plan a purchase, Add goal, Add subscription or Edit details first. This conversation cannot change your budget.'}</p>
   </section>;
 }

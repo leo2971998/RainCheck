@@ -11,9 +11,15 @@ export async function loadHouseholdContext({ dataset = 'demo', purchases = true,
   if (purchases) {
     try { base.plannedPurchases = await list(); }
     catch { const error = new Error('Saved purchases could not load.'); error.code = 'PURCHASES_UNAVAILABLE'; throw error; }
-    if (base.plannedPurchases.some(p => p.accountId !== base.checkingId)) {
-      const error = new Error('Saved purchases belong to a different demo account.'); error.code = 'PURCHASES_UNAVAILABLE'; throw error;
-    }
+    // A purchase saved against a different account is not this household's purchase, so leaving it
+    // out omits nothing. Refusing to build the forecast at all was the harsher reading, and it had
+    // no way out: the save RPC treats completed and cancelled purchases as immutable, so once the
+    // sandbox account was rebuilt the stale rows could never be repointed or deleted, and every
+    // request failed permanently. They are set aside and counted instead, so the mismatch is still
+    // visible without taking the whole plan down.
+    const foreign = base.plannedPurchases.filter(p => p.accountId !== base.checkingId);
+    if (foreign.length) base.plannedPurchases = base.plannedPurchases.filter(p => p.accountId === base.checkingId);
+    base.foreignPurchases = foreign.length;
     const posted = new Map(transactionRecords(snapshot, base.today).map(t => [t.id, t]));
     if (base.plannedPurchases.filter(p => p.status === 'completed').some(p => {
       const charge = posted.get(p.transactionId);

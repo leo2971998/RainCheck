@@ -9,10 +9,10 @@ import { budgetMoney as money } from './BudgetImpact.jsx';
  * SVG groups, so each part moves on its own, and the icon can cross-fade to a different state.
  *
  * Two separate things decide what is shown, on purpose:
- *   the supplied severity state picks the icon  (sun / partly / rain / storm)
- *   the time of day picks the sky      (dawn / day / dusk / night)
- * so a hero at 9pm shows a moon on a navy sky when money is fine, and a storm cloud on that
- * same sky when it is not. Evening never reads as bad news; only the icon can say that.
+ *   the supplied severity state picks the forecast (sun / partly / rain / storm)
+ *   the selected appearance picks the scene       (day / night)
+ * so dark mode keeps its moonlit identity even when rain arrives. Appearance never changes the
+ * budget result; only the calculated severity can add rain or a storm.
  */
 
 const RANK = { ok: 0, tight: 1, below: 2, over: 3 };
@@ -27,10 +27,15 @@ export function forecastWeather(state, alerts = []) {
 export function kindFor(state, night = false) {
   const day = { ok: 'sun', tight: 'partly', below: 'rain', over: 'storm' }[state] ?? 'sun';
   if (!night) return day;
-  return { sun: 'moon', partly: 'partly-night' }[day] ?? day;
+  return {
+    sun: 'moon',
+    partly: 'partly-night',
+    rain: 'rain-night',
+    storm: 'storm-night',
+  }[day] ?? day;
 }
 
-/** The sky the clock earns. Read once per render; the hero re-reads it every few minutes. */
+/** Clock-based scenes remain available to forecast surfaces that are not tied to the UI theme. */
 export function timeOfDay(d = new Date()) {
   const h = d.getHours();
   return h < 5 ? 'night' : h < 8 ? 'dawn' : h < 17 ? 'day' : h < 20 ? 'dusk' : 'night';
@@ -90,7 +95,7 @@ function Bolt() {
   return <polygon className="wx-bolt" points="35,42 29,52 34,52 31,61 40,49 35,49 38,42" />;
 }
 
-const KINDS = ['sun', 'partly', 'rain', 'storm', 'moon', 'partly-night'];
+const KINDS = ['sun', 'partly', 'rain', 'storm', 'moon', 'partly-night', 'rain-night', 'storm-night'];
 
 /** One weather icon. `kind` is one of KINDS. */
 export function WeatherIcon({ kind = 'sun', size = 48, title }) {
@@ -121,6 +126,8 @@ export function WeatherIcon({ kind = 'sun', size = 48, title }) {
       {kind === 'storm' && <><Cloud dark /><Bolt /><Drops n={4} heavy /></>}
       {kind === 'moon' && <Moon />}
       {kind === 'partly-night' && <><Moon /><Cloud y={6} /></>}
+      {kind === 'rain-night' && <><Moon /><Cloud dark y={6} /><Drops /></>}
+      {kind === 'storm-night' && <><Moon /><Cloud dark y={6} /><Bolt /><Drops n={4} heavy /></>}
     </svg>
   );
 }
@@ -143,7 +150,7 @@ export function Sky({ state, night = false, size = 150 }) {
 }
 
 const short = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-const WORDS = { ok: 'Above target', tight: 'Near target', below: 'Getting tight', over: 'Short of money' };
+const WORDS = { ok: 'Room to spare', tight: 'Little room left', below: 'Getting tight', over: 'Short of money' };
 
 /**
  * The outlook: one icon per week across the forecast, the way a weather app shows the days ahead.
@@ -157,8 +164,8 @@ export function Outlook({ sim, h, days = 7 }) {
   return (
     <section className="weekly-checking" aria-label="Weekly checking forecast">
     <p className="outlook-help" id={helpId}>
-      <span>Weekly balance estimates</span>
-      <span>After bills, spending and planned savings</span>
+      <span>Each card shows the least money expected in checking during those dates.</span>
+      <span>Checking buffer: <b>{money(h.cushion)}</b> for unexpected costs. This is separate from your savings goals.</span>
     </p>
     <div className="outlook" role="list" aria-label="Weekly outlook" aria-describedby={helpId}>
       {weeks.map((w, i) => {
@@ -174,13 +181,16 @@ export function Outlook({ sim, h, days = 7 }) {
         return (
           <div key={i} role="listitem" className={`ol-week st-${worst.state}`} style={{ '--i': i }}>
             <WeatherIcon kind={kindFor(worst.state)} size={36} />
-            <span className="ol-range">{i === 0 ? 'This week' : label}</span>
+            <span className="ol-range">{label}</span>
+            <span className="ol-balance num">{money(low.balance)} left</span>
+            <span className="ol-date">on {short(low.date)}</span>
             <span className="ol-word">{WORDS[worst.state]}</span>
             <span className="ol-threshold">{threshold}</span>
             <details className="ol-details">
-              <summary aria-label={`View estimate for ${label}`}>View estimate</summary>
+              <summary aria-label={`View estimate for ${label}`}>What’s included?</summary>
               <p className="ol-low">Checking could drop to <strong className="num">{money(low.balance)}</strong><span>on {short(low.date)}</span></p>
               <p className="ol-assumptions">End-of-day estimate, not today's balance. Includes expected income, bills, spending and planned savings.</p>
+              <p className="ol-assumptions">{w.flatMap(d => (d.events || []).filter(e => e.bill || e.transfer).map(e => `${e.label} ${money(-e.amt)} (${short(d.date)})`)).join(' · ') || 'No bills or savings scheduled in this period.'}</p>
             </details>
           </div>
         );

@@ -3,6 +3,7 @@ import { needsBillReview } from './bill-reviews.js';
 
 const short = date => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 const shortIso = iso => short(new Date(iso + 'T12:00:00'));
+const monthName = iso => new Date(`${iso.slice(0, 7)}-01T12:00:00`).toLocaleDateString('en-US', { month: 'long' });
 // Signed. Math.abs() here turned a $200 shortfall into "would leave $200", which read as
 // though the money were still there.
 const $ = n => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
@@ -12,8 +13,8 @@ const $ = n => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('
  *
  * The rule is one event, one alert. A bill change and the cushion breach it causes are the same
  * event, so the breach is folded into that alert's body rather than sent as a second one. Two
- * genuinely different events — a provider raising a price, and a charge arriving higher with no
- * explanation — are separate alerts, because they need different decisions from the user.
+ * genuinely different events — a saved budget estimate, and a recorded charge that differs from
+ * earlier payments — are separate alerts, because they need different decisions from the user.
  *
  * Everything here is a consequence the user can act on. Spending trends belong in a weekly
  * summary, not an interruption.
@@ -35,7 +36,7 @@ export function buildAlerts(h, sc, sim, cap, lastAction, datedGoal) {
     !goal.fits ? 'The planned contributions do not keep your checking target intact through the goal deadline.' : null].filter(Boolean).join(' ');
   let breachExplained = false;
 
-  // --- 1. A provider says the price is going up. We can quote the sentence that proves it. ---
+  // --- 1. A saved bill estimate affects the plan. This is not proof of a company price change. ---
   for (const bill of h.recurring.filter(r => r.change)) {
     const increase = sc.increase ?? bill.change.increase;
     if (!increase || accepted) continue;      // once the plan carries itself, this is no longer news
@@ -43,10 +44,10 @@ export function buildAlerts(h, sc, sim, cap, lastAction, datedGoal) {
     alerts.push({
       id: `increase:${bill.id}`,
       tone: breach ? 'bad' : 'warn',
-      title: `Your ${bill.label.toLowerCase()} bill increased by ${$(increase)}.`,
-      body: [breachSentence, goalSentence, 'Review the effect on your goal.'].filter(Boolean).join(' '),
+      title: `${bill.payee || bill.label}: review your saved bill estimate.`,
+      body: [`Your plan uses ${$(sc.whatIf?.[bill.id] ?? bill.change.to)} instead of ${$(bill.amount)}. This is a planning estimate, not a new bank charge.`, breachSentence].filter(Boolean).join(' '),
       actions: [
-        { label: 'See what changed', target: 'bill', billId: bill.id, primary: true },
+        { label: 'Review estimate & notes', target: 'bill', billId: bill.id, primary: true },
         { label: 'Compare options', target: 'compare' },
       ],
     });
@@ -62,23 +63,30 @@ export function buildAlerts(h, sc, sim, cap, lastAction, datedGoal) {
     alerts.push({
       id: `unexplained:${bill.id}`,
       tone: 'warn',
-      title: `Your ${bill.label.toLowerCase()} charge came in ${$(Math.abs(gap))} ${gap < 0 ? 'lower' : 'higher'} than usual.`,
+      title: `${bill.payee || bill.label}: payment ${$(Math.abs(gap))} ${gap < 0 ? 'lower' : 'higher'} than usual.`,
       body: `${$(bill.lastPosted)} posted${bill.lastPostedDate ? ` on ${shortIso(bill.lastPostedDate)}` : ''}, against a usual ${$(usual)}. We have not confirmed why.`
-        + ' Review the charge, choose a future estimate, and save a next step for the company.',
+        + ' Ask the company about the difference and keep notes.',
       actions: [{ label: 'Review charge', target: 'anomaly', billId: bill.id, primary: true }],
     });
   }
 
   // --- 3. The cushion is breached and no change above accounts for it. ---
   if (breach && !breachExplained) {
+    const lowMonth = sim.low.key?.slice(0, 7);
+    const monthPurchases = lowMonth ? (h.plannedPurchases || []).filter(p => p.status === 'planned'
+      && (p.date < h.today ? h.today : p.date).slice(0, 7) === lowMonth) : [];
+    const plannedTotal = monthPurchases.reduce((sum, purchase) => sum + purchase.amount, 0);
     alerts.push({
       id: 'cushion',
       tone: 'bad',
-      title: `Projected balance falls to ${$(sim.low.balance)} on ${short(sim.low.date)}.`,
-      body: `That is below your ${$(h.cushion)} cushion before your next paycheck.`
+      title: monthPurchases.length ? `${monthName(`${lowMonth}-01`)} plan needs attention.` : `Projected balance falls to ${$(sim.low.balance)} on ${short(sim.low.date)}.`,
+      body: (monthPurchases.length ? `You have ${$(plannedTotal)} in planned purchases in ${monthName(`${lowMonth}-01`)}. ` : '')
+        + `Checking is projected at ${$(sim.low.balance)} on ${short(sim.low.date)}, below your ${$(h.cushion)} cushion before your next paycheck.`
         + (!fits ? ` Your plan supports ${$(cap)} a month rather than the ${$(sc.contribution)} you have scheduled.` : '')
         + (goalSentence ? ` ${goalSentence}` : ''),
-      actions: [{ label: 'Compare options', target: 'compare', primary: true }],
+      actions: monthPurchases.length
+        ? [{ label: 'Review planned purchases', target: 'page:purchases', primary: true }, { label: 'Compare options', target: 'compare' }]
+        : [{ label: 'Compare options', target: 'compare', primary: true }],
     });
   }
 

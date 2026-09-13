@@ -4,6 +4,7 @@
 .amb-glow { position: absolute; inset: 0; opacity: 0; transition: opacity .5s ease; background: radial-gradient(ellipse at 80% 0%, #5697bf35, transparent 75%); }
 .raining .amb-glow { opacity: 1; }
 .clear .amb-glow { opacity: .55; background: radial-gradient(ellipse at 75% 0%, #ffe18b26, transparent 65%); }
+:root[data-theme="dark"] .clear .amb-glow { opacity: .7; background: radial-gradient(ellipse at 80% 0%, #9bbcf12b, transparent 66%); }
 .amb-rain { position: absolute; inset: -180px -10%; opacity: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg stroke='%238ec8ee' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M12 4v21M67 71v27M125 32v18M153 120v28'/%3E%3C/g%3E%3C/svg%3E"); background-size: 160px 160px; transform: skewX(-12deg); animation: ambient-rain 1s linear infinite; animation-play-state: paused; transition: opacity .45s ease; }
 .raining .amb-rain { animation-play-state: running; opacity: .32; }
 .raining .amb-r2 { opacity: .18; background-position: 55px 80px; animation-duration: 1.4s; }
@@ -17,6 +18,8 @@
 .contained.storm .amb-glow { background: radial-gradient(ellipse at 70% -15%, #bccde347, transparent 65%); }
 .app .weather-hero[data-weather="below"] { background: linear-gradient(115deg, #285873, #476c88); }
 .app .weather-hero[data-weather="over"] { background: linear-gradient(115deg, #1a2941, #3b4766); }
+:root[data-theme="dark"] .app .weather-hero[data-weather="below"] { background: linear-gradient(120deg, #121c38, #264966); }
+:root[data-theme="dark"] .app .weather-hero[data-weather="over"] { background: linear-gradient(120deg, #0a1023, #292f50); }
 .weather-hero .hero-weather { z-index: 1; }
 .weather-reading { display: inline-block; margin-top: 6px; padding: 6px 10px; border: 1px solid #ffffff4d; border-radius: 9px; background: #07182f40; color: #fff; font-size: 13px; font-weight: 700; }
 .weather-reading strong, .weather-reading span, .weather-reading small { display: block; }
