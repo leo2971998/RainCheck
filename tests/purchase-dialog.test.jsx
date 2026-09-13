@@ -6,8 +6,8 @@ import PurchaseDrawer from '../src/drawers/PurchaseDrawer.jsx';
 import { household as sample } from '../data/household.sample.js';
 import { emptyPlan } from '../src/engine/plan.js';
 
-const purchase = { id: 'tickets', revision: 1, label: 'Concert tickets', date: '2026-10-12', amount: 100, status: 'planned', accountId: sample.checkingId };
-const base = { ...sample, plannedPurchases: [purchase] };
+const purchase = { id: 'tickets', revision: 1, label: 'Concert tickets', date: '2026-10-12', amount: 100, status: 'planned', accountId: 'test-checking' };
+const base = { ...sample, checkingId: 'test-checking', plannedPurchases: [purchase] };
 let host, root, refresh, close, fetcher;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 beforeEach(() => {
