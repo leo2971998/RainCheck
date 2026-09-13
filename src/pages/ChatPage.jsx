@@ -4,6 +4,7 @@ import { Streamdown } from 'streamdown';
 import { Icon, money } from '../components/ui.jsx';
 import { receiveMessage } from '../chat/messages.js';
 import { chatBrief } from '../chat/brief.js';
+import { loadChatAvailability } from '../chat/availability.js';
 import './chat.css';
 
 const suggestions = ['How does my current plan look?', 'What if my internet bill increases by $25?', 'Could I add a $20 monthly subscription?'];
@@ -29,6 +30,7 @@ export default function ChatPage(props) {
 
 function Chat({ baseVersion, plan, visible }) {
   const [available, setAvailable] = useState(null);
+  const [publicDemo, setPublicDemo] = useState(false), [availabilityMessage, setAvailabilityMessage] = useState(''), [availabilityCheck, setAvailabilityCheck] = useState(0);
   const [messages, setMessages] = useState([]), [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false), [starting, setStarting] = useState(false), [error, setError] = useState('');
   const [started, setStarted] = useState(false), [ready, setReady] = useState(false), [progress, setProgress] = useState('');
@@ -78,10 +80,13 @@ function Chat({ baseVersion, plan, visible }) {
   const connected = chat.status === 'connected';
   useEffect(() => {
     const controller = new AbortController();
-    const timeout = setTimeout(() => { controller.abort(); setAvailable(false); }, 10000);
-    fetch('/api/chat-session', { signal: controller.signal }).then(r => r.json()).then(d => setAvailable(d.available === true)).catch(() => { if (!controller.signal.aborted) setAvailable(false); }).finally(() => clearTimeout(timeout));
-    return () => { clearTimeout(timeout); controller.abort(); };
-  }, []);
+    let active = true;
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    loadChatAvailability(fetch, controller.signal).then(result => {
+      if (active) { setAvailable(result.available); setPublicDemo(result.publicDemo); setAvailabilityMessage(result.message); }
+    }).finally(() => clearTimeout(timeout));
+    return () => { active = false; clearTimeout(timeout); controller.abort(); };
+  }, [availabilityCheck]);
   useEffect(() => () => { allowed.current = false; generation.current++; requests.current.forEach(c => c.abort()); chat.endSession(); }, [chat.endSession]);
   useEffect(() => {
     if (connected) chat.sendContextualUpdate('The saved plan or bank data may have changed. Retrieve the latest current plan before using any budget numbers. Previous previews are not saved.');
@@ -138,13 +143,16 @@ function Chat({ baseVersion, plan, visible }) {
         {!connected && <div className="chat-start">
           {started && <p>This conversation has ended. Starting again opens a new conversation; earlier messages are not carried over.</p>}
           <button className="btn" onClick={start} disabled={starting || !available || !baseVersion}>{starting ? 'Connecting…' : started ? 'Start a new chat' : 'Start chatting'}</button>
-          {available === null ? <p role="status">Checking chat availability…</p> : (!available || !baseVersion) && <p>Chat is available in the connected local test workspace. Refresh after starting the server and loading bank data.</p>}
+          {available === null ? <p role="status">Checking chat availability…</p> : !available ? <div><p role="status">{availabilityMessage}</p>
+            <button className="btn ghost sm" onClick={() => { setAvailable(null); setAvailabilityCheck(n => n + 1); }}>Try again</button></div>
+            : !baseVersion && <p>Your forecast is still loading. Chat will be ready once it loads.</p>}
         </div>}
         <form className="chat-compose" onSubmit={e => { e.preventDefault(); send(); }}>
           <label className="sr-only" htmlFor="chat-message">Your message</label>
           <textarea id="chat-message" ref={input} value={draft} onChange={e => setDraft(e.target.value)} placeholder={connected ? 'Ask a question or try a what-if…' : 'Your question…'} maxLength={2000} rows={2} onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} />
           <button type="submit" className="btn" aria-label="Send message" disabled={!connected || !ready || busy || !draft.trim()}><Icon n="arrow" s={18} /><span>Send</span></button>
         </form>
+        {publicDemo && <p className="chat-footnote">Public demo · Sample household · Up to 5 minutes per chat. Please don’t share passwords or private financial information.</p>}
         <div className="chat-attribution"><span>Powered by ElevenLabs Agents</span><details><summary>What is shared?</summary><p>Starting a chat shares your messages, selected sandbox forecast results and matching bank-record excerpts with ElevenLabs. Its current settings retain conversation transcripts. Bill review notes are not shared. This chat never uses your microphone.</p></details></div>
         <p className="chat-footnote">Estimates, not guarantees. Chat previews never change your saved plan.</p>
       </div>

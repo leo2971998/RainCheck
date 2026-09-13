@@ -1,19 +1,21 @@
-import { localReviewAllowed } from './_local-workspace.js';
+import { chatAccess, chatOriginAllowed, checkChatLimit } from './_chat-access.js';
 import { loadHouseholdContext } from './_household-context.js';
 import { retrieveReviewEvidence } from './_review-evidence.js';
 import { calculateChat } from './_chat.js';
 
-export function createContextHandler({ env = process.env, load = loadHouseholdContext, retrieve = retrieveReviewEvidence } = {}) {
+export function createContextHandler({ env = process.env, load = loadHouseholdContext, retrieve = retrieveReviewEvidence, limit } = {}) {
   return async (req, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    if (!localReviewAllowed(req, env) || req.headers?.origin !== `http://${req.headers.host}` || req.headers['content-type']?.split(';')[0] !== 'application/json')
-      return res.status(403).json({ message: 'Chat calculations are available in the local test workspace only.' });
+    const mode = chatAccess(req, env);
+    if (!chatOriginAllowed(req, mode, env))
+      return res.status(403).json({ message: 'Open RainCheck to explore your forecast.' });
     if (req.method !== 'POST') return res.status(405).json({ message: 'Ask a question from the chat.' });
     if (!req.body || Buffer.byteLength(JSON.stringify(req.body)) > 16384) return res.status(413).json({ message: 'There is too much information in this request.' });
     if (req.body.consent !== true) return res.status(400).json({ message: 'Please allow cloud chat first.' });
+    if (mode === 'public' && !await checkChatLimit(req, res, 'context', env, limit)) return;
     let base, snapshot, result;
-    try { ({ base, snapshot } = await load()); }
+    try { ({ base, snapshot } = await load({ dataset: 'demo', purchases: mode === 'local' })); }
     catch { return res.status(503).json({ message: 'The bank data could not be loaded. Please try again.' }); }
     try { result = calculateChat(base, req.body); }
     catch (error) { return res.status(error.status || 400).json({ message: error.status === 409 ? error.message : 'That scenario could not be calculated. Check the amount, bill and date, then try again.' }); }

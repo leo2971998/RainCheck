@@ -22,7 +22,22 @@ async function api(path, method = 'GET', body) {
   return response.json();
 }
 const agent = await api('agents/' + agentId);
-if (!process.argv.includes('--apply')) {
+if (process.argv.includes('--public-demo')) {
+  if (!process.argv.includes('--apply')) {
+    console.log('Public demo limits: 100 conversations/day, 5 simultaneous, 5 minutes each; text only and signed sessions. Add --apply to configure this agent.');
+  } else {
+    await api('agents/' + agentId, 'PATCH', {
+      conversation_config: { conversation: { text_only: true, max_duration_seconds: 300, file_input: { enabled: false } } },
+      platform_settings: { call_limits: { agent_concurrency_limit: 5, daily_limit: 100, bursting_enabled: false },
+        auth: { enable_auth: true }, overrides: { conversation_config_override: { conversation: { text_only: false, max_duration_seconds: false } } } },
+    });
+    const verified = await api('agents/' + agentId);
+    console.log(JSON.stringify({ agent: verified.name, textOnly: verified.conversation_config.conversation.text_only,
+      maxSeconds: verified.conversation_config.conversation.max_duration_seconds, filesEnabled: verified.conversation_config.conversation.file_input.enabled,
+      limits: verified.platform_settings.call_limits, signedSessions: verified.platform_settings.auth.enable_auth,
+      clientOverrides: verified.platform_settings.overrides.conversation_config_override.conversation }));
+  }
+} else if (!process.argv.includes('--apply')) {
   console.log(JSON.stringify({ agent: agent.name, textOnly: agent.conversation_config.conversation.text_only, plannedReadOnlyTools: tools.map(t => t.name) }));
 } else {
   const linked = agent.conversation_config.agent.prompt.tool_ids || [];
