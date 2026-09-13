@@ -125,9 +125,6 @@ export default function NoticeDrawer({ h, base, plan, cap, change, initialText =
           <button className="btn" disabled={!bill || !outcome} onClick={add}>
             <Icon n="check" s={15} />Add this change to {bill ? bill.label.toLowerCase() : 'a bill'}
           </button>
-          <div className="fine">
-            This records what the provider says is coming. It does not pay anything, and you can undo it.
-          </div>
         </>
       )}
     </Drawer>

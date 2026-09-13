@@ -1,4 +1,4 @@
-import { localReviewAllowed } from './_local-workspace.js';
+import { purchaseAccess, purchaseOriginAllowed, checkPurchaseLimit } from './_purchase-access.js';
 import { loadHouseholdContext } from './_household-context.js';
 import { savePurchase } from './_purchases.js';
 import { householdVersion } from './_review.js';
@@ -6,17 +6,19 @@ import { readPurchase, matchCandidates, confirmPurchaseMatch } from '../src/engi
 import { transactionRecords } from '../src/engine/records.js';
 
 const conflict = () => { const error = new Error('Your saved plans or bank data changed. Refresh before continuing.'); error.status = 409; throw error; };
-export function createPurchaseHandler({ env = process.env, load = loadHouseholdContext, save = savePurchase } = {}) {
+export function createPurchaseHandler({ env = process.env, load = loadHouseholdContext, save = savePurchase, limit } = {}) {
   return async (req, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    if (!localReviewAllowed(req, env)) return res.status(403).json({ message: 'Saved purchases are available in the local demo workspace only.' });
+    const mode = purchaseAccess(req, env);
+    if (!mode) return res.status(403).json({ message: 'Open the connected RainCheck demo to use saved purchases.' });
     if (!['GET','POST','PUT','DELETE'].includes(req.method)) return res.status(405).json({ message: 'Use the purchase form to make changes.' });
-    if (req.method !== 'GET' && (req.headers.origin !== `http://${req.headers.host}` || req.headers['content-type']?.split(';')[0] !== 'application/json'))
-      return res.status(403).json({ message: 'Open RainCheck locally to change your plans.' });
+    if (!purchaseOriginAllowed(req, mode, env))
+      return res.status(403).json({ message: 'Open RainCheck to change your plans.' });
     const body = req.body;
     if (req.method !== 'GET' && (!body || Buffer.byteLength(JSON.stringify(body)) > 8192)) return res.status(400).json({ message: 'Check the purchase details.' });
+    if (mode === 'shared' && req.method !== 'GET' && !await checkPurchaseLimit(req, res, env, limit)) return;
     let base, snapshot;
-    try { ({ base, snapshot } = await load({ live: body?.action === 'match' || Boolean(req.query?.candidates) })); }
+    try { ({ base, snapshot } = await load({ live: mode === 'shared' || body?.action === 'match' || Boolean(req.query?.candidates) })); }
     catch { return res.status(503).json({ message: 'Saved plans or bank records couldn’t load. Nothing changed. Please try again.' }); }
     try {
       const all = base.plannedPurchases || [];

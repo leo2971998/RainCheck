@@ -248,6 +248,7 @@ describe('alerts', () => {
     expect(unexplained.title).toContain('$20 higher than usual');
     expect(unexplained.body).toContain("$108");   // the gap and the usual must add up on screen
     expect(unexplained.body).toMatch(/We have not confirmed why/);
+    expect(unexplained).toMatchObject({ amount: 128, metricLabel: 'posted charge' });
     expect(unexplained.actions[0]).toMatchObject({ target: 'anomaly', billId: 'electric' });
   });
 
@@ -273,7 +274,9 @@ describe('alerts', () => {
     const noNotice = { ...h, recurring: h.recurring.map(({ change, ...r }) => r) };
     const scenario = { ...sc, increase: 0, contribution: 400 };
     const out = buildAlerts(noNotice, scenario, simulate(noNotice, scenario), capacity(noNotice, scenario), null);
-    expect(out.some(a => a.id === 'cushion')).toBe(true);
+    const cushion = out.find(a => a.id === 'cushion');
+    expect(cushion).toBeTruthy();
+    expect(cushion).toMatchObject({ amount: simulate(noNotice, scenario).low.balance, metricLabel: 'projected balance' });
   });
 
   it('connects a cushion warning to the month containing a saved purchase', () => {

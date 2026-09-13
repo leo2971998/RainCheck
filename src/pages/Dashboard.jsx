@@ -53,12 +53,10 @@ export default function Dashboard({ h, sc, weekly, alerts = [], open, history, o
         <span>Not counted as money already received</span>
       </Widget>
       <Widget title="Alerts" icon="bell" action="View alerts" onClick={() => open('page:alerts')}
-        value={attention ? `${attention} to review` : 'All clear'} subtitle="Across your plan">
-        <span>{attention ? 'Open to see what needs attention' : 'No open budget alerts'}</span>
-      </Widget>
+        value={attention ? `${attention} to review` : 'All clear'} subtitle={attention ? 'Needs your decision' : 'No action needed'} />
       <Widget title="Planned purchases" icon="cart" action="Plan a purchase" onClick={() => open('page:purchases')}
         value={money(w.purchasesTotal)} subtitle={w.purchases.length ? `${w.purchases.length} planned this week` : 'No purchases planned this week'}>
-        <span className="widget-names">{w.purchases.map(p => p.label).join(' · ') || 'Try a purchase before committing'}</span>
+        {w.purchases.length > 0 && <span className="widget-names">{w.purchases.map(p => p.label).join(' · ')}</span>}
       </Widget>
     </div>
     {lastAction && <div className="today-undo"><span>{lastAction.label}</span><button className="link" onClick={onUndo}>Undo</button></div>}
@@ -70,7 +68,7 @@ function Widget({ title, icon, value, subtitle, action, onClick, children }) {
     <span className="widget-heading"><i><Icon n={icon} s={19} /></i><span>{title}</span></span>
     <b className="widget-value num">{value}</b>
     <span className="widget-subtitle">{subtitle}</span>
-    <span className="widget-body">{children}</span>
+    {children && <span className="widget-body">{children}</span>}
     <span className="widget-action">{action}<Icon n="arrow" s={15} /></span>
   </button>;
 }

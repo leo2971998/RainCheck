@@ -11,7 +11,7 @@ export default function PurchasesPage({ h, available, open }) {
   return <>
     <div className="topbar"><div><h1>Planned purchases</h1><div className="sub">See what a one-time purchase would change, before you spend.</div></div>
       <button className="btn" disabled={!available} onClick={() => open('purchase', null, h.today)}>Plan a purchase</button></div>
-    {!available ? <p className="alert">Saved purchases are available in the local demo workspace. They aren’t connected to this hosted or sample workspace yet.</p> : <>
+    {!available ? <p className="alert">Connect to the RainCheck demo to save and edit purchases.</p> : <>
       <section className="purchase-overview card" aria-labelledby="purchase-overview-title">
         <header><div><span className="review-eyebrow">Purchase overview</span><h2 id="purchase-overview-title">Your plans at a glance</h2></div>
           <p>Select a date below to add something, or select a saved purchase to edit it.</p></header>

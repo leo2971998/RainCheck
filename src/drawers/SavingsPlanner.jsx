@@ -19,7 +19,6 @@ export default function SavingsPlanner({ optimization = { status: 'loading' }, o
       <div className="optimization-wait" role="alert"><h3>{optimization.status === 'stale' ? 'Your plan changed' : 'Analysis could not finish'}</h3>
         <p>{optimization.status === 'stale' ? 'Run the analysis again using your latest budgets and preferences.' : optimization.error || 'Your budgets are unchanged. Please try again.'}</p>
         <button className="btn" onClick={onRetry}>Try again</button></div>}
-    <p className="fine">No money moves here. Budgets change only after you confirm.</p>
   </Drawer>;
 }
 
@@ -43,7 +42,7 @@ function SavingsEditor({ base, baseVersion, plan, protectedIds = {}, result, cha
     try {
       const fresh = savingsPreview(base, plan, draft, protectedIds);
       if (!fresh.canApply || JSON.stringify(fresh) !== JSON.stringify(preview)) throw new Error('Your plan changed. Preview these amounts again.');
-      change(fresh.patch, 'Spending & savings plan updated — no money moved'); onClose();
+      change(fresh.patch, 'Spending & savings plan updated'); onClose();
     } catch (e) { setError(e.message); setReviewed(null); }
   };
   return <>

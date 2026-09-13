@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import Dashboard from '../src/pages/Dashboard.jsx';
-import Alerts from '../src/components/Alerts.jsx';
+import AlertsPage from '../src/pages/AlertsPage.jsx';
 import MonthsCompare from '../src/components/MonthsCompare.jsx';
 import SavingsPlanner from '../src/drawers/SavingsPlanner.jsx';
 import { household as base } from '../data/household.sample.js';
@@ -13,7 +13,7 @@ it('keeps Today focused on the spending amount and action', () => {
   expect(html).not.toContain('Weekly estimate · not your bank balance');
 });
 it('keeps alert mechanics out of the customer copy', () => {
-  const html = renderToStaticMarkup(<Alerts alerts={[]} open={() => {}} />);
+  const html = renderToStaticMarkup(<AlertsPage h={base} sc={emptyPlan()} alerts={[]} reminders={[]} open={() => {}} />);
   expect(html).not.toContain('One event, one alert');
   expect(html).not.toContain('Spending trends go');
 });

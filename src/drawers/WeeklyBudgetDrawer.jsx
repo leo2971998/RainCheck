@@ -25,6 +25,5 @@ export default function WeeklyBudgetDrawer({ h, weekly: w, open, onClose }) {
       <button className="btn ghost" onClick={() => open('page:goals')}>Review savings plan</button>
       <button className="btn ghost" onClick={() => open('page:recurring')}>Review bills</button>
     </div>
-    <p className="fine">Changes need your confirmation. No money moves here.</p>
   </Drawer>;
 }

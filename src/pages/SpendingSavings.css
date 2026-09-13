@@ -42,7 +42,6 @@
 .category-history dl { margin: 6px 0 0; display: grid; gap: 8px; }
 .category-history dl > div { display: flex; justify-content: space-between; gap: 10px; }
 .category-history dd { margin: 0; font-variant-numeric: tabular-nums; }
-.spending-footnote { color: var(--ink-2); font-size: 12px; line-height: 1.6; margin: 18px 0; }
 .savings-form { display: grid; gap: 18px; }
 .savings-intro { color: var(--ink-2); font-size: 14px; line-height: 1.6; }
 .savings-fields { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }

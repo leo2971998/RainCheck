@@ -2,13 +2,19 @@ import { useMemo, useState } from 'react';
 import { filterTransactions, sortTransactions } from '../engine/transaction-filters.js';
 import './TransactionsPage.css';
 import { Icon, moneyPrecise } from '../components/ui.jsx';
+import { chargeKey } from '../engine/unusual-charges.js';
 
 const KIND_ICON = { in: ['dollar', 'in'], rec: ['repeat', 'rec'], tr: ['swap', 'tr'], ev: ['cart', ''] };
 const FILTERS = [['all', 'All'], ['review', 'Needs review'], ['in', 'Income'], ['rec', 'Recurring'], ['ev', 'Everyday'], ['tr', 'Transfers']];
 // Why a row cannot be recategorised, in the same words the engine uses.
 const FIXED_REASON = { tr: 'Your own account', in: 'Income, not a category', rec: 'Set by the bill' };
 
-export default function TransactionsPage({ transactions, allowances = [], corrections: fixes = {}, setCorrections: setFixes }) {
+export default function TransactionsPage({ transactions, allowances = [], unusual = [], corrections: fixes = {}, setCorrections: setFixes, open }) {
+  // A row needs review when it is a charge that looks wrong — decided in App against the whole
+  // history and the answers already given. Answering it on Alerts empties this set, and the row
+  // returns to looking like any other.
+  const flagged = useMemo(() => new Map(unusual.map(t => [chargeKey(t), t.unusual])), [unusual]);
+  const reasonFor = t => flagged.get(chargeKey(t)) || null;
   const [filter, setFilter] = useState('all');
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('newest');
@@ -34,23 +40,40 @@ export default function TransactionsPage({ transactions, allowances = [], correc
   }, [transactions, allowances, fixes]);
 
   const rows = sortTransactions(filterTransactions(transactions.map((t, i) => ({ ...t, key: keyOf(t, i),
+    review: !!reasonFor(t),
+    note: reasonFor(t)?.note ?? t.note,
     cat: fixes[keyOf(t, i)] ?? t.cat, corrected: keyOf(t, i) in fixes })),
     { kind: filter, query, category, date, from, to, min, max }), sort);
 
-  const span = transactions.length ? `${transactions[transactions.length - 1].d} – ${transactions[0].d}` : 'No activity';
-  const needReview = transactions.filter(t => t.note).length;
+  // Built from the ISO dates, not the printed ones: "Sep 1 – Sep 12" was being shown above a list
+  // that ran back to October, because a year-less label cannot express a range that crosses one.
+  const span = useMemo(() => {
+    const iso = transactions.map(t => t.date).filter(Boolean).sort();
+    if (!iso.length) return 'No activity';
+    const fmt = (d, withYear) => new Date(d + 'T12:00:00').toLocaleDateString('en-US',
+      { month: 'short', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}) });
+    const crossesYear = iso[0].slice(0, 4) !== iso.at(-1).slice(0, 4);
+    return `${fmt(iso[0], crossesYear)} – ${fmt(iso.at(-1), crossesYear)}`;
+  }, [transactions]);
+  const needReview = unusual.length;
 
   return (
-    <>
-      <div className="topbar">
-        <div><h1>Transactions</h1>
-          <div className="sub">{span} · {transactions.length} transactions{needReview ? ` · ${needReview} worth a second look` : ''}</div></div>
-        <label className="search">
-          <Icon n="search" s={15} />
-          <input value={query} onChange={e => setQuery(e.target.value)} type="search" placeholder="Search transactions"
-            aria-label="Search transactions" style={{ border: 0, outline: 'none', font: 'inherit', background: 'transparent', color: 'var(--ink)', width: 190 }} />
-        </label>
-      </div>
+    <div className="page-shell">
+      <header className="page-heading">
+        <div>
+          <span className="page-eyebrow">Activity</span>
+          <h1>Transactions</h1>
+          <p>{span} · {transactions.length} transactions{needReview ? ` · ${needReview} needs your review` : ''}</p>
+        </div>
+        <div className="page-heading-actions">
+          {needReview > 0 && <button className="btn ghost" onClick={() => open?.('page:alerts')}>Resolve in Alerts</button>}
+          <label className="search">
+            <Icon n="search" s={15} />
+            <input value={query} onChange={e => setQuery(e.target.value)} type="search" placeholder="Search transactions"
+              aria-label="Search transactions" style={{ border: 0, outline: 'none', font: 'inherit', background: 'transparent', color: 'var(--ink)', width: 190 }} />
+          </label>
+        </div>
+      </header>
 
       <div className="card transaction-card">
         <div className="hd">
@@ -94,7 +117,7 @@ export default function TransactionsPage({ transactions, allowances = [], correc
               return (
                 <tr key={t.key} className="hover">
                   <td className="muted" style={{ whiteSpace: 'nowrap' }}>{t.d}</td>
-                  <td><div className="cat"><i className={t.note ? 'rev' : cls}><Icon n={t.note ? 'warn' : icon} s={14} /></i>
+                  <td><div className="cat"><i className={t.review ? 'rev' : cls}><Icon n={t.review ? 'warn' : icon} s={14} /></i>
                     <div><div style={{ fontWeight: 500 }}>{t.what}</div>{t.note && <div className="fine">{t.note}</div>}</div></div></td>
                   <td>
                     {editing === t.key && t.k === 'ev'
@@ -104,7 +127,7 @@ export default function TransactionsPage({ transactions, allowances = [], correc
                           style={{ font: 'inherit', padding: '4px 6px', borderRadius: 8, border: '1px solid var(--line)' }}>
                           {categories.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
-                      : <span className={'pill ' + (t.corrected ? 'accent' : t.note ? 'warn' : 'neutral')}>{t.cat}{t.corrected ? ' · corrected' : ''}</span>}
+                      : <span className={'pill ' + (t.corrected ? 'accent' : t.review ? 'warn' : 'neutral')}>{t.cat}{t.corrected ? ' · corrected' : ''}</span>}
                   </td>
                   <td className="r" style={{ fontWeight: 600, color: t.amt > 0 ? 'var(--good)' : undefined }}>{t.amt > 0 ? '+' : ''}{moneyPrecise(t.amt)}</td>
                   <td className="r">
@@ -126,6 +149,6 @@ export default function TransactionsPage({ transactions, allowances = [], correc
         </table>
 
       </div>
-    </>
+    </div>
   );
 }

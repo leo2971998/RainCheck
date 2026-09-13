@@ -25,6 +25,7 @@ it('offers real clickable widgets with recorded income, spending and a distinct 
   expect(html.match(/class="today-widget"/g)).toHaveLength(6);
   for (const text of ['Money this month', 'This week’s bills', 'Next income', 'Your goals', 'Alerts', 'Planned purchases',
     '$3,078', '$3,400', '$1,260', 'View transactions']) expect(html).toContain(text);
+  for (const text of ['Open to see what needs attention', 'No open budget alerts', 'Try a purchase before committing']) expect(html).not.toContain(text);
 });
 it('shows one shared savings total and goal names, without reallocating savings', () => {
   const facts = { ...h, fundedGoals: [{ id: 'emergency', label: 'Emergency fund', target: 2000, saved: 800, planned: 300, targetDate: '2027-01-02' },
@@ -54,8 +55,8 @@ it('keeps the explanation and adjustment links in the weekly detail panel', () =
   const weekly = weeklyBudget(h, sc);
   const html = renderToStaticMarkup(<WeeklyBudgetDrawer h={h} weekly={weekly} open={() => {}} onClose={() => {}} />);
   for (const text of ['role="dialog"', 'Your weekly budget', 'Already spent this week', 'Upcoming bills this week',
-    'Goal savings planned this week', 'Review planned purchases', 'Review savings plan', 'Review bills',
-    'Changes need your confirmation. No money moves here.']) expect(html).toContain(text);
+    'Goal savings planned this week', 'Review planned purchases', 'Review savings plan', 'Review bills']) expect(html).toContain(text);
+  expect(html).not.toContain('No money moves');
   const withoutHistory = renderToStaticMarkup(<WeeklyBudgetDrawer h={h} weekly={{ ...weekly, spent: null }} open={() => {}} onClose={() => {}} />);
   expect(withoutHistory).toContain('Records unavailable');
 });

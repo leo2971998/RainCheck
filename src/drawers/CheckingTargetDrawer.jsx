@@ -24,7 +24,6 @@ export default function CheckingTargetDrawer({ h, sim, change, onClose }) {
       </label>
       <p className="fine" id="checking-target-help">Rain warns you when the plan goes under this amount. A storm means checking could go below $0.</p>
       <div className="alert">
-        <b>This does not add or move money.</b>
         <p>Your forecast still drops to {money(sim.low.balance)}. Changing the target only changes warnings and how much the plan can put toward savings.</p>
         {value !== '' && Number(value) < h.cushion && <p>Lowering this target leaves a smaller safety buffer. It does not reduce your bills.</p>}
       </div>
@@ -33,7 +32,6 @@ export default function CheckingTargetDrawer({ h, sim, change, onClose }) {
         <button className="btn" type="submit">Save target</button>
         <button className="btn ghost" type="button" onClick={onClose}>Cancel</button>
       </div>
-      <p className="fine">Saved in this browser. You can Undo after saving. Planned spending and savings stay unchanged.</p>
     </form>
   </Drawer>;
 }

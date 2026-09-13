@@ -2,6 +2,7 @@ import { chatAccess, chatOriginAllowed, checkChatLimit } from './_chat-access.js
 import { loadHouseholdContext } from './_household-context.js';
 import { retrieveReviewEvidence } from './_review-evidence.js';
 import { calculateChat } from './_chat.js';
+import { purchaseAccess } from './_purchase-access.js';
 
 export function createContextHandler({ env = process.env, load = loadHouseholdContext, retrieve = retrieveReviewEvidence, limit } = {}) {
   return async (req, res) => {
@@ -15,7 +16,8 @@ export function createContextHandler({ env = process.env, load = loadHouseholdCo
     if (req.body.consent !== true) return res.status(400).json({ message: 'Please allow cloud chat first.' });
     if (mode === 'public' && !await checkChatLimit(req, res, 'context', env, limit)) return;
     let base, snapshot, result;
-    try { ({ base, snapshot } = await load({ dataset: 'demo', purchases: mode === 'local' })); }
+    const shared = purchaseAccess(req, env) === 'shared';
+    try { ({ base, snapshot } = await load({ dataset: 'demo', purchases: mode === 'local' || shared, ...(shared ? { live: true } : {}) })); }
     catch { return res.status(503).json({ message: 'The bank data could not be loaded. Please try again.' }); }
     try { result = calculateChat(base, req.body); }
     catch (error) { return res.status(error.status || 400).json({ message: error.status === 409 ? error.message : 'That scenario could not be calculated. Check the amount, bill and date, then try again.' }); }

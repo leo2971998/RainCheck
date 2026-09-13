@@ -1,5 +1,5 @@
 {
   "framework": "vite",
-  "functions": { "api/**/*.js": { "maxDuration": 30 } },
+  "functions": { "api/review.js": { "maxDuration": 120 }, "api/**/*.js": { "maxDuration": 30 } },
   "rewrites": [{ "source": "/((?!api(?:/|$)).*)", "destination": "/index.html" }]
 }

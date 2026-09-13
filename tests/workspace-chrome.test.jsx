@@ -5,6 +5,7 @@ import App from '../src/App.jsx';
 
 vi.mock('../src/hooks/useHousehold.js', () => ({ useHousehold: () => ({
   household, transactions, source: 'nessie', loading: false, purchasesAvailable: true,
+  pendingNotices: [{ id: 'notice-one', originLabel: 'Provider inbox', text: 'A notice' }],
 }) }));
 afterEach(() => vi.unstubAllGlobals());
 
@@ -21,4 +22,6 @@ it('has one global chat entry without a sample-data footer or provider branding'
   expect(html).not.toContain('Test rain');
   expect(html).not.toContain('Reset demo');
   expect(html).not.toContain('Local demo tools');
+  expect(html).not.toContain('Everyday Checking · Savings');
+  expect(html).toContain('aria-label="Alerts (2 need attention)"');
 });

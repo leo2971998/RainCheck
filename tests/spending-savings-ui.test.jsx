@@ -14,7 +14,8 @@ it('groups upcoming bills and every category into two panels with an optimize ac
   const html = renderToStaticMarkup(<CashFlowPage base={base} h={base} sc={{ contribution: 300 }} plan={emptyPlan()}
     protectedIds={{ groceries: true }} setProtectedIds={() => {}} change={() => {}} open={() => {}} />);
   for (const text of ['Spending &amp; Savings', 'Expenses', 'Optimize budgets', 'Keep unchanged', 'Upcoming bills',
-    'Recorded through', 'No money moves']) expect(html).toContain(text);
+    'Recorded through']) expect(html).toContain(text);
+  expect(html).not.toContain('No money moves');
   expect(html.match(/class="spending-panel[" ]/g)).toHaveLength(2);
   expect(html.match(/class="category-progress"/g)).toHaveLength(base.allowances.length);
   expect(html).not.toContain('Adjust budget');
@@ -24,7 +25,8 @@ it('groups upcoming bills and every category into two panels with an optimize ac
 });
 it('shows a waiting state without editing controls before AI finishes', () => {
   const html = renderToStaticMarkup(<SavingsPlanner base={base} plan={emptyPlan()} protectedIds={{ groceries: true }} change={() => { throw new Error('must not run'); }} onClose={() => {}} />);
-  for (const text of ['Optimizing your budgets', 'role="status"', 'No money moves']) expect(html).toContain(text);
+  for (const text of ['Optimizing your budgets', 'role="status"']) expect(html).toContain(text);
+  expect(html).not.toContain('No money moves');
   expect(html).not.toContain('<input');
   expect(html).not.toContain('Ask ZeroClaw');
   expect(html).not.toContain('Confirm budget &amp; savings changes');

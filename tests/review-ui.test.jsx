@@ -19,3 +19,8 @@ it('keeps calculator facts available when no AI explanation could be obtained', 
   expect(html).toContain('$125'); expect(html).toContain('Please try again.');
   expect(html).not.toContain('Open saved review');
 });
+it('preserves the access token in a public saved-review link', () => {
+  const html = renderToStaticMarkup(<ReviewAnswer review={{ id: 'test', accessToken: 'a'.repeat(64), facts,
+    result: { summary: 'Check your planned costs.', observations: [], questions: [] } }} />);
+  expect(html).toContain('review=test&amp;reviewToken=' + 'a'.repeat(64));
+});

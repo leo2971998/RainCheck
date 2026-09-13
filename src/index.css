@@ -1258,3 +1258,92 @@
   .mc-dim { color: var(--muted); }
   .mc-fc { background: color-mix(in oklab, var(--mint-soft) 55%, transparent); }
   .mc-total td { border-top: 2px solid var(--line); border-bottom: 0; }
+
+  /* Alerts is a to-do list: every item the same card, the first one tinted. */
+  /* One page heading, shared. Alerts introduced this treatment; anything adopting it uses the
+     neutral names so the next page does not invent a fourth header style. */
+  .alerts-page, .page-shell { display: grid; gap: 18px; max-width: 1120px; }
+  .alerts-heading, .page-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 2px 2px 4px; }
+  .alerts-heading h1, .page-heading h1 { margin: 2px 0 0; font: 800 30px/1.1 var(--display); letter-spacing: -.5px; }
+  .alerts-heading p, .page-heading p { margin: 0; color: var(--ink-2); font-size: 13px; }
+  .alerts-eyebrow, .page-eyebrow { display: block; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+  .page-heading-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  /* One list, one card. The lead card is tinted, not rebuilt: emphasis without a second layout. */
+  .alert-list { display: grid; gap: 12px; }
+  .alert-card { position: relative; overflow: hidden; display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 16px;
+    padding: 20px 22px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface);
+    box-shadow: 0 8px 24px oklch(.35 .06 240 / .055); }
+  .alert-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--warn); }
+  .alert-card.bad::before { background: var(--bad); }
+  .alert-card.lead { padding: 26px 26px 24px; border-color: color-mix(in oklab, var(--warn) 30%, var(--line));
+    background: linear-gradient(135deg, color-mix(in oklab, var(--warn-bg) 70%, var(--surface)), var(--surface) 58%); }
+  .alert-card.lead.bad { border-color: color-mix(in oklab, var(--bad) 28%, var(--line));
+    background: linear-gradient(135deg, color-mix(in oklab, var(--bad-bg) 70%, var(--surface)), var(--surface) 58%); }
+  .alert-card-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; color: var(--warn); background: var(--warn-bg); }
+  .alert-card.bad .alert-card-icon { color: var(--bad); background: var(--bad-bg); }
+  .alert-card.lead .alert-card-icon { width: 42px; height: 42px; background: var(--surface); box-shadow: var(--shadow); }
+  .alert-card-copy { min-width: 0; }
+  .alert-card-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 24px; }
+  .alert-card-copy h2 { margin: 0; max-width: 46ch; font: 700 16px/1.35 var(--display); }
+  .alert-card.lead .alert-card-copy h2 { font-size: 21px; line-height: 1.28; }
+  .alert-card-amount { display: flex; align-items: baseline; gap: 7px; white-space: nowrap; }
+  .alert-card-amount b { font-size: 17px; letter-spacing: -.3px; }
+  .alert-card.lead .alert-card-amount b { font-size: 22px; }
+  .alert-card-amount small { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+  .alert-card-copy > p { max-width: 74ch; margin: 8px 0 15px; color: var(--ink-2); font-size: 13.5px; line-height: 1.62; }
+  .alert-card.lead .alert-card-copy > p { font-size: 14.5px; }
+  .alert-card-copy > p.alert-card-note { margin: 13px 0 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+  .alert-card .btn { min-height: 36px; }
+  .alert-card.lead .btn { min-height: 40px; }
+
+  .alert-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .alert-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+
+  .alerts-empty { display: flex; align-items: center; gap: 18px; min-height: 170px; padding: 28px 32px; border: 1px solid color-mix(in oklab, var(--good) 28%, var(--line));
+    border-radius: 20px; background: linear-gradient(130deg, color-mix(in oklab, var(--good-bg) 78%, var(--surface)), var(--surface)); }
+  .alerts-empty-icon { width: 54px; height: 54px; flex: 0 0 54px; display: grid; place-items: center; border-radius: 18px; color: var(--good); background: var(--surface); box-shadow: var(--shadow); }
+  .alerts-empty h2 { margin: 3px 0 4px; font: 750 24px/1.2 var(--display); }
+  .alerts-empty p { margin: 0; color: var(--ink-2); }
+
+  .alerts-secondary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .alerts-secondary > :only-child { grid-column: 1 / -1; }
+  .alerts-secondary > .card { margin: 0; min-width: 0; }
+  .alerts-secondary .list { margin: 14px 0; border-top: 1px solid var(--line); }
+  .alerts-secondary .item { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; min-height: 62px; padding: 10px 0; border-bottom: 1px solid var(--line-2); }
+  .alerts-secondary .when { color: var(--ink-2); font-size: 12px; font-weight: 700; }
+  .alerts-secondary .what { display: grid; min-width: 0; }
+  .alerts-secondary .what strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .alerts-secondary .what small { color: var(--muted); font-size: 11px; }
+  .alerts-secondary .amt { font-weight: 750; font-variant-numeric: tabular-nums; }
+  .alerts-resolved { padding: 0; overflow: hidden; }
+  .alerts-resolved > summary { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 19px; cursor: pointer; list-style: none; }
+  .alerts-resolved > summary::-webkit-details-marker { display: none; }
+  .alerts-resolved > summary b { display: block; margin-top: 2px; font-size: 16px; }
+  .alerts-resolved > summary::after { content: '+'; color: var(--muted); font-size: 20px; }
+  .alerts-resolved[open] > summary::after { content: '−'; }
+  .alerts-resolved > summary .pill { margin-left: auto; }
+  .alerts-resolved-list { border-top: 1px solid var(--line); }
+  .alerts-resolved-list article { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line-2); }
+  .alerts-resolved-check { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; color: var(--good); background: var(--good-bg); }
+  .alerts-resolved-list h3 { margin: 0 0 2px; font-size: 14px; }
+  .alerts-resolved-list p { margin: 0; color: var(--ink-2); font-size: 12px; }
+  .alerts-resolved > .fine { margin: 0; padding: 12px 18px 15px; }
+
+  @media (max-width: 760px) {
+    .alerts-heading { align-items: flex-start; flex-direction: column; gap: 5px; }
+    .alert-card.lead { padding: 21px 18px; }
+    .alerts-secondary { grid-template-columns: 1fr; }
+    .alerts-secondary > :only-child { grid-column: auto; }
+  }
+  @media (max-width: 520px) {
+    .alert-card { grid-template-columns: 34px minmax(0, 1fr); gap: 11px; padding: 16px 14px; }
+    .alert-card-icon, .alert-card.lead .alert-card-icon { width: 32px; height: 32px; }
+    .alert-card.lead .alert-card-copy h2 { font-size: 18px; }
+    .alerts-empty { align-items: flex-start; padding: 22px 18px; }
+    .alerts-resolved-list article { grid-template-columns: 28px 1fr; }
+    .alerts-resolved-list article .btn { grid-column: 2; justify-self: start; }
+    .alerts-secondary .item { grid-template-columns: 52px minmax(0, 1fr) auto; }
+    .alerts-secondary .item .btn { grid-column: 2 / -1; justify-self: start; }
+  }
+  @media (prefers-reduced-motion: reduce) { .alert-card { animation: none; } }

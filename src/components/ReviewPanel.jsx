@@ -44,7 +44,7 @@ export function ReviewAnswer({ review, retrieval, impact, historical = false, co
         : <p>No matching saved bank evidence was included. This answer uses only the calculator and your question.</p>}
       {retrieval?.status === 'outdated' && <p>The saved bank import is out of date, so it was excluded.</p>}
     </details>
-    <p className="fine">No changes were applied and no money moved. {review.id && <a href={`/?review=${encodeURIComponent(review.id)}`} target="_blank" rel="noreferrer">Open saved review</a>}</p>
+    {review.id && <p className="fine"><a href={`/?review=${encodeURIComponent(review.id)}${review.accessToken ? `&reviewToken=${encodeURIComponent(review.accessToken)}` : ''}`} target="_blank" rel="noreferrer">Open saved review</a></p>}
   </article>;
 }
 
@@ -65,7 +65,8 @@ export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'pla
   useEffect(() => {
     if (!savedId) return;
     const controller = new AbortController();
-    fetch(`/api/review?id=${encodeURIComponent(savedId)}`, { signal: controller.signal })
+    const token = new URLSearchParams(window.location.search).get('reviewToken');
+    fetch(`/api/review?id=${encodeURIComponent(savedId)}${token ? `&token=${encodeURIComponent(token)}` : ''}`, { signal: controller.signal })
       .then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(d => setSaved(d.review))
       .catch(e => { if (e.name !== 'AbortError') setError('This saved review could not be opened.'); });
     return () => controller.abort();
@@ -100,7 +101,7 @@ export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'pla
       {messages.map(m => <div key={m.key}><p className="review-question"><b>You</b>{m.question}</p><ReviewAnswer review={m.review} retrieval={m.retrieval} impact={m.impact} compact={savings} /></div>)}
     </div>
     <div ref={end} />
-    {ready === null ? <p role="status">Checking the review connection…</p> : !ready || !baseVersion ? <p className="alert">{checkError ? 'The review connection could not be checked.' : 'AI review is available with bank data in the local test workspace. Your calculator still works.'} {checkError && <button className="link" onClick={check}>Try again</button>}</p> : <form className="review-compose" onSubmit={send}>
+    {ready === null ? <p role="status">Checking the review connection…</p> : !ready || !baseVersion ? <p className="alert">{checkError ? 'The review connection could not be checked.' : 'AI analysis is temporarily unavailable. Your calculator still works.'} <button className="link" onClick={check}>Try again</button></p> : <form className="review-compose" onSubmit={send}>
       <div className="review-suggestions">{suggestions.map(q => <button type="button" key={q} disabled={busy} onClick={() => setQuestion(q)}>{q}</button>)}</div>
       <label htmlFor="review-question">Your question</label>
       <textarea id="review-question" value={question} onChange={e => setQuestion(e.target.value)} maxLength={500} rows={3} required
@@ -112,6 +113,5 @@ export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'pla
     </form>}
     {busy && <p role="status" className="review-progress">Recalculating your plan, finding matching evidence and asking AI. This may take about a minute. You don’t need to send it again.</p>}
     {error && <p role="alert" className="alert">{error}</p>}
-    <p className="fine">{savings ? 'Use the spending targets above to try an idea, then preview and confirm. ZeroClaw cannot apply changes or move money.' : 'To test another amount or date, use Plan a purchase, Add goal, Add subscription or Edit details first. This conversation cannot change your budget.'}</p>
   </section>;
 }

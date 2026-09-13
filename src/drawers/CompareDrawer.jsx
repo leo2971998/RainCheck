@@ -31,7 +31,7 @@ export default function CompareDrawer({ h, sc, cap, options, current, preview, p
       <p style={{ margin: 0, color: 'var(--ink-2)' }}>
         Your current plan reaches {money(current.goalProjected)}{current.onTarget ? '' : `, ${money(current.goalGap)} short of ${money(h.goal.target)}`}
         {current.meetsCushion ? '' : `, and dips to ${money(current.low)} on ${prettyIso(current.lowDate)}`}.
-        Selecting an option previews it on your forecast. Nothing changes until you apply it.
+        Selecting an option previews it on your forecast.
       </p>
 
       {!current.meetsCushion && !live.some(o => !o.conditional && o.outcome.meetsCushion) && <div className="alert">

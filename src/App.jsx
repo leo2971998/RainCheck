@@ -11,6 +11,7 @@ import { emptyPlan, applyPatch, undoLatest, scenarioFor, householdFor } from './
 import { buildOptions, currentOutcome } from './engine/options.js';
 import { buildAlerts } from './engine/alerts.js';
 import { migrateBillReviews, needsBillReview } from './engine/bill-reviews.js';
+import { unusualCharges, answerChargePatch, chargeKey } from './engine/unusual-charges.js';
 import { buildReminders } from './engine/reminders.js';
 import { Icon, money, monthOf } from './components/ui.jsx';
 import Dashboard from './pages/Dashboard.jsx';
@@ -163,15 +164,36 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
   const previewSim = useMemo(() => (preview ? simulate(h, hypothetical(sc, preview.apply)) : null), [h, sc, preview]);
   const previewGoal = useMemo(() => (preview ? goalPlan(h, sc, { target: h.goal.target, targetDate: h.goal.targetDate, saved: h.goal.saved, contribution: preview.outcome.contribution }) : null), [h, sc, preview]);
 
+  // Transactions deliberately has no badge. A charge that needs a decision is an alert, and it is
+  // resolved on Alerts; counting it in a second place sent people to a list that could only show
+  // them the problem again. One number, one place to answer it.
   const badges = useMemo(() => ({
     recurring: h.recurring.filter(r => needsBillReview(r, sc)).length + discovered.length,
-    transactions: transactions.filter(t => t.note).length,
-  }), [h, transactions, sc, discovered]);
+  }), [h, sc, discovered]);
+
+  // Charges that do not fit this household: far above its own usual spending, or a merchant with
+  // no history. Computed here because the test needs the full record AND the answers already
+  // given, which live in the plan in this browser.
+  const unusual = useMemo(() => unusualCharges(transactions, plan), [transactions, plan]);
+  const unusualAlerts = useMemo(() => unusual.map(t => ({
+    id: `unusual:${chargeKey(t)}`, tone: 'bad', icon: 'warn',
+    amount: Math.abs(t.amt), metricLabel: plan.chargeAnswers?.[chargeKey(t)]?.answer === 'unknown' ? 'unrecognised charge' : 'charge to review',
+    title: plan.chargeAnswers?.[chargeKey(t)]?.answer === 'unknown' ? `${t.what}: you marked this unrecognised.` : `${t.what}: was this you?`,
+    body: `${t.unusual.note} Confirming it clears the flag. Marking it unrecognised keeps it listed so you can raise it with your bank — RainCheck cannot contact them for you.`,
+    actions: [
+      { label: 'Yes, that was me', primary: true, run: () => change(answerChargePatch(t, 'mine'), `${t.what} confirmed`) },
+      { label: 'I do not recognise this', run: () => change(answerChargePatch(t, 'unknown'), `${t.what} marked unrecognised`) },
+    ],
+  })), [unusual, plan]);
 
   const transfer = useTransfer(source);
   const [reviewedNotices, setReviewedNotices] = usePersistentState('reviewedNotices', {});
   const waiting = pendingNotices.filter(n => !reviewedNotices[n.id]);
-  const navBadges = { ...badges, alerts: alerts.filter(a => a.tone !== 'good').length };
+  const allAlerts = useMemo(() => [...unusualAlerts, ...alerts], [unusualAlerts, alerts]);
+  const navBadges = {
+    ...badges,
+    alerts: allAlerts.filter(a => a.tone !== 'good').length + waiting.length,
+  };
 
   const open = (what, id = null, date = null) => {
     if (what.startsWith('page:')) { setDrawer(null); setBackTo(page === 'dashboard' ? 'dashboard' : null); setPage(what.slice(5)); return; }
@@ -263,7 +285,6 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
         <div className="side-foot">
           <div className="acct"><span className="avatar">AR</span><span>Alex Rivera</span></div>
           <button className="link settings-entry" onClick={() => setDrawer('settings')}><Icon n="gear" s={15} />Settings</button>
-          Everyday Checking · Savings<br />
           <ThemeSwitch theme={theme} />
         </div>
       </aside>
@@ -276,11 +297,11 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
         <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
         {backTo && page !== backTo && <button className="back-link" onClick={() => navigate(backTo)}><i className="back-ic"><Icon n="arrow" s={14} /></i>Back to Today</button>}
         <GoalContext page={page} h={h} goal={goal} open={open} />
-        {page === 'dashboard' && <Dashboard h={h} sc={sc} weekly={weekly} alerts={alerts} open={open} history={history} onUndo={undo} dark={theme.dark} />}
-        {page === 'alerts' && <AlertsPage h={h} sc={sc} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} found={found} setFound={setFound} />}
+        {page === 'dashboard' && <Dashboard h={h} sc={sc} weekly={weekly} alerts={allAlerts} open={open} history={history} onUndo={undo} dark={theme.dark} />}
+        {page === 'alerts' && <AlertsPage h={h} sc={sc} alerts={allAlerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} open={open} />}
         {page === 'purchases' && <PurchasesPage h={h} available={purchasesAvailable} open={open} refresh={refresh} />}
-        {page === 'transactions' && <TransactionsPage transactions={transactions} allowances={h.allowances} corrections={corrections} setCorrections={setCorrections} />}
+        {page === 'transactions' && <TransactionsPage transactions={transactions} allowances={h.allowances} h={h} sc={sc} unusual={unusual} corrections={corrections} setCorrections={setCorrections} open={open} />}
         {page === 'recurring' && <RecurringPage h={h} sc={sc} plan={plan} change={change} cap={cap} open={open} discovered={discovered} onAdopt={adopt} onDismiss={dismiss} billNotes={billNotes} />}
         {page === 'cashflow' && <CashFlowPage base={base} baseVersion={baseVersion} h={h} sc={sc} plan={plan} protectedIds={protectedIds} setProtectedIds={setProtectedIds} change={change} open={open} />}
         {page === 'goals' && <GoalsPage h={h} base={base} plan={plan} change={change} cap={cap} goal={goal} history={history} onUndo={undo} open={open} transfer={transfer} />}

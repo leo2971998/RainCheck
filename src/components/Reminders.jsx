@@ -5,14 +5,14 @@ import { LEAD_TIMES } from '../engine/reminders.js';
  * Due-date reminders, which are a different thing from the alert list: an alert is about a change,
  * a reminder is about a date. It stops the moment the user confirms the payment.
  *
- * These are in-app only, and the card says so. A reminder the user never sees because the app is
- * closed is not a reminder, and pretending otherwise would be the easiest lie in the product.
+ * These are in-app only. A reminder the user never sees because the app is closed is not a
+ * reminder, so the product must not imply that it sends device notifications.
  */
-export default function Reminders({ reminders, leadDays, setLeadDays, onPaid }) {
+export default function Reminders({ title = 'Coming up', reminders, leadDays, setLeadDays, onPaid }) {
   return (
     <div className="card">
       <div className="hd">
-        <h2>Coming up</h2>
+        <h2>{title}</h2>
         <span className={'pill ' + (reminders.length ? 'warn' : 'good')}>{reminders.length || 'Clear'}</span>
       </div>
 
@@ -42,10 +42,6 @@ export default function Reminders({ reminders, leadDays, setLeadDays, onPaid }) 
         ))}
       </div>
 
-      <div className="fine">
-        Shown while RainCheck is open. It does not send notifications to your phone.
-        Marking one paid stops it until the next charge.
-      </div>
     </div>
   );
 }

@@ -10,6 +10,7 @@ it('opens the exact unusual charge and does not pretend to know why it changed',
   const sc=scenarioFor(base,emptyPlan());
   const alert=buildAlerts(base,sc,simulate(base,sc),capacity(base,sc)).find(a=>a.id===`unexplained:${bill.id}`);
   expect(alert.actions[0]).toMatchObject({target:'anomaly',billId:bill.id});
+  expect(alert).toMatchObject({ amount: bill.lastPosted, metricLabel: 'posted charge' });
   expect(alert.body).not.toContain('whether it was a one-time');
   const lower={...base,recurring:base.recurring.map(r=>r.id===bill.id?{...r,lastPosted:80}:r)};
   expect(buildAlerts(lower,sc,simulate(lower,sc),capacity(lower,sc)).find(a=>a.id===alert.id).title).toContain('lower');

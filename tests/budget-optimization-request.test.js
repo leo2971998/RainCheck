@@ -26,3 +26,8 @@ it('requires reloading when bank records change before analysis', async () => {
   await expect(requestOptimization(input, { fetcher: async () => ({ ok: false, status: 409 }) })).rejects.toThrow('Reload');
   await expect(requestOptimization({ ...input, baseVersion: null })).rejects.toThrow('Reload');
 });
+it('explains a disabled connection or rate limit without exposing raw server details', async () => {
+  for (const [status, copy] of [[403, 'not available'], [429, 'wait a minute'], [503, 'temporarily unavailable']])
+    await expect(requestOptimization(input, { fetcher: async () => ({ ok: false, status,
+      json: async () => ({ message: 'PRIVATE PROVIDER ERROR' }) }) })).rejects.toThrow(copy);
+});

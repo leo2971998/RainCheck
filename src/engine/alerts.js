@@ -44,6 +44,8 @@ export function buildAlerts(h, sc, sim, cap, lastAction, datedGoal) {
     alerts.push({
       id: `increase:${bill.id}`,
       tone: breach ? 'bad' : 'warn',
+      amount: sc.whatIf?.[bill.id] ?? bill.change.to,
+      metricLabel: 'planned bill estimate',
       title: `${bill.payee || bill.label}: review your saved bill estimate.`,
       body: [`Your plan uses ${$(sc.whatIf?.[bill.id] ?? bill.change.to)} instead of ${$(bill.amount)}. This is a planning estimate, not a new bank charge.`, breachSentence].filter(Boolean).join(' '),
       actions: [
@@ -63,6 +65,8 @@ export function buildAlerts(h, sc, sim, cap, lastAction, datedGoal) {
     alerts.push({
       id: `unexplained:${bill.id}`,
       tone: 'warn',
+      amount: bill.lastPosted,
+      metricLabel: 'posted charge',
       title: `${bill.payee || bill.label}: payment ${$(Math.abs(gap))} ${gap < 0 ? 'lower' : 'higher'} than usual.`,
       body: `${$(bill.lastPosted)} posted${bill.lastPostedDate ? ` on ${shortIso(bill.lastPostedDate)}` : ''}, against a usual ${$(usual)}. We have not confirmed why.`
         + ' Ask the company about the difference and keep notes.',
@@ -79,6 +83,8 @@ export function buildAlerts(h, sc, sim, cap, lastAction, datedGoal) {
     alerts.push({
       id: 'cushion',
       tone: 'bad',
+      amount: sim.low.balance,
+      metricLabel: 'projected balance',
       title: monthPurchases.length ? `${monthName(`${lowMonth}-01`)} plan needs attention.` : `Projected balance falls to ${$(sim.low.balance)} on ${short(sim.low.date)}.`,
       body: (monthPurchases.length ? `You have ${$(plannedTotal)} in planned purchases in ${monthName(`${lowMonth}-01`)}. ` : '')
         + `Checking is projected at ${$(sim.low.balance)} on ${short(sim.low.date)}, below your ${$(h.cushion)} cushion before your next paycheck.`
@@ -94,8 +100,8 @@ export function buildAlerts(h, sc, sim, cap, lastAction, datedGoal) {
   // Use the current dated goal, not the original sample's contribution count.
   if (!breach && !breachExplained && (goal.gap > 0 || !goal.fits)) {
     alerts.push({
-      id: 'goal', tone: 'warn', title: `${h.goal.label} needs a plan adjustment.`,
-      body: `${goalSentence} Review the monthly saving amount, costs, or deadline. Nothing changes until you choose.`,
+      id: 'goal', tone: 'warn', amount: goal.gap, metricLabel: 'goal gap', title: `${h.goal.label} needs a plan adjustment.`,
+      body: `${goalSentence} Review the monthly saving amount, costs, or deadline.`,
       actions: [{ label: 'Review goal', target: 'page:goals', primary: true },
         { label: 'Compare options', target: 'compare' }],
     });

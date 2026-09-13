@@ -66,10 +66,5 @@ export default function ForecastHelpDrawer({ h, sc, sim, options = [], current, 
       {rows.some(r => r.label === 'Planned purchases' && r.amount < 0) &&
         <button className="btn ghost" onClick={() => open('page:purchases')}>Review planned purchases</button>}
     </section>
-    <section className="grid" style={{ gap: 10 }}>
-      <h3>3. Choose what works for you</h3>
-      <p>No money moves when you apply a budget plan. You still need to follow the spending or savings changes yourself.</p>
-      <p className="fine">Rain clears when your saved forecast stays at or above your checking target. Clouds can remain when there's little room left. Closing an alert does not fix the forecast, and a planned cancellation is counted only after confirmation.</p>
-    </section>
   </Drawer>;
 }

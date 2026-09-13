@@ -31,16 +31,16 @@ describe('transaction filters', () => {
 
 describe('transaction sorting', () => {
   const rows = [
-    { date: '2026-01-01', amt: -100, note: 'Check charge' },
+    { date: '2026-01-01', amt: -100, note: 'Check charge', review: true },
     { date: '2026-01-03', amt: 20 },
-    { date: '2026-01-02', amt: -20, note: 'Check merchant' },
+    { date: '2026-01-02', amt: -20, note: 'Informational note only' },
   ];
   it('sorts absolute amounts in both directions, breaking ties by newest date', () => {
     expect(sortTransactions(rows, 'amount-asc')).toEqual([rows[1], rows[2], rows[0]]);
     expect(sortTransactions(rows, 'amount-desc')).toEqual([rows[0], rows[1], rows[2]]);
   });
   it('puts review transactions first and keeps both groups newest first', () => {
-    expect(sortTransactions(rows, 'review')).toEqual([rows[2], rows[0], rows[1]]);
+    expect(sortTransactions(rows, 'review')).toEqual([rows[0], rows[1], rows[2]]);
   });
   it('defaults to newest first without mutating the source and sorts filtered results', () => {
     const original = [...rows];
@@ -48,5 +48,17 @@ describe('transaction sorting', () => {
     expect(rows).toEqual(original);
     expect(sortTransactions(filterTransactions(rows, { min: '50' }), 'review')).toEqual([rows[0]]);
     expect(sortTransactions([], 'review')).toEqual([]);
+  });
+});
+
+describe('actionable review filtering', () => {
+  const rows = [
+    { date: '2026-01-03', d: 'Jan 3', what: 'Electric', cat: 'Utilities', amt: -196, k: 'rec', note: 'Higher than usual.', review: true },
+    { date: '2026-01-02', d: 'Jan 2', what: 'Transfer', cat: 'Transfer', amt: -200, k: 'tr', note: 'Labeled as a transfer.' },
+    { date: '2026-01-01', d: 'Jan 1', what: 'Coffee', cat: 'Dining', amt: -8, k: 'ev', note: '4 charges this month.' },
+  ];
+
+  it('includes only notes that represent a task the customer can resolve', () => {
+    expect(filterTransactions(rows, { kind: 'review' })).toEqual([rows[0]]);
   });
 });

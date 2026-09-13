@@ -24,7 +24,7 @@ export default function CashFlowPage({ base, baseVersion, h, sc, plan, protected
       <button className="btn" onClick={optimize}><Icon n="target" s={16} />Optimize budgets</button></div>
     <div className="spending-meta"><p>{monthName(insight.month)} · Recorded through {prettyIso(insight.asOf)}</p>
       <details><summary>About optimization</summary><p>Clicking Optimize budgets sends category summaries and calculated proposals through ZeroClaw to its cloud AI for review. No raw receipts or account credentials are shared. Reviews stay on your server; changes need your confirmation.</p></details></div>
-    {saved && <p className="alert good" role="status">Your budgets were updated. No money moved. You can undo this from Today.</p>}
+    {saved && <p className="alert good" role="status">Your budgets were updated. You can undo this from Today.</p>}
     <div className="spending-panels">
       <section className="spending-panel spending-upcoming" aria-label="Upcoming bills">
         <header className="spending-panel-heading"><span className="spending-panel-icon"><Icon n="repeat" s={20} /></span><div><h2>Upcoming bills</h2><p>Next 30 days · scheduled amounts</p></div></header>
@@ -55,7 +55,6 @@ export default function CashFlowPage({ base, baseVersion, h, sc, plan, protected
         <p className="fine">Keep unchanged protects a category during optimization. Limits are planning estimates, not bank restrictions.</p>
       </section>
     </div>
-    <p className="spending-footnote">No money moves automatically. Review your proposed limits before saving any changes.</p>
     {planner && createPortal(<SavingsPlanner base={base || h} baseVersion={baseVersion} plan={plan} protectedIds={protectedIds}
       optimization={optimization.state} onRetry={optimization.start}
       change={(patch, label) => { change(patch, label); setSaved(true); }} onClose={close} />, document.body)}

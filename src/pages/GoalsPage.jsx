@@ -28,7 +28,7 @@ export default function GoalsPage({ h, base, plan, goal, history, onUndo, open,
       <div className="goal-total num">{money(goal.contribution)}<span>/month</span></div>
       <p>Across {goals.length} {goals.length === 1 ? 'goal' : 'goals'}, after expected bills and everyday spending.</p>
       {!goal.fits && <div className="alert"><b>These contributions do not all fit the forecast.</b>
-        <p>Review a goal’s monthly amount or deadline, or compare spending changes. Nothing is reduced automatically.</p>
+        <p>Review a goal’s monthly amount or deadline, or compare spending changes.</p>
         <button className="btn ghost sm" onClick={() => open('compare')}>Compare spending changes</button></div>}
       {goal.gap > 0 && <p className="fine">The scheduled contributions leave a combined {money(goal.gap)} shortfall. Check each goal’s deadline below.</p>}
       <PlanConnections open={open} />
@@ -62,7 +62,7 @@ export default function GoalsPage({ h, base, plan, goal, history, onUndo, open,
         <div className="row between"><span>Recorded balance</span><b>{money(h.savings)}</b></div>
         <div className="row between"><span>Already allocated across goals</span><b>{money(allocated)}</b></div>
         <div className="row between"><span>Not assigned to a goal</span><b>{money(h.savings - allocated)}</b></div>
-        <p className="fine">Allocations include paused goals. Each dollar is assigned once. Accepting a plan does not move money.</p>
+        <p className="fine">Allocations include paused goals. Each dollar is assigned once.</p>
         <details><summary>Practice a savings transfer</summary>
           <p className="fine">Practice only — no real money moves. This does not update goal allocations or account balances automatically.</p>
           <button className="btn ghost" disabled={!transfer.available || transferring || !nextAmount} onClick={() => transfer.request(nextAmount)}>
@@ -85,7 +85,6 @@ export default function GoalsPage({ h, base, plan, goal, history, onUndo, open,
           </li>)}</ul>
           {!payments.length && <p>No contributions are scheduled before these deadlines.</p>}
         </details>
-        <p className="fine">{goal.assumption}</p>
       </section>
     </div>
   </>;

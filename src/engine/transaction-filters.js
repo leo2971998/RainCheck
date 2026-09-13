@@ -5,7 +5,7 @@ export function sortTransactions(rows, sort = 'newest') {
   return [...rows].sort((a, b) => {
     if (sort === 'amount-asc') return Math.abs(a.amt) - Math.abs(b.amt) || newest(a, b);
     if (sort === 'amount-desc') return Math.abs(b.amt) - Math.abs(a.amt) || newest(a, b);
-    if (sort === 'review') return Number(!!b.note) - Number(!!a.note) || newest(a, b);
+    if (sort === 'review') return Number(!!b.review) - Number(!!a.review) || newest(a, b);
     return newest(a, b);
   });
 }
@@ -27,7 +27,7 @@ export function filterTransactions(rows, { kind = 'all', query = '', category = 
   const search = query.trim().toLowerCase();
   return rows.filter(t => {
     const amount = Math.abs(t.amt);
-    return (kind === 'all' || (kind === 'review' ? t.note : t.k === kind))
+    return (kind === 'all' || (kind === 'review' ? t.review : t.k === kind))
       && (!search || `${t.what} ${t.cat} ${t.d} ${t.date || ''} ${t.amt}`.toLowerCase().includes(search))
       && (!category || t.cat === category)
       && (!(start || end) || (t.date && (!start || t.date >= start) && (!end || t.date <= end)))

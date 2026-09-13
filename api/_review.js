@@ -37,6 +37,9 @@ export function readReviewPlan(raw, base) {
   object(raw);
   if (Object.keys(raw).some(k => !Object.hasOwn(emptyPlan(), k))) fail();
   const p = { ...emptyPlan(), ...raw };
+  // Charge-recognition answers are local UI decisions, not inputs to financial calculations or AI.
+  if (Object.keys(object(p.chargeAnswers)).length > 500) fail();
+  p.chargeAnswers = {};
   for (const k of ['contribution', 'goalTarget', 'cushion']) if (p[k] !== null) p[k] = amount(p[k]);
   if (p.goalDate !== null) p.goalDate = date(p.goalDate, base);
   p.goals = map(p.goals, value => value === null ? null : readGoal(value, base.today));

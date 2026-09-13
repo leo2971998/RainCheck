@@ -16,8 +16,9 @@ it('explains the warning using all forecast events up to the lowest day', () => 
   expect(round2(rows.reduce((sum, row) => sum + row.amount, 0))).toBe(sim.low.balance);
   expect(rows.find(row => row.label === 'Monthly goal savings').amount).toBe(-300);
   const html = renderToStaticMarkup(<ForecastHelpDrawer h={h} sim={sim} open={() => {}} onClose={() => {}} />);
-  for (const text of ['$150', '$350', 'Check the numbers', 'Expected income', 'Compare adjustments', 'No money moves'])
+  for (const text of ['$150', '$350', 'Check the numbers', 'Expected income', 'Compare adjustments'])
     expect(html.includes(text)).toBe(true);
+  expect(html).not.toContain('No money moves');
 });
 it('keeps a negative balance warning distinct from the checking target', () => {
   const sim = simulate(base, { contribution: 550 });
@@ -33,6 +34,7 @@ it('does not promise that an unaffordable adjustment resolves the warning', () =
     current={currentOutcome(h, sc)} protectedIds={protectedIds} onClose={() => {}} />);
   expect(html.includes('None of these changes fully protects')).toBe(true);
   expect(html.includes('Still below your')).toBe(true);
+  expect(html).not.toContain('Nothing changes until you apply');
 });
 it('discloses the savings assumption behind a conditional cancellation preview', () => {
   const h = { ...base, cushion: 350 }, sc = { contribution: 300 };

@@ -12,7 +12,7 @@ const sections = [
 
 /** A small, shared goal anchor; details stay out of the dashboard's main reading path. */
 export default function GoalContext({ page, h, goal, open }) {
-  if (page === 'recurring' || page === 'forecast' || page === 'purchases' || page === 'cashflow') return null;
+  if (page === 'recurring' || page === 'forecast' || page === 'purchases' || page === 'cashflow' || page === 'alerts') return null;
   const section = sections.find(([id]) => id === page);
   if (!section) return null;
   const status = !goal.fits ? 'Savings plan needs review' : goal.gap > 0 ? `${money(goal.gap)} short of goal` : 'On track in this estimate';
@@ -35,6 +35,5 @@ export function PlanConnections({ open }) {
       <button className="link" onClick={() => open(`page:${id}`)}>{label}<Icon n="arrow" s={14} /></button>
       <p>{description}</p>
     </li>)}</ol>
-    <p className="fine">Estimates assume expected income and costs continue. AI can explain calculated options; it does not move money or change your savings plan for you.</p>
   </details>;
 }

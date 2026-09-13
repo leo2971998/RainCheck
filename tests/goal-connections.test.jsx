@@ -23,6 +23,7 @@ it('connects goal shortfalls to alerts even when the near-term checking forecast
   expect(result.sim.low.balance).toBe(200);
   const alert = result.alerts.find(a => a.id === 'goal');
   expect(alert?.body).toContain('$3,000');
+  expect(alert?.body).not.toContain('Nothing changes until you choose');
   expect(alert?.actions.some(a => a.target === 'page:goals')).toBe(true);
 });
 
@@ -79,4 +80,9 @@ it('keeps goal status off the recurring payment-history page', () => {
 it('keeps the shared goal banner off the forecast page', () => {
   const { h, goal } = evaluate(tripPlan());
   expect(renderToStaticMarkup(<GoalContext page="forecast" h={h} goal={goal} open={() => {}} />)).toBe('');
+});
+
+it('keeps the Alerts decision queue ahead of unrelated goal context', () => {
+  const { h, goal } = evaluate(tripPlan());
+  expect(renderToStaticMarkup(<GoalContext page="alerts" h={h} goal={goal} open={() => {}} />)).toBe('');
 });

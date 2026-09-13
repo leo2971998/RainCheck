@@ -25,6 +25,8 @@ it('shows combined monthly funding and each goal, with the checking buffer tucke
   expect(html.includes('One goal at a time')).toBe(false);
   expect(html).toMatch(/<details[^>]*><summary>Checking safety buffer<\/summary>/);
   expect(html.includes('Already allocated across goals')).toBe(true);
+  expect(html).not.toContain('Accepting a plan does not move money');
+  expect(html).not.toContain('Future income and spending are estimates');
 });
 
 it('asks for an explicit monthly amount and an allocation rather than replacing the active goal', () => {

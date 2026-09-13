@@ -39,6 +39,7 @@ it('shows useful purchase totals above the calendar instead of setup instruction
   ] };
   const html = renderToStaticMarkup(<PurchasesPage h={h} available open={() => {}} refresh={() => {}} />);
   for (const text of ['Purchase overview', '2 planned', '$650', 'Next purchase', 'Concert tickets', 'Sep 29']) expect(html).toContain(text);
+  expect(html).not.toContain('Saved purchases are shared with everyone using this demo');
 });
 
 it('does not ask for a separate merchant name when planning a purchase', () => {
@@ -46,6 +47,8 @@ it('does not ask for a separate merchant name when planning a purchase', () => {
   expect(html).not.toContain('Merchant for matching');
   expect(html).not.toContain('Merchant name');
   expect(html).toContain('How should we count it?');
+  expect(html).not.toContain('RainCheck never makes the purchase');
+  expect(html).not.toContain('Saved to the local demo database');
 });
 
 it('shows only the selected month as a calendar with purchases on their dates', () => {

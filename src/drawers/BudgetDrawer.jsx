@@ -43,7 +43,7 @@ export default function BudgetDrawer({ kind, id, base, baseVersion, plan, change
   return <Drawer label={title} onClose={onClose}>
     <DrawerHeader title={title} icon={isGoal ? 'target' : 'repeat'} onClose={onClose} />
     <p>{isGoal ? 'Give this goal a monthly amount. Other goals stay in your plan. We check all contributions together before you confirm.'
-      : 'Try a new monthly cost before you commit. This adds a budget estimate, not a real subscription.'}</p>
+      : 'Add a monthly cost and preview how it changes your budget.'}</p>
     {!preview && <form onSubmit={showPreview} className="budget-form">
       <label>{isGoal ? 'What are you saving for?' : 'Subscription name'}
         <input name="label" autoComplete="off" maxLength={60} value={draft.label} onChange={update} required placeholder={isGoal ? 'e.g. Family trip' : 'e.g. Music membership'} /></label>
@@ -79,9 +79,7 @@ export default function BudgetDrawer({ kind, id, base, baseVersion, plan, change
         <button className="btn ghost" onClick={() => setPreview(null)}>Edit details</button>
         <button className="btn ghost" onClick={onClose}>Cancel</button>
       </div>
-      <p className="fine">{isGoal ? 'Only this goal changes. Monthly amounts for your other goals stay the same.' : 'Applying keeps your planned savings contributions unchanged. If checking falls below the cushion, compare adjustments before committing.'} You can Undo after applying. Saved on this browser only.</p>
     </>}
     {existing && !(isGoal && itemId === BASE_GOAL) && !preview?.removing && <button className="link budget-remove" onClick={remove}>Remove {isGoal ? 'saved goal' : 'budget subscription'}</button>}
-    {isGoal && itemId === BASE_GOAL && <p className="fine">You can edit or pause your emergency fund without removing other goals.</p>}
   </Drawer>;
 }

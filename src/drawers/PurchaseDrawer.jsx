@@ -13,14 +13,14 @@ const monthName = iso => new Date(`${iso.slice(0, 7)}-01T12:00:00`).toLocaleDate
 
 export function purchaseSaveToast({ matching = false, removing = false, editing = false, status, previewMonth, onOpenAlerts }) {
   if (matching) return { title: 'Purchase completed', body: 'Matched to a posted charge. The future estimate is no longer counted.', tone: 'neutral', actions: [] };
-  if (removing) return { title: 'Purchase removed from the plan', body: 'The estimate no longer affects your forecast. No bank payment changed.', tone: 'neutral', actions: [] };
+  if (removing) return { title: 'Purchase removed from the plan', body: 'The estimate no longer affects your forecast.', tone: 'neutral', actions: [] };
   if (status?.tone === 'warn' || status?.tone === 'bad') return {
     title: `${previewMonth} budget alert added`,
     body: 'This purchase puts the current plan under pressure. Review the alert to adjust the purchase or compare another plan.',
     tone: status.tone,
     actions: onOpenAlerts ? [{ label: 'Review alert', run: onOpenAlerts }] : [],
   };
-  return { title: editing ? 'Purchase updated' : `Added to ${previewMonth}`, body: 'The purchase is now included in that month’s plan. No bank payment changed.', tone: 'good', actions: [] };
+  return { title: editing ? 'Purchase updated' : `Added to ${previewMonth}`, body: 'The purchase is now included in that month’s plan.', tone: 'good', actions: [] };
 }
 
 export default function PurchaseDrawer({ id, initialDate, base, baseVersion, plan, refresh, onOpenAlerts, onClose }) {
@@ -70,7 +70,7 @@ export default function PurchaseDrawer({ id, initialDate, base, baseVersion, pla
   const status = preview && budgetStatus(preview.impact.after, base.cushion);
   const previewMonth = preview && monthName(preview.remove ? existing.date : preview.patch.draft.date);
   return <Drawer label={title} onClose={close} className="purchase-drawer"><DrawerHeader title={title} icon="cart" onClose={close} />
-    <p>A one-time estimate for checking. You decide whether to save it; RainCheck never makes the purchase.</p>
+    <p>Add a one-time cost and see its effect on checking before you save it.</p>
     {!matches && <PurchaseSteps compact current={preview ? 2 : 1} />}
     {!preview && !matches && <>
       <form className="budget-form" onSubmit={showPreview}>
@@ -109,15 +109,14 @@ export default function PurchaseDrawer({ id, initialDate, base, baseVersion, pla
       <BudgetImpact impact={preview.impact} />
       <section className="purchase-ai-card">
         <div className="purchase-decision-number" aria-hidden="true">3</div><div><span className="review-eyebrow">Optional explanation</span><h3>Review the plan with AI</h3>
-          <p>AI can explain the calculator’s result and point out assumptions. It cannot change the warning or save anything.</p></div>
+          <p>AI can explain the calculator’s result and point out assumptions.</p></div>
         <details className="budget-ai-review"><summary>Open AI review</summary><ReviewPanel baseVersion={baseVersion} plan={plan} patch={preview.patch} kind="purchase" /></details>
       </section>
       <section className="purchase-save-card">
         <div className="purchase-decision-number" aria-hidden="true">4</div><div><span className="review-eyebrow">Your decision</span><h3>{preview.remove ? 'Remove this estimate?' : `Add this to ${previewMonth}?`}</h3>
-          <p>{preview.remove ? 'Its history stays available, but it stops affecting the forecast.' : 'Saving updates your plan and any related alerts. It never places an order or moves money.'}</p></div>
+          <p>{preview.remove ? 'Its history stays available, but it stops affecting the forecast.' : 'Saving updates your plan and any related alerts.'}</p></div>
         <div className="row wrap budget-actions"><button className="btn" disabled={busy} onClick={() => save()}>{busy ? 'Saving…' : preview.remove ? 'Confirm removal' : 'Save purchase'}</button>
           <button className="btn ghost" disabled={busy} onClick={() => setPreview(null)}>Back to details</button></div>
-        <p className="fine">Saved to the local demo database, not just this browser. You can edit or remove a planned item later.</p>
       </section>
     </>}
     {matches && <section aria-label="Match a posted charge"><h3>Is one of these your purchase?</h3>

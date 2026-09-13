@@ -20,6 +20,6 @@ export default function ForecastPage({ h, sc }) {
     <section className="month-summary" aria-label="Monthly spending estimate">
       <div><span>{out.partial ? 'Still expected this month' : 'Expected spending'}</span><strong className="num">{money(out.spending)}</strong><p>Estimated from recorded spending, scheduled bills, and plans you saved.</p></div>
     </section>
-    <MonthsCompare evidence={evidence} forecastMonth={month} />
+    <MonthsCompare evidence={evidence} forecastMonth={month} outlook={out} />
   </div>;
 }

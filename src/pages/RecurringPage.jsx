@@ -14,6 +14,10 @@ export function sortPostedPayments(payments = []) {
     || String(b.id || '').localeCompare(String(a.id || '')));
 }
 
+export function paymentsForYear(payments = [], year) {
+  return sortPostedPayments(payments).filter(payment => payment.date?.startsWith(`${year}-`));
+}
+
 export function recurringYear(items, today, selection = today.slice(0, 4)) {
   const current = monthKey(today);
   const [currentYear, currentNumber] = current.split('-').map(Number);
@@ -62,66 +66,43 @@ function CompanyStatus({ bill, plan, reviews }) {
   return <span className="pill good">Up to date</span>;
 }
 
-function PaymentHistory({ bill }) {
-  const payments = sortPostedPayments(bill.paymentHistory);
+function PaymentHistory({ bill, year }) {
+  const payments = paymentsForYear(bill.paymentHistory, year);
   const largest = Math.max(...payments.map(payment => payment.amount), 1);
-  const recent = payments.slice(0, 6);
-  const older = payments.slice(6);
   return <section className="recurring-history" aria-label={`${bill.label} payment history`}>
     <div className="section-heading"><div><span className="review-eyebrow">Bank records</span><h3>Payment history</h3></div>
-      {!!payments.length && <span className="fine">{payments.length} posted</span>}</div>
-    {payments.length ? <>
-      <PaymentGroups payments={recent} largest={largest} />
-      {!!older.length && <details className="previous-payments"><summary>Show {older.length} older payment{older.length === 1 ? '' : 's'}</summary>
-        <PaymentGroups payments={older} largest={largest} />
-      </details>}
-    </> : <div className="recurring-empty-history">
-      <Icon n="list" s={18} /><p>{bill.budgetOnly
-        ? 'This is a planned recurring cost. No payment has posted from the bank.'
-        : 'No posted payments are available for this company yet.'}</p>
-    </div>}
-  </section>;
-}
-
-function PaymentGroups({ payments, largest }) {
-  const groups = [];
-  for (const payment of payments) {
-    const year = payment.date?.slice(0, 4) || 'Date unavailable';
-    const group = groups.at(-1);
-    if (group?.year === year) group.payments.push(payment);
-    else groups.push({ year, payments: [payment] });
-  }
-  return groups.map(group => <div className="payment-year" key={group.year}>
-    <h4>{group.year}</h4>
-    <ol>{group.payments.map(payment => <li key={payment.id || `${payment.date}-${payment.amount}`}>
+      {!!payments.length && <span className="fine">{payments.length} posted in {year}</span>}</div>
+    {payments.length ? <ol>{payments.map(payment => <li key={payment.id || `${payment.date}-${payment.amount}`}>
       <time dateTime={payment.date}>{paymentDate(payment.date)}</time>
       <span className="payment-track" aria-hidden="true"><i style={{ width: `${Math.max(8, payment.amount / largest * 100)}%` }} /></span>
       <b>{money(payment.amount)}</b>
-    </li>)}</ol>
-  </div>);
+    </li>)}</ol> : <div className="recurring-empty-history">
+      <Icon n="list" s={18} /><p>{bill.budgetOnly
+        ? 'This is a planned recurring cost. No payment has posted from the bank.'
+        : `No posted payments are available for this company in ${year}.`}</p>
+    </div>}
+  </section>;
 }
 
 function YearPaymentChart({ months, currentMonth, selection, years, onSelection }) {
   const largest = Math.max(...months.map(month => month.total ?? 0), 1);
   const range = months.length ? `${monthRangeName(months[0].key)} – ${monthRangeName(months.at(-1).key)}` : '';
   return <section className="recurring-year-chart" aria-labelledby="recurring-year-title">
-    <div className="section-heading"><div><span className="review-eyebrow">Payment history</span><h3 id="recurring-year-title">{selection === 'last-12' ? 'Last 12 months' : `${selection} payment history`}</h3>
+    <div className="section-heading"><div><span className="review-eyebrow">Payment history</span><h3 id="recurring-year-title">{selection} payment history</h3>
       <span className="fine">{range} · Posted bank payments only</span></div>
       <label className="recurring-range"><span>Show</span><select aria-label="Payment history range" value={selection} onChange={event => onSelection(event.target.value)}>
         {years.map((year, index) => <option value={year} key={year}>{index === 0 ? `This year · ${year}` : year}</option>)}
-        <option value="last-12">Last 12 months</option>
       </select></label></div>
     <div className="recurring-chart-scroll">
       <ol>
         {months.map(month => {
           const hasData = month.total != null;
           const state = month.current ? 'current' : month.key > currentMonth ? 'future' : hasData ? 'recorded' : 'unavailable';
-          const displayLabel = selection === 'last-12' ? `${month.label} ’${month.key.slice(2, 4)}` : month.label;
           const description = `${monthName(month.key)}: ${hasData ? `${money(month.total)} paid` : 'no payment data available'}`;
           return <li key={month.key} className={state} aria-label={description} title={description}>
             <span className="recurring-chart-value" aria-hidden="true">{hasData ? money(month.total) : '—'}</span>
             <span className="recurring-chart-track" aria-hidden="true"><i style={{ height: hasData ? `${Math.max(6, month.total / largest * 100)}%` : 0 }} /></span>
-            <span className="recurring-chart-month" aria-hidden="true">{displayLabel}</span>
+            <span className="recurring-chart-month" aria-hidden="true">{month.label}</span>
           </li>;
         })}
       </ol>
@@ -174,7 +155,7 @@ export default function RecurringPage({ h, sc, plan, change, open, discovered = 
   const posted = bills.flatMap(bill => bill.paymentHistory || []);
   const currentMonth = monthKey(h.today);
   const availableYears = [...new Set([currentYear, ...posted.map(payment => payment.date?.slice(0, 4)).filter(Boolean)])].sort((a, b) => b.localeCompare(a));
-  const selectedRange = historyRange === 'last-12' || availableYears.includes(historyRange) ? historyRange : currentYear;
+  const selectedRange = availableYears.includes(historyRange) ? historyRange : currentYear;
   const year = recurringYear(posted, h.today, selectedRange);
   const summaryMonths = recurringYear(posted, h.today, 'last-12');
   const current = summaryMonths.at(-1);
@@ -232,7 +213,7 @@ export default function RecurringPage({ h, sc, plan, change, open, discovered = 
             <CompanyStatus bill={bill} plan={sc} reviews={billReviews} />
           </summary>
           <div className="recurring-company-body">
-            <PaymentHistory bill={bill} />
+            <PaymentHistory bill={bill} year={selectedRange} />
             <CompanyFollowUp bill={bill} plan={sc} notes={billNotes} open={open} />
           </div>
           <div className="recurring-company-footer">
