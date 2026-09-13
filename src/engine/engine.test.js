@@ -232,7 +232,10 @@ describe('alerts', () => {
     expect(out.filter(a => a.id.startsWith('increase:'))).toHaveLength(1);
     expect(out.some(a => a.id === 'cushion')).toBe(false);          // one event, one alert
     expect(out[0].body).toMatch(/below your \$200 cushion/);
-    expect(out[0].body).toMatch(/\$100 short/);
+    // The current plan still schedules $300. Its problem is affordability;
+    // a $100 goal shortfall belongs to the unaccepted $275 alternative, not this plan.
+    expect(out[0].body).toContain('planned contributions do not keep your checking target intact');
+    expect(out[0].body).not.toMatch(/\$100 short/);
   });
 
   // The gap this covers: a charge that simply arrived higher used to raise nothing at all.

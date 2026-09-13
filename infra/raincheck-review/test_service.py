@@ -78,6 +78,28 @@ class ValidationTests(unittest.TestCase):
 
 
 class ConversationTests(unittest.TestCase):
+    def with_checking_targets(self):
+        data = self.chat(); data['version'] = 3
+        for side in ('before', 'after'):
+            data[side].update(plannedPurchasesCents=0, cushionCents=20000)
+        return data
+
+    def test_accepts_separate_checking_targets_without_losing_before_value(self):
+        data = self.with_checking_targets()
+        data['before']['cushionCents'] = 35000
+        self.assertEqual(validate_brief(data), data)
+        answer = result(); answer['observations'][0]['facts'] = ['before.cushionCents', 'after.cushionCents']
+        self.assertEqual(validate_result(answer, data), answer)
+
+    def test_checking_targets_must_be_paired_bounded_and_consistent(self):
+        for mutate in [lambda b: b['after'].pop('cushionCents'),
+                       lambda b: b['before'].pop('cushionCents'),
+                       lambda b: b['before'].update(cushionCents=-1),
+                       lambda b: b['after'].update(cushionCents=True),
+                       lambda b: b['after'].update(cushionCents=35000)]:
+            data = self.with_checking_targets(); mutate(data)
+            with self.assertRaises(ValueError): validate_brief(data)
+
     def test_one_time_purchase_week_is_bounded_and_distinct_from_monthly_bills(self):
         data = self.chat(); data.update(version=3, kind='purchase', purchaseWeek={
             'startsOn': '2026-10-05', 'endsOn': '2026-10-11', 'beforeLowCents': 30000, 'afterLowCents': 10000})

@@ -1,0 +1,39 @@
+import { Icon, prettyIso } from './ui.jsx';
+import { budgetMoney as money } from './BudgetImpact.jsx';
+
+const sections = [
+  ['transactions', 'Transactions', 'Past income and spending help form estimates. Your category edits organize this list but do not change the forecast yet.'],
+  ['recurring', 'Recurring', 'Upcoming bills and the future prices you confirm are included in the plan. An unusual charge needs review before it becomes a new estimate.'],
+  ['purchases', 'Purchases', 'A planned cost changes available checking and what saving can fit. Confirming a matching posted payment removes the planned duplicate.'],
+  ['forecast', 'Forecast', 'The day-by-day forecast combines paydays, bills, living costs and planned savings. The goal check looks further ahead, through your deadline.'],
+  ['alerts', 'Alerts', 'When checking or your goal needs attention, review the cause and compare changes. Dismissing an alert does not add money or repair a shortfall.'],
+  ['cashflow', 'Cash flow', 'See income and costs together. A positive monthly total does not rule out running short before a payday.'],
+];
+
+/** A small, shared goal anchor; details stay out of the dashboard's main reading path. */
+export default function GoalContext({ page, h, goal, open }) {
+  const section = sections.find(([id]) => id === page);
+  if (!section) return null;
+  const status = !goal.fits ? 'Savings plan needs review' : goal.gap > 0 ? `${money(goal.gap)} short of goal` : 'On track in this estimate';
+  return <section className="goal-context" aria-label="Connected savings goal">
+    <div className="goal-context-heading">
+      <Icon n="target" s={19} />
+      <div><b>{h.goal.label}</b><p>{money(h.goal.target)} by {prettyIso(goal.targetDate)} · planned {money(goal.contribution)}/month</p></div>
+      <span className={'pill ' + (!goal.fits || goal.gap > 0 ? 'warn' : 'good')}>{status}</span>
+      <button className="btn ghost sm" onClick={() => open('page:goals')}>View goal</button>
+    </div>
+    <p className="goal-context-note">{section[2]}</p>
+  </section>;
+}
+
+export function PlanConnections({ open }) {
+  return <details className="plan-connections">
+    <summary>How your goal connects to your money</summary>
+    <p>Set an amount and a date. We compare the monthly saving needed with what fits after expected bills and living costs, while keeping your checking target.</p>
+    <ol>{sections.map(([id, label, description]) => <li key={id}>
+      <button className="link" onClick={() => open(`page:${id}`)}>{label}<Icon n="arrow" s={14} /></button>
+      <p>{description}</p>
+    </li>)}</ol>
+    <p className="fine">Estimates assume expected income and costs continue. AI can explain calculated options; it does not move money or change your savings plan for you.</p>
+  </details>;
+}

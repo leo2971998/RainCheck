@@ -1,0 +1,50 @@
+.chat-launcher { position: fixed; z-index: 50; right: 24px; bottom: 24px; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 54px; padding: 0 19px; border: 1px solid color-mix(in oklab, var(--button-ink) 25%, transparent); border-radius: 999px; background: var(--button-bg); color: var(--button-ink); font: 700 14px var(--body); box-shadow: 0 8px 28px color-mix(in oklab, var(--rain-deep) 30%, transparent); cursor: pointer; }
+.chat-launcher:hover { filter: brightness(1.08); transform: translateY(-2px); }
+.chat-launcher:focus-visible, .chat-minimize:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+.chat-dock { position: fixed; inset: 20px 20px 20px auto; margin: 0; width: 400px; max-width: calc(100vw - 40px); height: calc(100dvh - 40px); max-height: 900px; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); color: var(--ink); box-shadow: 0 18px 60px color-mix(in oklab, var(--rain-deep) 20%, transparent); z-index: 55; }
+.chat-dock:not([open]) { display: none; }
+.chat-dock::backdrop { background: oklch(.2 .04 240 / .4); backdrop-filter: blur(3px); }
+.chat-minimize { position: absolute; top: 14px; right: 12px; z-index: 1; width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 12px; background: var(--field); color: var(--ink-2); cursor: pointer; }
+.chat-dock .chat-page { display: flex; flex-direction: column; height: 100%; min-height: 0; margin: 0; max-width: none; }
+.chat-dock .chat-header { display: block; padding: 18px 18px 12px; flex-shrink: 0; }
+.chat-dock .chat-heading { padding-right: 40px; }
+.chat-dock .chat-emblem { display: none; }
+.chat-dock .chat-heading h1 { font-size: 22px; }
+.chat-dock .chat-heading p { font-size: 12px; }
+.chat-dock .chat-connection { justify-content: flex-start; max-width: none; margin-top: 12px; font-size: 11px; }
+.chat-dock .chat-connection .btn { margin-left: auto; min-height: 30px; font-size: 11px; }
+.chat-dock .chat-shell { flex: 1; height: auto; min-height: 0; max-height: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+.chat-dock .chat-thread { padding: 20px 18px; }
+.chat-dock .chat-welcome { margin: 0; }
+.chat-dock .chat-welcome-icon { display: none; }
+.chat-dock .chat-welcome h2 { font-size: 24px; }
+.chat-dock .chat-welcome p { font-size: 14px; margin-bottom: 20px; }
+.chat-dock .chat-examples button { font-size: 13px; padding: 12px; }
+.chat-dock .chat-message { max-width: 100%; }
+.chat-dock .chat-message.user { max-width: 94%; }
+.chat-dock .chat-bubble { font-size: 14px; }
+.chat-dock .chat-bottom { padding: 12px; max-height: 65%; overflow-y: auto; }
+.chat-dock .chat-compose { padding: 5px; }
+.chat-dock .chat-compose textarea { font-size: 16px; }
+.chat-dock .chat-compose .btn span { display: none; }
+.chat-dock .chat-start { gap: 6px 12px; font-size: 12px; }
+.chat-dock .chat-start .btn { font-size: 13px; min-height: 40px; width: 100%; }
+.chat-dock .chat-footnote { font-size: 11px; }
+.chat-dock .chat-calculation > summary { flex-wrap: wrap; }
+.chat-dock .chat-calculation dd { font-size: 20px; }
+.chat-dock .chat-calculation del { display: block; }
+.app .toasts { bottom: 90px; }
+@media (min-width: 901px) { .app.chat-is-open .toasts { right: 440px; bottom: 18px; } }
+/* Wide screens reserve room rather than covering the forecast with the panel. */
+@media (min-width: 1440px) { .app.chat-is-open { padding-right: 424px; } }
+@media (min-width: 1440px) and (max-width: 1650px) { .app.chat-is-open .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) {
+  .chat-launcher { width: 56px; height: 56px; min-height: 56px; padding: 0; right: 18px; bottom: 20px; }
+  .chat-launcher span { display: none; }
+  .chat-dock { top: calc(var(--chat-vtop, 0px) + 8px + env(safe-area-inset-top, 0px)); right: 8px; bottom: auto; width: calc(100vw - 16px); max-width: none; height: calc(var(--chat-vh, 100dvh) - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); max-height: none; border-radius: 20px; }
+}
+@media (max-width: 560px) {
+  .chat-launcher { bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
+  .app .toasts { bottom: calc(208px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { .chat-launcher:hover { transform: none; } }

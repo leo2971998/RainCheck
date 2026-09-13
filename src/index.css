@@ -249,6 +249,22 @@
 
   /* --- Weather hero, ported from ui-update ------------------------------------------------- */
   .workspace { min-width: 0; }
+  .workspace-disclosure { margin-top: 28px; padding: 14px 0 24px; color: var(--muted); font-size: 12px; }
+  .workspace-disclosure summary { cursor: pointer; width: fit-content; min-height: 44px; align-content: center; }
+  .goal-context { border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; background: var(--card); }
+  .goal-context-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+  .goal-context-heading > svg { color: var(--accent); flex-shrink: 0; }
+  .goal-context-heading > div { flex: 1; min-width: 180px; }
+  .goal-context-heading b { font-size: 14px; }
+  .goal-context-heading p, .goal-context-note { font-size: 12.5px; color: var(--ink-2); margin: 4px 0 0; line-height: 1.5; }
+  .goal-context-note { border-top: 1px solid var(--line-2); padding-top: 9px; margin-top: 9px; }
+  .goal-context .pill { white-space: normal; }
+  .goal-context .btn { min-height: 44px; }
+  .plan-connections { border-top: 1px solid var(--line); padding-top: 4px; }
+  .plan-connections summary { cursor: pointer; font-weight: 600; min-height: 44px; align-content: center; }
+  .plan-connections ol { padding-left: 22px; display: grid; gap: 10px; }
+  .plan-connections p { margin: 4px 0 12px; font-size: 13px; color: var(--ink-2); line-height: 1.6; }
+  .plan-connections .link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
   .weather-hero { position: relative; min-height: 158px; overflow: hidden; display: flex; align-items: center; justify-content: space-between; padding: 28px 34px; margin-bottom: 12px; background: linear-gradient(115deg, var(--rain-deep), var(--rain)); background-size: 160% 160%; color: var(--surface); border-radius: var(--r); box-shadow: 0 16px 36px color-mix(in oklab, var(--rain) 20%, transparent); animation: hero-arrive .65s cubic-bezier(.2,.8,.2,1) both, sky-shift 12s ease-in-out 1s infinite alternate; }
   .weather-hero::before { content: ""; position: absolute; width: 210px; height: 90px; border-radius: 50%; right: 60px; bottom: -52px; background: color-mix(in oklab, var(--surface) 14%, transparent); box-shadow: 110px 4px 0 color-mix(in oklab, var(--surface) 10%, transparent); animation: cloud-drift 9s ease-in-out infinite alternate; }
   .weather-copy { position: relative; z-index: 1; max-width: 720px; }
@@ -441,7 +457,7 @@
 
   /* ===== Outlook strip ======================================================================= */
   .outlook { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 0 0 14px; }
-  .ol-week { display: grid; justify-items: center; gap: 2px; padding: 12px 8px 10px; border-radius: 12px; text-align: center;
+  .ol-week { display: grid; justify-items: center; align-content: start; gap: 2px; padding: 12px 8px 6px; border-radius: 12px; text-align: center;
     background: color-mix(in oklab, var(--surface) 78%, transparent); border: 1px solid color-mix(in oklab, var(--rain) 10%, var(--line));
     box-shadow: 0 1px 2px oklch(.35 .06 240 / .04), 0 8px 20px oklch(.45 .08 230 / .06);
     animation: card-rise .46s var(--ease-out) backwards; animation-delay: calc(.06s + var(--i) * .05s);
@@ -449,7 +465,26 @@
   .ol-week:hover { transform: translateY(-2px); box-shadow: 0 2px 6px oklch(.35 .06 240 / .06), 0 16px 34px oklch(.45 .08 230 / .12); }
   .ol-range { font-size: 11.5px; color: var(--muted); font-weight: 600; margin-top: 4px; }
   .ol-word { font-size: 12.5px; font-weight: 800; font-family: var(--display); color: var(--ink); }
-  .ol-low { font-size: 11px; color: var(--muted); }
+  .outlook-help { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 10px; color: var(--ink-2); font-size: 12px; line-height: 1.6; }
+  .outlook-help strong { color: var(--ink); font-size: 14px; }
+  .ol-edit-target { min-height: 44px; min-width: 44px; margin-left: 6px; font-size: 12px; text-decoration: underline; }
+  .local-rain-test { justify-content: flex-end; gap: 10px; margin-bottom: 12px; }
+  .local-rain-test .btn { min-height: 44px; }
+  .rain-review-option { padding: 16px; gap: 10px; }
+  .rain-review-option dd { text-align: right; white-space: normal; }
+  .weather-reading .weather-action { margin-top: 12px; min-height: 44px; background: #fff; color: #123a50; border: 1px solid #fff; }
+  .forecast-breakdown { margin: 0; display: grid; gap: 10px; }
+  .forecast-breakdown > div { display: flex; justify-content: space-between; gap: 16px; font-size: 13px; }
+  .forecast-breakdown dd { margin: 0; font-weight: 700; white-space: nowrap; }
+  .forecast-breakdown .breakdown-total { border-top: 1px solid var(--line); padding-top: 12px; font-weight: 700; }
+  .ol-threshold { font-size: 12px; color: var(--ink-2); }
+  .ol-details { width: 100%; font-size: 12px; }
+  .ol-details summary { min-height: 44px; align-content: center; cursor: pointer; color: var(--ink-2); border-radius: 6px; }
+  .ol-details summary:hover { color: var(--ink); }
+  .ol-details summary:focus-visible { outline: 2px solid var(--rain); outline-offset: -2px; }
+  .ol-low { margin: 0 0 8px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-2); }
+  .ol-low strong { display: block; margin: 2px 0; font-size: 18px; color: var(--ink); }
+  .ol-assumptions { margin: 0 0 8px; font-size: 11px; line-height: 1.5; color: var(--ink-2); }
   .ol-week.st-tight .ol-word { color: var(--sun-deep); }
   .ol-week.st-below .ol-word, .ol-week.st-over .ol-word { color: var(--storm); }
   .ol-week.st-below, .ol-week.st-over { background: color-mix(in oklab, var(--storm-soft) 55%, var(--surface)); }

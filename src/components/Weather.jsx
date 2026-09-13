@@ -1,4 +1,5 @@
-import { money } from './ui.jsx';
+import { useId } from 'react';
+import { budgetMoney as money } from './BudgetImpact.jsx';
 
 /**
  * Weather, drawn rather than typed.
@@ -15,6 +16,12 @@ import { money } from './ui.jsx';
  */
 
 const RANK = { ok: 0, tight: 1, below: 2, over: 3 };
+
+// Balance risk takes priority. A review reminder can add clouds, never invent a storm.
+export function forecastWeather(state, alerts = []) {
+  if (state === 'over' || state === 'below' || state === 'tight') return state;
+  return alerts.some(a => a.tone !== 'good') ? 'tight' : 'ok';
+}
 
 /** The icon a forecast state earns, and its night-time counterpart. */
 export function kindFor(state, night = false) {
@@ -136,32 +143,51 @@ export function Sky({ state, night = false, size = 150 }) {
 }
 
 const short = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-const WORDS = { ok: 'Clear', tight: 'Tight', below: 'Below cushion', over: 'Overdrawn' };
+const WORDS = { ok: 'Above target', tight: 'Near target', below: 'Getting tight', over: 'Short of money' };
 
 /**
  * The outlook: one icon per week across the forecast, the way a weather app shows the days ahead.
  * The worst day in the week decides the icon, because a week with one overdrawn day is a week
  * to worry about — an average would hide exactly the day that matters.
  */
-export function Outlook({ sim, h, days = 7 }) {
+export function Outlook({ sim, h, days = 7, onEditTarget }) {
+  const helpId = useId();
   const weeks = [];
   for (let i = 0; i < sim.days.length; i += days) weeks.push(sim.days.slice(i, i + days));
   return (
-    <div className="outlook" role="list" aria-label="Weekly outlook">
+    <section className="weekly-checking" aria-label="Weekly checking forecast">
+    <p className="outlook-help" id={helpId}>
+      <span>Keep in checking: <strong className="num">{money(h.cushion)}</strong>
+        {onEditTarget && <button className="link ol-edit-target" aria-label="Edit checking target" onClick={onEditTarget}>Edit</button>}
+      </span>
+      <span>Weekly estimates</span>
+    </p>
+    <div className="outlook" role="list" aria-label="Weekly outlook" aria-describedby={helpId}>
       {weeks.map((w, i) => {
         const worst = w.reduce((a, d) => (RANK[d.state] > RANK[a.state] ? d : a), w[0]);
         const low = w.reduce((a, d) => (d.balance < a.balance ? d : a), w[0]);
         const label = `${short(w[0].date)} – ${short(w[w.length - 1].date)}`;
+        const threshold = {
+          ok: `Over ${money(h.cushion)}`,
+          tight: `${low.balance === h.cushion ? 'At' : 'Just over'} ${money(h.cushion)}`,
+          below: `Under ${money(h.cushion)}`,
+          over: 'Under $0',
+        }[worst.state];
         return (
-          <div key={i} role="listitem" className={`ol-week st-${worst.state}`} style={{ '--i': i }}
-            title={`${label}: ${WORDS[worst.state]}, lowest ${money(low.balance)} on ${short(low.date)}`}>
+          <div key={i} role="listitem" className={`ol-week st-${worst.state}`} style={{ '--i': i }}>
             <WeatherIcon kind={kindFor(worst.state)} size={36} />
             <span className="ol-range">{i === 0 ? 'This week' : label}</span>
             <span className="ol-word">{WORDS[worst.state]}</span>
-            <span className="ol-low num">low {money(low.balance)}</span>
+            <span className="ol-threshold">{threshold}</span>
+            <details className="ol-details">
+              <summary aria-label={`View estimate for ${label}`}>View estimate</summary>
+              <p className="ol-low">Checking could drop to <strong className="num">{money(low.balance)}</strong><span>on {short(low.date)}</span></p>
+              <p className="ol-assumptions">End-of-day estimate, not today's balance. Includes expected income, bills, spending and planned savings.</p>
+            </details>
           </div>
         );
       })}
     </div>
+    </section>
   );
 }

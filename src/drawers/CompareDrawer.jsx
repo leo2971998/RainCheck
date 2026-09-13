@@ -11,7 +11,7 @@ import { MiniForecast } from '../components/charts.jsx';
 const ROWS = [
   { key: 'contribution', label: 'Monthly contribution', fmt: o => money(o.contribution) },
   { key: 'low', label: 'Lowest projected balance', fmt: o => money(o.low), sub: o => prettyIso(o.lowDate) },
-  { key: 'meetsCushion', label: 'Stays above the cushion', fmt: (o, h) => o.meetsCushion ? 'Yes' : 'No', tone: o => o.meetsCushion ? 'good' : 'bad' },
+  { key: 'meetsCushion', label: 'Keeps your checking target', fmt: (o, h) => o.meetsCushion ? 'Yes' : 'No', tone: o => o.meetsCushion ? 'good' : 'bad' },
   { key: 'goalProjected', label: 'Goal reaches', fmt: o => money(o.goalProjected),
     sub: o => `by ${o.goalDate ? prettyIso(o.goalDate) : '—'} · ${o.onTarget ? 'on target' : `${money(o.goalGap)} short`}` },
 ];
@@ -33,6 +33,11 @@ export default function CompareDrawer({ h, sc, cap, options, current, preview, p
         {current.meetsCushion ? '' : `, and dips to ${money(current.low)} on ${prettyIso(current.lowDate)}`}.
         Selecting an option previews it on your forecast. Nothing changes until you apply it.
       </p>
+
+      {!current.meetsCushion && !live.some(o => !o.conditional && o.outcome.meetsCushion) && <div className="alert">
+        <b>None of these changes fully protects your {money(h.cushion)} target.</b>
+        <p>Check your expected income and costs, or review planned purchases. An improvement is not the same as resolving the warning.</p>
+      </div>}
 
       <div>
         <h3 style={{ marginBottom: 8 }}>Protect</h3>
@@ -112,6 +117,10 @@ export default function CompareDrawer({ h, sc, cap, options, current, preview, p
             {o.conditional && <span className="pill neutral">Conditional</span>}
           </div>
           <p>{o.detail}</p>
+          <p className="fine">{o.outcome.meetsCushion
+            ? `Keeps at least ${money(h.cushion)} in checking in this forecast${o.conditional ? ', if confirmed' : ''}.`
+            : `Still below your ${money(h.cushion)} checking target. This option does not fully resolve the warning.`}</p>
+          {o.conditional && <p className="fine">This preview also assumes {money(o.outcome.contribution)}/month in savings. Confirming the cancellation alone does not change your planned savings amount.</p>}
           {o.note && <div className="fine">{o.note}</div>}
           <div className="row between">
             <button className={'btn sm' + (preview?.id === o.id ? '' : ' ghost')} onClick={() => setPreviewId(preview?.id === o.id ? null : o.id)}>

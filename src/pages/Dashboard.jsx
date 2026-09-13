@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Icon, Kpi, Num, STATE, money, prettyDate, longDate, prettyIso, weekdayIso } from '../components/ui.jsx';
+import { Icon, Kpi, Num, STATE, prettyDate, longDate, prettyIso, weekdayIso } from '../components/ui.jsx';
+import { budgetMoney as money } from '../components/BudgetImpact.jsx';
 import { AreaChart } from '../components/charts.jsx';
-import { Sky, Outlook, timeOfDay } from '../components/Weather.jsx';
+import { Sky, Outlook, timeOfDay, forecastWeather } from '../components/Weather.jsx';
+import { Ambient } from '../components/Ambient.jsx';
 import { GoalRing } from '../components/GoalRing.jsx';
 import { budgetStatus } from '../engine/review-status.js';
 import { needsBillReview } from '../engine/bill-reviews.js';
 
-export default function Dashboard({ h, source, plan, sc, change, sim, previewSim, preview, cap, goal, alerts, waiting = [], onReviewNotice, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
+export default function Dashboard({ h, plan, sc, change, sim, previewSim, preview, cap, goal, alerts, waiting = [], onReviewNotice, reminders = [], leadDays = 3, setLeadDays, onPaid, open, history, onUndo, found, setFound }) {
   // The scenario, not the raw plan: an unaccepted plan has no contribution of its own and falls back
   // to the planned figure. Reading the plan here made the chart caption say "$0 contribution" beside
   // a line that was simulated at $300.
@@ -15,7 +17,6 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
   const changedBills = h.recurring.filter(r => r.change);
   const unexplainedBills = h.recurring.filter(r => needsBillReview(r, sc));
   const today = new Date(h.today + 'T12:00:00');
-  const sourceLabel = { sample: 'Sample data', nessie: 'Nessie sandbox', snapshot: 'Saved sandbox snapshot' }[source];
   const nextPay = (sc.income || h.income)[0];
   const lastDay = sim.days[sim.days.length - 1];
   // Appearance mode never decides whether it is day or night. Start with a stable server value,
@@ -28,30 +29,38 @@ export default function Dashboard({ h, source, plan, sc, change, sim, previewSim
     return () => window.clearInterval(timer);
   }, []);
 
-  // Alerts alone decide the icon: clear when nothing needs attention, partly cloudy for a warning,
-  // and stormy for a severe alert. Positive confirmations do not cloud the forecast.
+  // The same balance risk drives the hero, weekly outlook, and page atmosphere.
   const activeAlerts = alerts.filter(a => a.tone !== 'good');
-  const weatherState = activeAlerts.some(a => a.tone === 'bad') ? 'over' : activeAlerts.length ? 'tight' : 'ok';
+  const weatherState = forecastWeather(sim.worst, alerts);
   const attention = activeAlerts.length;
   const night = tod === 'night';
   const goalStatus = budgetStatus({ ...goal, low: sim.low.balance }, h.cushion);
-  const headline = sim.worst === 'over' ? 'Your balance would go below zero before payday.' : sim.worst === 'below' ? 'Bills are covered, but your savings plan dips below your cushion.' : !goal.fits || goal.gap > 0 ? 'Bills are covered, but your goal needs an adjustment.' : 'Bills are covered and your goal is on track.';
+  const headline = sim.worst === 'over' ? `Your plan could leave checking ${money(Math.abs(sim.low.balance))} short.` : sim.worst === 'below' ? `Your plan could leave just ${money(sim.low.balance)} in checking.` : !goal.fits || goal.gap > 0 ? 'Bills are covered, but your goal needs an adjustment.' : 'Bills are covered and your goal is on track.';
   return (
     <>
-      <div className={'weather-hero sky-' + tod}>
+      <div className={'weather-hero sky-' + tod} data-weather={weatherState}>
+        <Ambient state={weatherState} contained />
         <div className="weather-copy">
           <span className="weather-kicker">{night ? 'TONIGHT’S' : 'TODAY’S'} FINANCIAL FORECAST</span>
           <h1>{headline}</h1>
+          {(weatherState === 'below' || weatherState === 'over') && <div className="weather-reading" role="status">
+            <strong>{weatherState === 'over' ? 'Storm forecast' : 'Rain forecast'}</strong>
+            <span>{weatherState === 'over'
+              ? `On ${prettyDate(sim.low.date)}, planned spending and savings could exceed the money available by ${money(Math.abs(sim.low.balance))}. Review the plan to avoid going below $0.`
+              : `On ${prettyDate(sim.low.date)}, that is ${money(h.cushion - sim.low.balance)} less than the ${money(h.cushion)} you want to keep for unexpected costs. Review upcoming costs or planned savings to protect that money.`}</span>
+            <small>This is a projection, not your current balance. Nothing has been moved.</small>
+            <button className="btn weather-action" onClick={() => open('forecast-help')}>Review my plan <Icon n="arrow" s={15} /></button>
+          </div>}
           <div className="weather-status">{attention ? `${attention} open budget ${attention === 1 ? 'alert' : 'alerts'}` : 'No open budget alerts'} · Upcoming bills are listed separately.</div>
           <div className="sub">{longDate(today)}{nextPay ? ` · Next paycheck ${weekdayIso(nextPay.date)}` : ''} · Forecast through {prettyDate(lastDay.date)}</div>
         </div>
         <div className="hero-weather"><Sky state={weatherState} night={night} /></div>
       </div>
-      <Outlook sim={sim} h={h} />
-      <div className="top-actions"><span className="pill teal"><Icon n="bank" s={13} />{sourceLabel}</span><button className="btn ghost sm" onClick={() => open('page:purchases')}>Plan a purchase</button><button className="btn ghost sm" onClick={() => open('assistant')}>Talk through my plan</button></div>
+      <Outlook sim={sim} h={h} onEditTarget={() => open('checking-target')} />
+      <div className="top-actions"><button className="btn ghost sm" onClick={() => open('page:purchases')}>Plan a purchase</button></div>
       <div className="grid g4" style={{ marginBottom: 18 }}>
         <Kpi label="Checking balance" value={<Num v={h.checking} />} sub="Everyday Checking" />
-        <Kpi label="Lowest projected balance" value={<Num v={sim.low.balance} />} sub={`${prettyDate(sim.low.date)} · cushion ${money(h.cushion)}`} pill={<span className={'pill ' + tone}>{st}</span>} />
+        <Kpi label="Lowest projected balance" value={<Num v={sim.low.balance} />} sub={`${prettyDate(sim.low.date)} · you want to keep ${money(h.cushion)}`} pill={<span className={'pill ' + tone}>{st}</span>} />
         <Kpi label={`Supported saving · next ${h.windowDays} days`} value={<><Num v={cap} />/mo</>} sub={`Planned ${money(sc.contribution)} · ${cap < sc.contribution ? 'above estimated capacity' : 'within estimated capacity'}`} pill={cap < sc.contribution ? <span className="pill warn"><Icon n="down" s={11} />{money(sc.contribution - cap)}</span> : <span className="pill good">OK</span>} />
         <Kpi label={h.goal.label} value={<Num v={goal.projected} />} sub={`Projected of ${money(h.goal.target)} by ${goal.targetLabel}`} pill={<span className={'pill ' + goalStatus.tone}>{goalStatus.tone === 'good' ? 'Within estimates' : 'Needs adjustment'}</span>} />
       </div>

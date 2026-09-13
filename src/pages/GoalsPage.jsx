@@ -2,6 +2,7 @@ import { Icon, Num, money, prettyIso, monthOf } from '../components/ui.jsx';
 import { GoalChart } from '../components/charts.jsx';
 import { BASE_GOAL, goalChoices } from '../engine/budget.js';
 import { budgetMoney } from '../components/BudgetImpact.jsx';
+import { PlanConnections } from '../components/GoalContext.jsx';
 
 /**
  * A goal, the way a person states one: this much, by this date.
@@ -35,6 +36,7 @@ export default function GoalsPage({ h, base, plan, change, cap, goal, history, o
       <div className="card budget-library">
         <div className="hd"><h2>Your active goal</h2><span className="pill teal">One goal at a time</span></div>
         <p>{h.goal.label} uses the savings shown below. Other ideas do not change your budget until you choose one.</p>
+        <PlanConnections open={open} />
         {alternatives.length > 0 && <details><summary>Other goals ({alternatives.length})</summary>
           <ul className="budget-list">{alternatives.map(g => <li key={g.id}>
             <div><b>{g.label}</b><span className="fine">{budgetMoney(g.target)} by {prettyIso(g.targetDate)} · not funded separately</span></div>
@@ -137,23 +139,23 @@ export default function GoalsPage({ h, base, plan, change, cap, goal, history, o
 
         <div className="grid" style={{ gap: 18 }}>
           <div className="card">
-            <div className="hd"><h2>Savings account</h2><span className="pill teal">{transfer.available ? 'Nessie sandbox' : 'Sandbox not connected'}</span></div>
-            <div className="row between"><span className="muted">Actual balance</span>
+            <div className="hd"><h2>Savings account</h2><span className="pill neutral">Practice account</span></div>
+            <div className="row between"><span className="muted">Recorded balance</span>
               <b className="num" style={{ fontSize: 22, fontFamily: 'var(--display)' }}>{money(h.savings)}</b></div>
             <div className="fine">Counted toward one goal. Accepting a plan never moves money.</div>
 
             <button className="btn ghost" disabled={!transfer.available || transferring || !(goal.contribution > 0)} onClick={() => transfer.request(goal.contribution)}>
-              Move {money(goal.contribution)} to savings (sandbox)
+              Try a {money(goal.contribution)} savings transfer
             </button>
-            {!transfer.available && <div className="fine">Connect the Nessie sandbox to move money.</div>}
-            {transferring && <div className="alert"><b>Transfer requested</b><p>Waiting to read its status back from the sandbox before showing it as complete.</p></div>}
+            <div className="fine">Practice only — no real money moves.{!transfer.available && ' Transfers are unavailable in this workspace.'}</div>
+            {transferring && <div className="alert"><b>Transfer requested</b><p>Waiting for confirmation before showing it as recorded.</p></div>}
             {transfer.status === 'completed' && !transferring && (
-              <div className="alert good"><b><Icon n="check" s={13} /> Completed · confirmed by the sandbox</b>
-                <p>{money(transfer.result?.amount ?? goal.contribution)} recorded on {transfer.result?.date}. {transfer.result?.balanceNote}</p></div>
+              <div className="alert good"><b><Icon n="check" s={13} /> Practice transfer recorded</b>
+                <p>{money(transfer.result?.amount ?? goal.contribution)} recorded on {transfer.result?.date}. Practice account balances do not update automatically.</p></div>
             )}
             {transfer.error && (
               <div className="alert bad">
-                <b>{transfer.halfCompleted ? 'The money left checking but did not arrive' : 'Transfer could not be confirmed'}</b>
+                <b>{transfer.halfCompleted ? 'The practice transfer is only partly recorded' : 'Transfer could not be confirmed'}</b>
                 <p>{transfer.error}</p>
               </div>
             )}

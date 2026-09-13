@@ -36,7 +36,7 @@ export function readReviewPlan(raw, base) {
   object(raw);
   if (Object.keys(raw).some(k => !Object.hasOwn(emptyPlan(), k))) fail();
   const p = { ...emptyPlan(), ...raw };
-  for (const k of ['contribution', 'goalTarget']) if (p[k] !== null) p[k] = amount(p[k]);
+  for (const k of ['contribution', 'goalTarget', 'cushion']) if (p[k] !== null) p[k] = amount(p[k]);
   if (p.goalDate !== null) p.goalDate = date(p.goalDate, base);
   p.goals = map(p.goals, value => value === null ? null : readGoal(value, base.today));
   if (p.goalId !== null && p.goalId !== 'emergency-fund' && !p.goals[p.goalId]) fail();
@@ -100,12 +100,13 @@ export function calculateReview(base, body) {
   if (body.kind === 'purchase') return purchaseImpact(base, plan, body.patch);
   const next = readReviewPlan(applyPatch(plan, body.patch).plan, base);
   // Both sides go through the same engine. No forecast supplied by the browser is used.
-  return { ...budgetImpact(base, plan, {}), after: budgetImpact(base, next, {}).after };
+  const nextImpact = budgetImpact(base, next, {});
+  return { ...budgetImpact(base, plan, {}), cushion: nextImpact.cushion, after: nextImpact.after };
 }
 
 export function reviewBrief(impact, body, evidence) {
   const cents = n => { const c = Math.round(n * 100); if (!Number.isSafeInteger(c)) fail(); return c; };
-  const outcome = o => ({ lowCents: cents(o.low), monthlyBillsCents: cents(o.monthlyBills),
+  const outcome = o => ({ lowCents: cents(o.low), cushionCents: cents(o.cushion), monthlyBillsCents: cents(o.monthlyBills),
     plannedPurchasesCents: cents(o.plannedPurchases),
     goalTargetCents: cents(o.target), goalProjectedCents: cents(o.projected), contributionCents: cents(o.contribution),
     goalDate: o.targetDate, contributionFits: o.fits, goalFeasible: o.feasible, checkedThrough: o.checkedThrough });

@@ -53,7 +53,7 @@ function outcome(base, plan) {
   const h = householdFor(base, plan), sc = scenarioFor(h, plan);
   const sim = simulate(h, sc);
   const g = goalPlan(h, sc, { ...h.goal, contribution: sc.contribution });
-  return { low: sim.low.balance, lowDate: sim.low.key, state: sim.worst,
+  return { low: sim.low.balance, lowDate: sim.low.key, state: sim.worst, cushion: h.cushion,
     plannedPurchases: round2(sim.days.flatMap(d => d.events).filter(e => e.purchase).reduce((s, e) => s - e.amt, 0)),
     monthlyBills: round2(h.recurring.filter(r => !sc.cancelled?.[r.id]).reduce((s, r) => s + monthlyEquivalent(r, amountFor(r, nextChargeDate(r, h.today), sc)), 0)),
     goalLabel: h.goal.label, target: g.target, saved: g.saved, targetDate: g.targetDate, projected: g.projected,
@@ -61,6 +61,7 @@ function outcome(base, plan) {
     fits: g.fits, feasible: g.feasible, checkedThrough: g.checkedThrough };
 }
 export function budgetImpact(base, plan, patch) {
-  return { asOf: base.today, cushion: base.cushion, windowDays: base.windowDays,
-    before: outcome(base, plan), after: outcome(base, applyPatch(plan, patch).plan) };
+  const before = outcome(base, plan), after = outcome(base, applyPatch(plan, patch).plan);
+  return { asOf: base.today, cushion: after.cushion, beforeCushion: before.cushion, windowDays: base.windowDays,
+    before, after };
 }

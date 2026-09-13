@@ -23,6 +23,7 @@ export function emptyPlan() {
     contribution: null,     // null → the contribution the forecast can carry
     goalTarget: null,       // null → the household's goal target
     goalDate: null,         // null → the household's target date
+    cushion: null,          // null → the household's checking target; never a bank balance
     cuts: {}, cancelled: {}, pendingCancel: {}, treatAsNewPrice: {},
     whatIf: {},             // billId → an amount the user typed, overriding that bill's notice
     billChanges: {},        // billId → a change imported from a notice the user pasted
@@ -33,6 +34,12 @@ export function emptyPlan() {
     income: null,
     goalId: null, goals: {}, subscriptions: {},
   };
+}
+
+export function readCheckingTarget(value) {
+  if (!/^\d+(\.\d{1,2})?$/.test(String(value)) || Number(value) > 1000000)
+    throw new Error('Enter $0 to $1,000,000, with up to two decimal places.');
+  return Number(value);
 }
 
 /**
@@ -98,6 +105,7 @@ export function householdFor(base, plan) {
   const target = plan.goalTarget ?? selected.target;
   const targetDate = plan.goalDate ?? selected.targetDate;
   const income = plan.income ?? base.income;
+  const cushion = plan.cushion ?? base.cushion;
   const imported = plan.billChanges || {};
 
   // A notice the user imported attaches to the bill it names. Importing a second notice for the
@@ -127,7 +135,7 @@ export function householdFor(base, plan) {
   }
 
   const unchanged = selected === base.goal && target === base.goal.target && targetDate === base.goal.targetDate
-    && income === base.income && withAdopted === base.recurring && allowances === base.allowances;
+    && cushion === base.cushion && income === base.income && withAdopted === base.recurring && allowances === base.allowances;
   if (unchanged) return base;
-  return { ...base, income, recurring: withAdopted, allowances, goal: { ...base.goal, label: selected.label, target, targetDate } };
+  return { ...base, cushion, income, recurring: withAdopted, allowances, goal: { ...base.goal, label: selected.label, target, targetDate } };
 }

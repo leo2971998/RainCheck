@@ -21,7 +21,7 @@ import time
 import uuid
 
 MODEL = 'gpt-5.5'
-CONTRACT = 'raincheck-review-v4'
+CONTRACT = 'raincheck-review-v5'
 MAX_BODY = 16384
 MAX_OUTPUT = 32768
 ROOT = Path(__file__).resolve().parent
@@ -69,11 +69,14 @@ def validate_brief(data):
             raise ValueError('Invalid purchase week.')
         integer(week['beforeLowCents'], -100000000, 100000000)
         integer(week['afterLowCents'], -100000000, 100000000)
+    # Accept older briefs, but keep both targets when the app supplies an edited one.
+    separate_targets = data['version'] == 3 and isinstance(data['before'], dict) and 'cushionCents' in data['before']
     for side in ('before', 'after'):
         values = data[side]
         exact(values, ['lowCents', 'monthlyBillsCents', 'goalTargetCents', 'goalProjectedCents',
                        'contributionCents', 'goalDate', 'contributionFits', 'goalFeasible', 'checkedThrough']
-              + (['plannedPurchasesCents'] if data['version'] == 3 else []))
+              + (['plannedPurchasesCents'] if data['version'] == 3 else [])
+              + (['cushionCents'] if separate_targets else []))
         for name, value in values.items():
             if name.endswith('Cents'): integer(value, -100000000 if name == 'lowCents' else 0, 100000000)
         for name in ['contributionFits', 'goalFeasible']:
@@ -82,6 +85,8 @@ def validate_brief(data):
             raise ValueError('Goal date outside the planning period.')
         if values['checkedThrough'] is not None and not as_of <= day(values['checkedThrough']) <= day(values['goalDate']):
             raise ValueError('Invalid affordability horizon.')
+    if separate_targets and data['after']['cushionCents'] != data['cushionCents']:
+        raise ValueError('The preview checking target does not match.')
     return data
 
 
@@ -142,6 +147,11 @@ def run_agent(data):
         'or perform actions. Explain only the before/after tradeoffs supported by the facts. '
         'Mention that projections depend on expected income and expenses continuing. '
         'This is a short checking projection and a separate longer goal projection. '
+        'cushionCents is the user-chosen checking target, not a bank balance or an income-based recommendation. '
+        'before.cushionCents and after.cushionCents, when supplied, preserve each side of a target edit. '
+        'Lowering a target changes the warning threshold, not the money available. Never present that as funding a shortfall. '
+        'For a rainy-day preview, explain the actual before/after checking and savings-goal trade-off. '
+        'A preview has not been applied; the person must explicitly choose an adjustment in the app. '
         'plannedPurchasesCents covers one-time spending inside windowDays, NOT a monthly bill. '
         'purchaseWeek, when present, contains a separate dated week comparison that may be beyond windowDays. '
         'A purchase does not automatically reduce planned savings; it may instead make those contributions unaffordable. '

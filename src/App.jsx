@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useReducedMotion } from './hooks/useMotion.js';
 import { useTheme } from './hooks/useTheme.js';
@@ -25,15 +25,24 @@ import BillReviewDrawer from './drawers/BillReviewDrawer.jsx';
 import CompareDrawer from './drawers/CompareDrawer.jsx';
 import NoticeDrawer from './drawers/NoticeDrawer.jsx';
 import BudgetDrawer from './drawers/BudgetDrawer.jsx';
+import CheckingTargetDrawer from './drawers/CheckingTargetDrawer.jsx';
+import ForecastHelpDrawer from './drawers/ForecastHelpDrawer.jsx';
 import AssistantDrawer from './drawers/AssistantDrawer.jsx';
 import PurchaseDrawer from './drawers/PurchaseDrawer.jsx';
 import PurchasesPage from './pages/PurchasesPage.jsx';
+import ChatDock, { ChatLauncher } from './components/ChatDock.jsx';
+import { Ambient } from './components/Ambient.jsx';
+import { forecastWeather } from './components/Weather.jsx';
+import { rainDemoPatch, RAIN_DEMO_ID } from './engine/rain-demo.js';
+import { subscriptionPatch } from './engine/budget.js';
+import GoalContext from './components/GoalContext.jsx';
 
+const ChatPage = lazy(() => import('./pages/ChatPage.jsx'));
 const NAV = [['dashboard', 'Today', 'dash'], ['alerts', 'Alerts', 'bell'], ['forecast', 'Forecast', 'trend'], ['purchases', 'Purchases', 'cart'], ['transactions', 'Transactions', 'list', 'Activity'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Cash flow', 'bars'], ['goals', 'Goals', 'target']];
 
 function Navigation({ page, setPage, badges = {} }) {
   return NAV.map(([id, label, icon, short = label]) => (
-    <button key={id} className={`nav${page === id ? ' on' : ''}`} aria-label={label + (badges[id] > 0 ? ` (${badges[id]} need attention)` : '')} aria-current={page === id ? 'page' : undefined} onClick={() => setPage(id)}>
+    <button key={id} className={`nav nav-${id}${page === id ? ' on' : ''}`} aria-label={label + (badges[id] > 0 ? ` (${badges[id]} need attention)` : '')} aria-current={page === id ? 'page' : undefined} onClick={() => setPage(id)}>
       <Icon n={icon} s={17} /><span className="nav-l nav-long">{label}</span><span className="nav-l nav-short" aria-hidden="true">{short}</span>
       {badges[id] > 0 && <span className="badge" aria-label={`${badges[id]} need attention`}>{badges[id]}</span>}
     </button>
@@ -43,7 +52,7 @@ function Navigation({ page, setPage, badges = {} }) {
 function ThemeSwitch({ theme }) {
   return <div className="theme-switch" role="group" aria-label="Colour theme">
     {theme.MODES.map(m => <button key={m} aria-pressed={theme.mode === m} onClick={() => theme.setMode(m)}>
-      {m === 'auto' ? 'Auto' : m === 'light' ? 'Light' : 'Dark'}
+      {m === 'light' ? 'Light' : 'Dark'}
     </button>)}
   </div>;
 }
@@ -57,6 +66,9 @@ export default function App() {
 
 function Workspace({ household: base, baseVersion, transactions, notice, source, purchasesAvailable = false, refresh, discovered: candidates = [], pendingNotices = [] }) {
   const [page, setPageRaw] = useState('dashboard');
+  const [chatOpened, setChatOpened] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const showChat = useCallback(() => { setChatOpened(true); setChatOpen(true); }, []);
   const reducedMotion = useReducedMotion();
   const theme = useTheme();
 
@@ -127,7 +139,7 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
     };
   }, [h, sc, plan.contribution]);
 
-  const alerts = useMemo(() => buildAlerts(h, sc, sim, cap, lastAction(history)), [h, sc, sim, cap, history]);
+  const alerts = useMemo(() => buildAlerts(h, sc, sim, cap, lastAction(history), goal), [h, sc, sim, cap, history, goal]);
   const options = useMemo(() => buildOptions(h, sc, cap, protectedIds), [h, sc, cap, protectedIds]);
   const current = useMemo(() => currentOutcome(h, sc), [h, sc]);
   const reminders = useMemo(() => buildReminders(h, sc, leadDays), [h, sc, leadDays]);
@@ -168,6 +180,13 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
     const { plan: next, entry } = applyPatch(plan, patch, label ?? patch.label ?? 'Plan updated');
     setPlanSaved(next);
     setHistory(hs => [...hs, entry].slice(-20));
+  };
+  const demoCost = plan.subscriptions?.[RAIN_DEMO_ID];
+  const toggleRainDemo = () => {
+    try {
+      if (demoCost) change(subscriptionPatch(RAIN_DEMO_ID, null), 'Local rain test ended');
+      else change(rainDemoPatch(base, plan), 'Local rain test started — sample cost only');
+    } catch (e) { toast.push({ title: 'Rain test not started', body: e.message, tone: 'neutral' }); }
   };
 
   const markPaid = r => change({ paid: { [r.billId]: r.cycle } }, `${r.label} marked paid`);
@@ -227,16 +246,17 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
       actions: [{ label: 'Mark paid', run: () => markPaid(r) }],
     }), 900 + i * 350));
   }, [reminders.length]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const sourceLabel = source === 'nessie' ? 'Nessie sandbox' : source === 'snapshot' ? 'Saved sandbox snapshot' : 'Sample data';
+  const chatVisible = chatOpen && !drawer && !confirm;
 
   return (
-    <div className="app">
+    <div className={`app${chatVisible ? ' chat-is-open' : ''}`}>
+      <Ambient state={forecastWeather(sim.worst, alerts)} />
       <aside>
         <div className="brand"><span className="mark"><span className="weather-mark" aria-hidden="true">☂</span></span><div><b>RainCheck</b><small>Financial forecast</small></div></div>
         <nav aria-label="Main navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
         <div className="side-foot">
           <div className="acct"><span className="avatar">AR</span><span>Alex Rivera</span></div>
-          Everyday Checking · Savings<br />{sourceLabel}
+          Everyday Checking · Savings<br />
           <ThemeSwitch theme={theme} />
           {hasPersisted() && <><br /><button className="link" style={{ fontSize: 12, marginTop: 6 }} onClick={resetAll}>Reset my decisions</button></>}
         </div>
@@ -248,8 +268,13 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
           <ThemeSwitch theme={theme} />
         </div>
         <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
+        {import.meta.env.DEV && page === 'dashboard' && <div className="row wrap local-rain-test">
+          <span className="fine">{demoCost ? `Local test · ${money(demoCost.amount)}/month sample cost added. Other plan choices stay saved.` : 'Local demo tools'}</span>
+          <button className="btn ghost sm" onClick={toggleRainDemo}>{demoCost ? 'End rain test' : 'Test rain'}</button>
+        </div>}
         {backTo && page !== backTo && <button className="back-link" onClick={() => navigate(backTo)}><i className="back-ic"><Icon n="arrow" s={14} /></i>Back to Today</button>}
-        {page === 'dashboard' && <Dashboard h={h} source={source} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
+        <GoalContext page={page} h={h} goal={goal} open={open} />
+        {page === 'dashboard' && <Dashboard h={h} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
         {page === 'alerts' && <AlertsPage h={h} sc={sc} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} found={found} setFound={setFound} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
         {page === 'purchases' && <PurchasesPage h={h} available={purchasesAvailable} open={open} refresh={refresh} />}
@@ -257,9 +282,18 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
         {page === 'recurring' && <RecurringPage h={h} sc={sc} plan={plan} change={change} cap={cap} open={open} discovered={discovered} onAdopt={adopt} onDismiss={dismiss} billNotes={billNotes} />}
         {page === 'cashflow' && <CashFlowPage h={h} sc={sc} sim={sim} />}
         {page === 'goals' && <GoalsPage h={h} base={base} plan={plan} change={change} cap={cap} goal={goal} history={history} onUndo={undo} open={open} transfer={transfer} />}
+        <footer className="workspace-disclosure"><details><summary>Sample data</summary>
+          <p>No real bank account is connected. Explore a sample household; practice transfers do not move real money.</p>
+        </details></footer>
       </main>
 
+      {!chatVisible && !drawer && !confirm && <ChatLauncher onOpen={showChat} />}
+      {chatOpened && <ChatDock open={chatVisible} onClose={() => setChatOpen(false)}><Suspense fallback={<p role="status" style={{ padding: 24 }}>Opening chat…</p>}><ChatPage baseVersion={baseVersion} plan={plan} visible={chatVisible} /></Suspense></ChatDock>}
+
       <Toasts />
+      {drawer === 'checking-target' && <CheckingTargetDrawer h={h} sim={sim} change={change} onClose={() => setDrawer(null)} />}
+      {drawer === 'forecast-help' && <ForecastHelpDrawer h={h} sc={sc} sim={sim} options={options} current={current}
+        baseVersion={baseVersion} plan={plan} open={open} onClose={() => setDrawer(null)} />}
       {drawer === 'anomaly' && <BillReviewDrawer id={billId} h={h} plan={plan} notes={billNotes} change={change}
         saveNote={(key,text) => setBillNotes(previous => ({ ...previous, [key]: text }))} onClose={() => setDrawer(null)} />}
       {drawer === 'assistant' && <AssistantDrawer baseVersion={baseVersion} plan={plan} savedId={new URLSearchParams(window.location.search).get('review')} onClose={() => setDrawer(null)} />}

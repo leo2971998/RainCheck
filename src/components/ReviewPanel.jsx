@@ -47,10 +47,10 @@ export function ReviewAnswer({ review, retrieval, historical = false }) {
 }
 
 /** Both entry points use this read-only conversation; applying stays outside it. */
-export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'plan', savedId }) {
+export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'plan', savedId, initialQuestion = '', preview = kind !== 'plan' }) {
   const [ready, setReady] = useState(null), [checkError, setCheckError] = useState(false);
   const [consent, setConsent] = useState(false), [busy, setBusy] = useState(false);
-  const [question, setQuestion] = useState(''), [error, setError] = useState('');
+  const [question, setQuestion] = useState(initialQuestion), [error, setError] = useState('');
   const [messages, setMessages] = useState([]), [saved, setSaved] = useState(null);
   const active = useRef(null), end = useRef(null);
   const check = () => {
@@ -84,11 +84,11 @@ export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'pla
       if (active.current === controller) setError(err.name === 'AbortError' ? 'The review took too long. Your plan is unchanged; please try again.' : err.message);
     } finally { clearTimeout(timeout); if (active.current === controller) { setBusy(false); active.current = null; } }
   };
-  const suggestions = kind === 'plan' ? ['Can my planned saving fit my budget?', 'What assumptions should I check?']
+  const suggestions = !preview ? ['Can my planned saving fit my budget?', 'What assumptions should I check?']
     : ['What changes in this preview?', 'Will this put my savings goal under pressure?'];
   return <section className="review-panel" aria-label="AI plan conversation">
     <ol className="review-layers" aria-label="How this works"><li>Calculate</li><li>Check evidence</li><li>Explain</li><li>You decide</li></ol>
-    <p>{kind === 'plan' ? 'Ask about your current plan, in everyday language.' : 'Ask AI to explain this preview before you decide.'} The calculator handles the numbers; AI explains the trade-offs.</p>
+    <p>{!preview ? 'Ask about your current plan, in everyday language.' : 'Ask AI to explain this preview before you decide.'} The calculator handles the numbers; AI explains the trade-offs.</p>
     {saved && <><p className="review-question"><b>Question in this saved review</b>{saved.facts.question || 'Explain this budget preview.'}</p>
       <ReviewAnswer review={saved} historical /><p><b>Ask about your current plan below.</b> New answers use your current decisions, not the saved preview above.</p></>}
     <div className="review-conversation" aria-label="Conversation">

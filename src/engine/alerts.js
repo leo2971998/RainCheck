@@ -1,4 +1,4 @@
-import { goalAt } from './forecast.js';
+import { goalPlan } from './forecast.js';
 import { needsBillReview } from './bill-reviews.js';
 
 const short = date => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -18,10 +18,10 @@ const $ = n => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('
  * Everything here is a consequence the user can act on. Spending trends belong in a weekly
  * summary, not an interruption.
  */
-export function buildAlerts(h, sc, sim, cap, lastAction) {
+export function buildAlerts(h, sc, sim, cap, lastAction, datedGoal) {
   const accepted = sc.contribution != null && sc.contribution <= cap;
   const alerts = [];
-  const goal = goalAt(h, cap);
+  const goal = datedGoal ?? goalPlan(h, sc, { ...h.goal, contribution: sc.contribution });
   const fits = sc.contribution <= cap;
   const breach = sim.worst === 'over' || sim.worst === 'below';
 
@@ -31,7 +31,8 @@ export function buildAlerts(h, sc, sim, cap, lastAction) {
       ? `Your planned ${$(sc.contribution)} contribution would overdraw you by ${$(Math.abs(sim.low.balance))} on ${short(sim.low.date)}.`
       : `Your planned ${$(sc.contribution)} contribution would leave ${$(sim.low.balance)} on ${short(sim.low.date)}, below your ${$(h.cushion)} cushion.`)
     : null;
-  const goalSentence = goal.gap ? `Your goal would end ${$(goal.gap)} short.` : null;
+  const goalSentence = [goal.gap ? `Your current savings plan would end ${$(goal.gap)} short by ${shortIso(goal.targetDate)}.` : null,
+    !goal.fits ? 'The planned contributions do not keep your checking target intact through the goal deadline.' : null].filter(Boolean).join(' ');
   let breachExplained = false;
 
   // --- 1. A provider says the price is going up. We can quote the sentence that proves it. ---
@@ -75,8 +76,20 @@ export function buildAlerts(h, sc, sim, cap, lastAction) {
       tone: 'bad',
       title: `Projected balance falls to ${$(sim.low.balance)} on ${short(sim.low.date)}.`,
       body: `That is below your ${$(h.cushion)} cushion before your next paycheck.`
-        + (!fits ? ` Your plan supports ${$(cap)} a month rather than the ${$(sc.contribution)} you have scheduled.` : ''),
+        + (!fits ? ` Your plan supports ${$(cap)} a month rather than the ${$(sc.contribution)} you have scheduled.` : '')
+        + (goalSentence ? ` ${goalSentence}` : ''),
       actions: [{ label: 'Compare options', target: 'compare', primary: true }],
+    });
+  }
+
+  // A goal can fall short even when the near-term checking forecast is comfortable.
+  // Use the current dated goal, not the original sample's contribution count.
+  if (!breach && !breachExplained && (goal.gap > 0 || !goal.fits)) {
+    alerts.push({
+      id: 'goal', tone: 'warn', title: `${h.goal.label} needs a plan adjustment.`,
+      body: `${goalSentence} Review the monthly saving amount, costs, or deadline. Nothing changes until you choose.`,
+      actions: [{ label: 'Review goal', target: 'page:goals', primary: true },
+        { label: 'Compare options', target: 'compare' }],
     });
   }
 
