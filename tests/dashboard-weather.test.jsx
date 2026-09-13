@@ -66,7 +66,14 @@ it('keeps purchase planning without duplicating the global chat launcher', () =>
   expect(html).not.toContain('Nessie');
   expect(html).not.toContain('sandbox');
   expect(html).toContain('Lowest projected balance');
-  expect(html).toContain('Edit checking target');
+  expect(html).not.toContain('Edit checking target');
+  expect(html).not.toContain('Keep in checking:');
+});
+it('puts navigation and purchase planning before the weekly forecast', () => {
+  const html = render([]);
+  expect(html.indexOf('class="peeks"')).toBeLessThan(html.indexOf('The next five weeks'));
+  expect(html.indexOf('Plan a purchase')).toBeLessThan(html.indexOf('The next five weeks'));
+  expect(html).not.toContain('Elsewhere in RainCheck');
 });
 it('keeps the checking target short and puts the dated balance inside a closed disclosure', () => {
   const days = [
@@ -74,7 +81,7 @@ it('keeps the checking target short and puts the dated balance inside a closed d
     { date: new Date('2026-10-11T12:00:00'), state: 'ok', balance: 485 },
   ];
   const html = renderToStaticMarkup(<Outlook sim={{ days }} h={h} />);
-  expect(html).toContain('Keep in checking:');
+  expect(html).toContain('Weekly balance estimates');
   expect(html).toContain('Above target');
   expect(html).toContain('Over $200');
   expect(html).toMatch(/<details[^>]*><summary[^>]*>View estimate<\/summary>/);

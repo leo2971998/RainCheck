@@ -2,10 +2,13 @@ const dollars = n => new Intl.NumberFormat('en-US', { style: 'currency', currenc
 // Give the agent a labeled calculation, not ambiguous boolean or forecast-state codes.
 export function chatBrief({ impact, bills, preview, retrieval }) {
   const describe = (label, result) => `${label}: lowest checking balance ${dollars(result.low)} on ${result.lowDate}; monthly bills ${dollars(result.monthlyBills)}. ` +
-    `Goal: ${result.goalLabel}, target ${dollars(result.target)} by ${result.targetDate}, already saved ${dollars(result.saved)}. ` +
+    (result.shared
+      ? `Shared budget for ${result.goals.length} goals with separate deadlines. Existing savings are allocated once, not reused for each goal. Deadline shortfalls are calculated from the chosen contributions, independently of the checking warning; do not say a cash-flow shortfall caused the deadline gap. ` +
+        result.goals.map(g => `${g.label}: ${dollars(g.contribution)}/month; ${dollars(g.saved)} already allocated; target ${dollars(g.target)} by ${g.targetDate}; projected ${dollars(g.projected)}; shortfall ${dollars(g.gap)}.`).join(' ') + ' '
+      : `Goal: ${result.goalLabel}, target ${dollars(result.target)} by ${result.targetDate}, already saved ${dollars(result.saved)}. `) +
     `The plan schedules ${dollars(result.contribution)} of savings per month. ` +
     `Projected goal savings if those contributions happen: ${dollars(result.projected)}. Goal shortfall under the scheduled contributions: ${dollars(result.gap)}. ` +
-    `Supported monthly savings while preserving the cushion: ${dollars(result.supported)}. ` +
+    (result.shared ? `Of this planned savings mix, the estimated cash flow supports ${dollars(result.supported)}/month. This is a proportional capacity check, not an applied reduction or permission to change any goal. ` : `Supported monthly savings while preserving the cushion: ${dollars(result.supported)}. `) +
     (result.fits && result.feasible ? 'The calculator supports this saving rate within the forecast assumptions.'
       : 'This saving rate is NOT fully supported while preserving the checking cushion. Explain the trade-off: the goal projection assumes the scheduled contributions still happen, but the cash-flow warning remains. Do not describe this as comfortably on track. ') +
     ' Do not turn a cushion warning into a claim that the goal will be missed. A lower contribution would need a separate calculation; do not invent its goal total or completion date.';

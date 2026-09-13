@@ -150,17 +150,15 @@ const WORDS = { ok: 'Above target', tight: 'Near target', below: 'Getting tight'
  * The worst day in the week decides the icon, because a week with one overdrawn day is a week
  * to worry about — an average would hide exactly the day that matters.
  */
-export function Outlook({ sim, h, days = 7, onEditTarget }) {
+export function Outlook({ sim, h, days = 7 }) {
   const helpId = useId();
   const weeks = [];
   for (let i = 0; i < sim.days.length; i += days) weeks.push(sim.days.slice(i, i + days));
   return (
     <section className="weekly-checking" aria-label="Weekly checking forecast">
     <p className="outlook-help" id={helpId}>
-      <span>Keep in checking: <strong className="num">{money(h.cushion)}</strong>
-        {onEditTarget && <button className="link ol-edit-target" aria-label="Edit checking target" onClick={onEditTarget}>Edit</button>}
-      </span>
-      <span>Weekly estimates</span>
+      <span>Weekly balance estimates</span>
+      <span>After bills, spending and planned savings</span>
     </p>
     <div className="outlook" role="list" aria-label="Weekly outlook" aria-describedby={helpId}>
       {weeks.map((w, i) => {

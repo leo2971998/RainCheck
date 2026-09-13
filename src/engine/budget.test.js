@@ -56,13 +56,14 @@ describe('budget changes stay separate from bank records', () => {
   it('does not invent an extra cent when calculating the required contribution', () => {
     expect(goalPlan(h, {}, { target: 800.07, saved: 800, targetDate: '2026-10-03' }).required).toBe(0.07);
   });
-  it('edits the starting goal and preserves it when an active alternative is removed', () => {
+  it('preserves the starting idea without silently funding it when the old active goal is removed', () => {
     const baseline = readGoal({ ...goal, label: 'Rainy day fund' }, h.today);
     let plan = applyPatch(emptyPlan(), goalPatch(BASE_GOAL, baseline, 200)).plan;
     expect(householdFor(h, plan).goal.label).toBe('Rainy day fund');
     plan = applyPatch(plan, goalPatch('goal-trip', readGoal(goal, h.today), 200)).plan;
     const removed = applyPatch(plan, removeGoalPatch(h, plan, 'goal-trip'));
-    expect(householdFor(h, removed.plan).goal.label).toBe('Rainy day fund');
+    expect(householdFor(h, removed.plan).fundedGoals).toEqual([]);
+    expect(goalChoices(h, removed.plan)[0].label).toBe('Rainy day fund');
     expect(goalChoices(h, removed.plan)).toHaveLength(1);
     expect(householdFor(h, revert(removed.plan, removed.entry)).goal.label).toBe('Trip');
   });

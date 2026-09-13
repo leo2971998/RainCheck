@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { Icon, money, prettyIso } from '../components/ui.jsx';
 import Drawer from '../components/Drawer.jsx';
 import { reviewNotice } from '../engine/changes.js';
-import { simulate, capacity, goalAt, hypothetical } from '../engine/forecast.js';
-import { householdFor } from '../engine/plan.js';
+import { simulate, capacity, goalAt, goalPlan, hypothetical } from '../engine/forecast.js';
+import { householdFor, scenarioFor } from '../engine/plan.js';
 
 /**
  * Bring in a notice the user has received.
@@ -29,9 +29,10 @@ export default function NoticeDrawer({ h, base, plan, cap, change, initialText =
     if (!review?.change || !bill) return null;
     const record = { ...review.change, increase: review.change.to - bill.amount, importedAt: h.today, noticeText: text };
     const after = householdFor(base, { ...plan, billChanges: { ...plan.billChanges, [bill.id]: record } });
-    const scenario = hypothetical(plan, { contribution: plan.contribution ?? h.goal.planned });
+    const scenario = after.fundedGoals ? scenarioFor(after, plan) : hypothetical(plan, { contribution: plan.contribution ?? h.goal.planned });
     const capAfter = capacity(after, scenario);
-    return { record, low: simulate(after, scenario).low, cap: capAfter, goal: goalAt(after, capAfter) };
+    return { record, low: simulate(after, scenario).low, cap: capAfter,
+      goal: after.fundedGoals ? goalPlan(after, scenario, after.goal) : goalAt(after, capAfter) };
   }, [review, bill, base, plan, h, text]);
 
   const add = () => {
@@ -114,9 +115,10 @@ export default function NoticeDrawer({ h, base, plan, cap, change, initialText =
                   <span className="fine">{prettyIso(outcome.low.key)}</span></div>
                 <div><span className="k">Contribution supported</span><b>{money(outcome.cap)}</b>
                   <span className="fine">now {money(cap)}</span></div>
-                <div><span className="k">Goal reaches</span><b>{money(outcome.goal.projected)}</b>
+                <div><span className="k">{outcome.goal.shared ? 'Combined goal projection' : 'Goal reaches'}</span><b>{money(outcome.goal.projected)}</b>
                   <span className="fine">{outcome.goal.onTarget ? 'on target' : `${money(outcome.goal.gap)} short`}</span></div>
               </div>
+              {outcome.goal.shared && <div className="fine">Each goal is checked at its own deadline. Goal contributions stay unchanged until you edit them; this projection can still leave checking below its buffer.</div>}
             </div>
           )}
 

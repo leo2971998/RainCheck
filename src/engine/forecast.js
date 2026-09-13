@@ -2,6 +2,7 @@
 // The forecast engine. Pure functions, no React, no wall-clock dates.
 import { purchaseSchedule } from './purchases.js';
 import { latestBillEstimate } from './bill-reviews.js';
+import { goalPayments, monthlyGoalDates } from './goal-funding.js';
 
 export const iso = d => d.toISOString().slice(0, 10);
 export const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
@@ -76,6 +77,7 @@ export function simulate(h, sc = {}, { days: dayCount } = {}) {
   const monthlySpend = h.allowances.reduce((a, x) => a + x.monthly - (sc.cuts?.[x.id] || 0), 0);
   const dailySpend = monthlySpend / 30;
   const purchases = purchaseSchedule(h, sc);
+  const sharedPayments = h.fundedGoals ? goalPayments(h, sc, iso(addDays(start, windowDays - 1))) : null;
 
   const days = [];
   let balance = h.checking;
@@ -96,7 +98,12 @@ export function simulate(h, sc = {}, { days: dayCount } = {}) {
       events.push({ label: r.label, amt: -amt, bill: true, big: amt >= 100, id: r.id });
     }
 
-    if (contributionOn.has(key) && sc.contribution > 0) {
+    if (sharedPayments) {
+      for (const payment of sharedPayments.filter(p => p.date === key)) {
+        balance -= payment.amount;
+        events.push({ label: `${payment.label} savings`, amt: -payment.amount, transfer: true, goalId: payment.goalId });
+      }
+    } else if (contributionOn.has(key) && sc.contribution > 0) {
       balance -= sc.contribution;
       events.push({ label: 'Savings contribution', amt: -sc.contribution, transfer: true });
     }
@@ -123,10 +130,12 @@ export function simulate(h, sc = {}, { days: dayCount } = {}) {
     bills: round2(month.reduce((a, d) => a + d.events.filter(e => e.bill).reduce((s, e) => s - e.amt, 0), 0)),
     everyday: round2(month.reduce((a, d) => a + d.events.filter(e => e.everyday).reduce((s, e) => s - e.amt, 0), 0)),
     purchases: round2(month.reduce((a, d) => a + d.events.filter(e => e.purchase).reduce((s, e) => s - e.amt, 0), 0)),
-    savings: sc.contribution,
+    savings: sharedPayments ? round2(month.reduce((a, d) => a + d.events.filter(e => e.transfer).reduce((s, e) => s - e.amt, 0), 0)) : sc.contribution,
   };
 
-  return { days, low, worst, dailySpend: round2(dailySpend), monthlySpend, cash, contributionDate: firstPayday, contributionDates: [...contributionOn] };
+  const scheduledDates = sharedPayments ? [...new Set(sharedPayments.map(p => p.date))].sort() : [...contributionOn];
+  return { days, low, worst, dailySpend: round2(dailySpend), monthlySpend, cash,
+    contributionDate: sharedPayments ? scheduledDates[0] ?? null : firstPayday, contributionDates: scheduledDates };
 }
 
 /**
@@ -151,6 +160,7 @@ export function hypothetical(sc, changes = {}) {
  * future months is an extrapolation — see `goalAt`, which labels it as one.
  */
 export function capacity(h, sc = {}, max = 600, step = 5) {
+  if (h.fundedGoals) return sharedCapacity(h, sc);
   for (let c = max; c >= 0; c -= step)
     if (simulate(h, { ...sc, contribution: c }).low.balance >= h.cushion) return c;
   return 0;
@@ -277,6 +287,7 @@ export function affordableOver(h, sc, schedule, max = 600, step = 5, throughDate
  * Contribution counts are a consequence of that, not the way the user states it.
  */
 export function goalPlan(h, sc, { target, targetDate, saved, contribution = null }) {
+  if (h.fundedGoals) return sharedGoalPlan(h, sc);
   const schedule = scheduleUntil(h, targetDate);
   const left = schedule.length;
   const remaining = Math.max(0, target - saved);
@@ -298,6 +309,55 @@ export function goalPlan(h, sc, { target, targetDate, saved, contribution = null
       ? `Checked against every bill and paycheck through ${longIso(check.checkedThrough)}. Paychecks beyond the next three repeat your current cadence.`
       : 'No contribution is scheduled before this deadline. Choose a later date to explore future savings.',
   };
+}
+
+// Capacity for shared goals means how much of THIS allocation mix fits, not permission to
+// change the monthly amounts. Only a confirmed goal edit changes the saved allocations.
+function sharedCapacity(h, sc, days = h.windowDays) {
+  const total = h.fundedGoals.reduce((s, g) => s + (g.saved < g.target ? Math.round(g.planned * 100) : 0), 0);
+  if (!total) return 0;
+  const scaled = cents => h.fundedGoals.map(g => ({ ...g,
+    planned: g.saved < g.target ? Math.floor(cents * Math.round(g.planned * 100) / total) / 100 : 0 }));
+  const fits = cents => {
+    const goals = scaled(cents);
+    return simulate({ ...h, fundedGoals: goals }, sc, { days }).low.balance >= h.cushion;
+  };
+  if (fits(total)) return total / 100;
+  let low = 0, high = total;
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2);
+    if (fits(mid)) low = mid; else high = mid - 1;
+  }
+  return round2(scaled(low).reduce((s, g) => s + g.planned, 0));
+}
+
+function sharedGoalPlan(h, sc) {
+  const targetDate = h.goal.targetDate;
+  const horizonDays = Math.max(h.windowDays, isoDaysBetween(h.today, targetDate) + 3);
+  const income = projectIncome({ ...h, income: sc.income || h.income }, iso(addDays(new Date(h.today + 'T12:00:00'), horizonDays - 1)));
+  const scenario = { ...sc, income };
+  const payments = goalPayments(h, scenario, targetDate);
+  const check = simulate(h, scenario, { days: horizonDays });
+  const supported = sharedCapacity(h, scenario, horizonDays);
+  const goals = h.fundedGoals.map(g => {
+    const own = payments.filter(p => p.goalId === g.id);
+    const possibleDates = monthlyGoalDates(income, h.today, g.targetDate);
+    const remaining = round2(Math.max(0, g.target - g.saved));
+    const projected = round2(g.saved + own.reduce((s, p) => s + p.amount, 0));
+    return { id: g.id, label: g.label, target: g.target, targetDate: g.targetDate, saved: g.saved,
+      contribution: g.saved >= g.target ? 0 : g.planned, payments: own, schedule: own.map(p => p.date),
+      projected, gap: round2(Math.max(0, g.target - projected)),
+      required: remaining === 0 ? 0 : possibleDates.length ? Math.ceil(Math.round(remaining * 100) / possibleDates.length) / 100 : null };
+  });
+  const sum = key => round2(goals.reduce((s, g) => s + g[key], 0));
+  const schedule = [...new Set(payments.map(p => p.date))];
+  const gap = sum('gap'), fits = check.low.balance >= h.cushion;
+  return { shared: true, goals, payments, schedule, left: schedule.length,
+    target: sum('target'), targetDate, saved: sum('saved'), projected: sum('projected'),
+    contribution: sum('contribution'), required: goals.some(g => g.required === null) ? null : sum('required'),
+    supported, gap, onTarget: gap === 0, feasible: gap === 0 && fits, fits,
+    low: check.low, checkedThrough: targetDate, horizonDays,
+    assumption: 'Each goal has its own deadline. All scheduled savings are checked together against expected income, bills and spending. Contributions stop at the target amount or deadline. Future income and spending are estimates.' };
 }
 
 /** Keeping the current spending plan: when would the goal actually be reached? */

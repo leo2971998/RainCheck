@@ -16,7 +16,18 @@ export default function ForecastPage({ h, sc, plan, change, sim, cap }) {
             </tbody></table></div>
         </div>
         <div className="grid" style={{ gap: 18 }}>
-          <div className="card"><h2>Assumptions</h2><div className="kv"><span className="k">Cushion</span><span className="v">{money(h.cushion)}</span><span className="k">Usual everyday spending</span><span className="v">{money(sim.dailySpend)}/day</span><span className="k">Savings contribution</span><span className="v">{money(sc.contribution)}{sim.contributionDate ? ` on ${prettyDate(new Date(sim.contributionDate + 'T12:00:00'))}` : ''}</span><span className="k">Supported contribution</span><span className="v">{money(cap)}</span></div><div className="fine">Supported = the largest contribution that keeps every day at or above the cushion. Spending covered by an allowance moves to the planned purchase date instead of being counted twice.</div></div>
+          <div className="card"><h2>Assumptions</h2>
+            <div className="kv">
+              <span className="k">Checking safety buffer</span><span className="v">{money(h.cushion)}</span>
+              <span className="k">Usual everyday spending</span><span className="v">{money(sim.dailySpend)}/day</span>
+              <span className="k">{h.fundedGoals ? 'Total monthly goal saving' : 'Savings contribution'}</span>
+              <span className="v">{money(sc.contribution)}{!h.fundedGoals && sim.contributionDate ? ` on ${prettyDate(new Date(sim.contributionDate + 'T12:00:00'))}` : ''}</span>
+              <span className="k">{h.fundedGoals ? 'Monthly saving that fits' : 'Supported contribution'}</span><span className="v">{money(cap)}</span>
+            </div>
+            <div className="fine">{h.fundedGoals
+              ? 'The amount that fits is a portion of your current goal contributions, checked together against this forecast. It is not an automatic change. Each goal stops at its target or deadline.'
+              : 'Supported = the largest contribution that keeps every day at or above the cushion.'} Spending covered by an allowance moves to the planned purchase date instead of being counted twice.</div>
+          </div>
           <IncomeList h={h} plan={plan} change={change} />
         </div>
       </div>

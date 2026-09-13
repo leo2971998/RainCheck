@@ -133,9 +133,9 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
     });
     return {
       ...g,
-      accepted: plan.contribution != null,
+      accepted: plan.goalFunding != null || plan.contribution != null,
       targetLabel: monthOf(g.targetDate),
-      keepSpending: dateToReach(h, sc, { target: h.goal.target, saved: h.goal.saved, contribution: g.supported }),
+      keepSpending: g.shared ? null : dateToReach(h, sc, { target: h.goal.target, saved: h.goal.saved, contribution: g.supported }),
     };
   }, [h, sc, plan.contribution]);
 
@@ -274,7 +274,7 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
         </div>}
         {backTo && page !== backTo && <button className="back-link" onClick={() => navigate(backTo)}><i className="back-ic"><Icon n="arrow" s={14} /></i>Back to Today</button>}
         <GoalContext page={page} h={h} goal={goal} open={open} />
-        {page === 'dashboard' && <Dashboard h={h} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
+        {page === 'dashboard' && <Dashboard h={h} plan={plan} sc={sc} change={change} sim={sim} previewSim={previewSim} preview={preview} cap={cap} goal={goal} alerts={alerts} options={options} waiting={waiting} onReviewNotice={reviewNoticeItem} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} open={open} history={history} onUndo={undo} found={found} setFound={setFound} />}
         {page === 'alerts' && <AlertsPage h={h} sc={sc} alerts={alerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} found={found} setFound={setFound} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} />}
         {page === 'purchases' && <PurchasesPage h={h} available={purchasesAvailable} open={open} refresh={refresh} />}

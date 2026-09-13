@@ -20,7 +20,8 @@ function outcomeOf(h, sc, changes) {
   const sim = simulate(h, scenario);
   const goal = goalPlan(h, scenario, { target: h.goal.target, targetDate: changes.goalDate ?? h.goal.targetDate, saved: h.goal.saved, contribution: scenario.contribution ?? sc.contribution });
   return {
-    contribution: scenario.contribution ?? sc.contribution,
+    contribution: goal.contribution,
+    shared: !!goal.shared,
     low: sim.low.balance,
     lowDate: sim.low.key,
     meetsCushion: sim.low.balance >= h.cushion,
@@ -42,7 +43,7 @@ export function buildOptions(h, sc, cap, protectedIds = {}) {
   const planned = h.goal.planned;
 
   // A. Contribute what the window can actually carry.
-  options.push({
+  if (!h.fundedGoals) options.push({
     id: 'keep',
     title: 'Keep everyday spending as it is',
     detail: `Contribute $${cap} a month instead of $${planned}.`,
@@ -63,7 +64,7 @@ export function buildOptions(h, sc, cap, protectedIds = {}) {
         title: `Reduce ${trimmed.a.label.toLowerCase()} by $${trimmed.cut} a month`,
         detail: `$${trimmed.a.monthly} → $${trimmed.a.monthly - trimmed.cut}, which carries the $${planned} contribution.`,
         note: 'Only allowances you have not protected are offered.',
-        apply: { cuts: { [trimmed.a.id]: trimmed.cut }, contribution: planned, label: `${trimmed.a.label} trimmed $${trimmed.cut}/month` },
+        apply: { cuts: { [trimmed.a.id]: trimmed.cut }, ...(!h.fundedGoals ? { contribution: planned } : {}), label: `${trimmed.a.label} trimmed $${trimmed.cut}/month` },
         outcome: outcomeOf(h, sc, { cuts: { [trimmed.a.id]: trimmed.cut }, contribution: planned }),
       }
     : { id: 'reduce', title: 'Reduce an allowance', detail: 'Every allowance is protected, so there is nothing to trim.', disabled: true });
@@ -81,7 +82,7 @@ export function buildOptions(h, sc, cap, protectedIds = {}) {
       id: 'renewal',
       conditional: true,
       title: `Cancel the ${renewal.label.toLowerCase()} before it renews`,
-      detail: `$${renewal.amount} is due on ${prettyDate(renewal.dueOn)}. If you cancel and the provider confirms, the plan would carry $${Math.min(capIf, planned)} a month.`,
+      detail: h.fundedGoals ? `$${renewal.amount} is due on ${prettyDate(renewal.dueOn)}. Preview removing that charge while leaving every goal contribution unchanged.` : `$${renewal.amount} is due on ${prettyDate(renewal.dueOn)}. If you cancel and the provider confirms, the plan would carry $${Math.min(capIf, planned)} a month.`,
       note: 'Accepting this records your intention. Your forecast will not change until you confirm the cancellation went through.',
       apply: { pendingCancel: { [renewal.id]: true }, label: `${renewal.label} cancellation pending confirmation` },
       outcome: outcomeOf(h, sc, { cancelled: { [renewal.id]: true }, contribution: Math.min(capIf, planned) }),
@@ -90,7 +91,7 @@ export function buildOptions(h, sc, cap, protectedIds = {}) {
 
   // D. Keep the spending, and let the goal take the time it actually needs.
   const reach = dateToReach(h, sc, { target: h.goal.target, saved: h.goal.saved, contribution: cap });
-  if (reach.date && reach.date !== h.goal.targetDate) {
+  if (!h.fundedGoals && reach.date && reach.date !== h.goal.targetDate) {
     options.push({
       id: 'date',
       title: 'Give the goal more time',

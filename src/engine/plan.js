@@ -13,6 +13,7 @@
 // "this key did not exist before" has to be representable in JSON. `undefined` is dropped by
 // JSON.stringify, so a reloaded history entry forgot that Undo should REMOVE a newly added key —
 // a first cancellation or imported change survived its own undo.
+import { fundedGoals, combinedGoal } from './goal-funding.js';
 const ABSENT = '__raincheck_absent__';
 
 const MERGED = ['cuts', 'cancelled', 'pendingCancel', 'treatAsNewPrice', 'whatIf', 'billChanges', 'billReviews', 'paid', 'adopted', 'dismissed', 'goals', 'subscriptions'];
@@ -33,6 +34,7 @@ export function emptyPlan() {
     dismissed: {},          // id → a proposal the user rejected, so it is not offered again
     income: null,
     goalId: null, goals: {}, subscriptions: {},
+    goalFunding: null,      // null preserves the legacy plan until a shared-goal edit is confirmed
   };
 }
 
@@ -90,7 +92,7 @@ export function undoLatest(plan, history, expectedAt = null) {
 
 /** The scenario the forecast runs on: the plan, with the scheduled contribution filled in. */
 export function scenarioFor(h, plan) {
-  return { ...plan, contribution: plan.contribution ?? h.goal.planned };
+  return { ...plan, contribution: h.fundedGoals ? h.goal.planned : plan.contribution ?? h.goal.planned };
 }
 
 /**
@@ -136,6 +138,11 @@ export function householdFor(base, plan) {
 
   const unchanged = selected === base.goal && target === base.goal.target && targetDate === base.goal.targetDate
     && cushion === base.cushion && income === base.income && withAdopted === base.recurring && allowances === base.allowances;
+  if (plan.goalFunding != null) {
+    const goals = fundedGoals(base, plan);
+    return { ...base, cushion, income, recurring: withAdopted, allowances,
+      fundedGoals: goals, goal: combinedGoal(base, goals) };
+  }
   if (unchanged) return base;
   return { ...base, cushion, income, recurring: withAdopted, allowances, goal: { ...base.goal, label: selected.label, target, targetDate } };
 }

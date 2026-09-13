@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon, money, prettyIso } from '../components/ui.jsx';
-import { goalAt } from '../engine/forecast.js';
+import { goalAt, goalPlan } from '../engine/forecast.js';
+import { scenarioFor } from '../engine/plan.js';
 import { questionFor } from '../engine/changes.js';
 import Drawer from '../components/Drawer.jsx';
 
@@ -14,7 +15,7 @@ export default function BillDrawer({ h, notice, billId, plan, change, cap, onCom
   if (!bill) return null;
   const billChange = bill.change;
   const increase = (plan.whatIf?.[bill?.id] ?? bill?.change?.to) - (bill?.amount ?? 0);
-  const goal = goalAt(h, cap);
+  const goal = h.fundedGoals ? goalPlan(h, scenarioFor(h, plan), h.goal) : goalAt(h, cap);
   // An amount the user typed is an assumption. The notice establishes its own figure, and the
   // app must not keep claiming the provider confirmed a number they never wrote.
   const isWhatIf = increase !== billChange.increase;
@@ -65,10 +66,11 @@ export default function BillDrawer({ h, notice, billId, plan, change, cap, onCom
 
         <h3>What it changes in your plan</h3>
         <div className="ba">
-          <div><span className="k">Supported contribution</span><b>{money(cap)}</b><span className="fine">was {money(h.goal.planned)}</span></div>
-          <div><span className="k">Goal at target date</span><b>{money(goal.projected)}</b>
+          <div><span className="k">{goal.shared ? 'Monthly saving that fits' : 'Supported contribution'}</span><b>{money(cap)}</b><span className="fine">{goal.shared ? 'planned' : 'was'} {money(h.goal.planned)}</span></div>
+          <div><span className="k">{goal.shared ? 'Combined goal projection' : 'Goal at target date'}</span><b>{money(goal.projected)}</b>
             <span className="fine">{goal.gap ? `${money(goal.gap)} short of ${money(h.goal.target)}` : 'on target'}</span></div>
         </div>
+        {goal.shared && <div className="fine">Each goal is checked at its own deadline. Goal contributions stay unchanged until you edit them; this projection can still leave checking below its buffer.</div>}
 
         <h3>Try a different amount</h3>
         <div className="row">

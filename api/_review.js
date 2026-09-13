@@ -3,6 +3,7 @@ import { emptyPlan, applyPatch } from '../src/engine/plan.js';
 import { budgetImpact, readGoal, readSubscription, planningLimit } from '../src/engine/budget.js';
 import { purchaseImpact } from '../src/engine/purchase-impact.js';
 import { billReviewKey, NEXT_STEPS } from '../src/engine/bill-reviews.js';
+import { validateFunding } from '../src/engine/goal-funding.js';
 
 export const householdVersion = base => createHash('sha256').update(JSON.stringify(base)).digest('hex');
 const fail = () => { throw new Error('This plan contains a value the review cannot use. Check its amounts and dates.'); };
@@ -39,6 +40,16 @@ export function readReviewPlan(raw, base) {
   for (const k of ['contribution', 'goalTarget', 'cushion']) if (p[k] !== null) p[k] = amount(p[k]);
   if (p.goalDate !== null) p.goalDate = date(p.goalDate, base);
   p.goals = map(p.goals, value => value === null ? null : readGoal(value, base.today));
+  if (p.goalFunding !== null) {
+    p.goalFunding = map(p.goalFunding, v => {
+      if (v === null) return null;
+      object(v);
+      if (Object.keys(v).some(k => !['monthly', 'saved', 'active'].includes(k))) fail();
+      return { monthly: amount(v.monthly), saved: amount(v.saved), active: boolean(v.active) };
+    });
+    validateFunding(base, p);
+    if (p.contribution !== null || p.goalDate !== null || p.goalTarget !== null || p.goalId !== null) fail();
+  }
   if (p.goalId !== null && p.goalId !== 'emergency-fund' && !p.goals[p.goalId]) fail();
   p.subscriptions = map(p.subscriptions, (v, id) => {
     if (!/^sub-[a-z0-9-]+$/.test(id)) fail();

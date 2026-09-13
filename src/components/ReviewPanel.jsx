@@ -9,8 +9,9 @@ const factNames = { lowCents: 'Checking forecast', monthlyBillsCents: 'Monthly b
   cushionCents: 'Checking cushion', windowDays: 'Forecast window', asOf: 'Data date' };
 const sourceName = path => path.startsWith('evidence.') ? 'Saved bank evidence' : factNames[path.split('.').at(-1)] || 'Calculator';
 
-export function ReviewAnswer({ review, retrieval, historical = false }) {
+export function ReviewAnswer({ review, retrieval, impact, historical = false }) {
   const f = review.facts, a = f.after;
+  const shared = impact?.after?.shared;
   const status = budgetStatus({ low: a.lowCents / 100, fits: a.contributionFits,
     gap: Math.max(0, a.goalTargetCents - a.goalProjectedCents) / 100 }, f.cushionCents / 100);
   const evidence = retrieval?.evidence || f.evidence || [];
@@ -24,7 +25,7 @@ export function ReviewAnswer({ review, retrieval, historical = false }) {
         <div><dt>Your cushion</dt><dd>{budgetMoney(f.cushionCents / 100)}</dd></div>
         <div><dt>Planned monthly saving</dt><dd>{budgetMoney(a.contributionCents / 100)}</dd></div>
         {a.plannedPurchasesCents > 0 && <div><dt>One-time purchases · {f.windowDays} days</dt><dd>{budgetMoney(a.plannedPurchasesCents / 100)}</dd></div>}
-        <div><dt>Goal projection*</dt><dd>{budgetMoney(a.goalProjectedCents / 100)}</dd><small className="fine">Target {budgetMoney(a.goalTargetCents / 100)} by {budgetDate(a.goalDate)}</small></div>
+        <div><dt>{shared ? 'Combined goal projection*' : 'Goal projection*'}</dt><dd>{budgetMoney(a.goalProjectedCents / 100)}</dd><small className="fine">Target {budgetMoney(a.goalTargetCents / 100)}{shared ? ' across separate deadlines' : ` by ${budgetDate(a.goalDate)}`}</small></div>
       </dl>
       {f.purchaseWeek && <p>Lowest checking in the purchase week ({budgetDate(f.purchaseWeek.startsOn)}–{budgetDate(f.purchaseWeek.endsOn)}): {budgetMoney(f.purchaseWeek.beforeLowCents / 100)} → {budgetMoney(f.purchaseWeek.afterLowCents / 100)}.</p>}
       <p className="fine">*Assumes the planned contributions are made. {!a.contributionFits && 'The calculator says those contributions do not keep your cushion intact. '}
@@ -92,7 +93,7 @@ export default function ReviewPanel({ baseVersion, plan, patch = {}, kind = 'pla
     {saved && <><p className="review-question"><b>Question in this saved review</b>{saved.facts.question || 'Explain this budget preview.'}</p>
       <ReviewAnswer review={saved} historical /><p><b>Ask about your current plan below.</b> New answers use your current decisions, not the saved preview above.</p></>}
     <div className="review-conversation" aria-label="Conversation">
-      {messages.map(m => <div key={m.key}><p className="review-question"><b>You</b>{m.question}</p><ReviewAnswer review={m.review} retrieval={m.retrieval} /></div>)}
+      {messages.map(m => <div key={m.key}><p className="review-question"><b>You</b>{m.question}</p><ReviewAnswer review={m.review} retrieval={m.retrieval} impact={m.impact} /></div>)}
     </div>
     <div ref={end} />
     {ready === null ? <p role="status">Checking the review connection…</p> : !ready || !baseVersion ? <p className="alert">{checkError ? 'The review connection could not be checked.' : 'AI review is available with bank data in the local test workspace. Your calculator still works.'} {checkError && <button className="link" onClick={check}>Try again</button>}</p> : <form className="review-compose" onSubmit={send}>

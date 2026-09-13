@@ -13,7 +13,7 @@ const ROWS = [
   { key: 'low', label: 'Lowest projected balance', fmt: o => money(o.low), sub: o => prettyIso(o.lowDate) },
   { key: 'meetsCushion', label: 'Keeps your checking target', fmt: (o, h) => o.meetsCushion ? 'Yes' : 'No', tone: o => o.meetsCushion ? 'good' : 'bad' },
   { key: 'goalProjected', label: 'Goal reaches', fmt: o => money(o.goalProjected),
-    sub: o => `by ${o.goalDate ? prettyIso(o.goalDate) : '—'} · ${o.onTarget ? 'on target' : `${money(o.goalGap)} short`}` },
+    sub: o => `${o.shared ? 'Across separate goal deadlines' : `by ${o.goalDate ? prettyIso(o.goalDate) : '—'}`} · ${o.onTarget ? 'on target' : `${money(o.goalGap)} short`}` },
 ];
 
 export default function CompareDrawer({ h, sc, cap, options, current, preview, previewSim, previewGoal, setPreviewId, protectedIds, setProtectedIds, onApply, onClose }) {

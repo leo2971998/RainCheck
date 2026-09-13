@@ -18,9 +18,9 @@ export default function GoalContext({ page, h, goal, open }) {
   return <section className="goal-context" aria-label="Connected savings goal">
     <div className="goal-context-heading">
       <Icon n="target" s={19} />
-      <div><b>{h.goal.label}</b><p>{money(h.goal.target)} by {prettyIso(goal.targetDate)} · planned {money(goal.contribution)}/month</p></div>
+      <div><b>{h.goal.label}</b><p>{goal.shared ? `${goal.goals.length} goals · ${money(h.goal.target)} combined target` : `${money(h.goal.target)} by ${prettyIso(goal.targetDate)}`} · planned {money(goal.contribution)}/month</p></div>
       <span className={'pill ' + (!goal.fits || goal.gap > 0 ? 'warn' : 'good')}>{status}</span>
-      <button className="btn ghost sm" onClick={() => open('page:goals')}>View goal</button>
+      <button className="btn ghost sm" onClick={() => open('page:goals')}>{goal.shared ? 'View goals' : 'View goal'}</button>
     </div>
     <p className="goal-context-note">{section[2]}</p>
   </section>;
@@ -28,8 +28,8 @@ export default function GoalContext({ page, h, goal, open }) {
 
 export function PlanConnections({ open }) {
   return <details className="plan-connections">
-    <summary>How your goal connects to your money</summary>
-    <p>Set an amount and a date. We compare the monthly saving needed with what fits after expected bills and living costs, while keeping your checking target.</p>
+    <summary>How your goals connect to your money</summary>
+    <p>Give each goal a target, deadline and monthly amount. We check the combined savings against expected bills and living costs. The checking buffer covers timing gaps; an emergency fund is a separate savings goal.</p>
     <ol>{sections.map(([id, label, description]) => <li key={id}>
       <button className="link" onClick={() => open(`page:${id}`)}>{label}<Icon n="arrow" s={14} /></button>
       <p>{description}</p>

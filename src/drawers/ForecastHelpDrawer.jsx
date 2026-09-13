@@ -45,7 +45,7 @@ export default function ForecastHelpDrawer({ h, sc, sim, options = [], current, 
     </section>
     <section className="grid" style={{ gap: 10 }}>
       <h3>2. Preview a change</h3>
-      <p>Compare saving less for now or reducing optional spending. See the effect on checking and your savings goal before deciding.</p>
+      <p>{h.fundedGoals ? 'Review the monthly amount for each goal or compare optional spending changes. We check all goals together; you choose what changes.' : 'Compare saving less for now or reducing optional spending. See the effect on checking and your savings goal before deciding.'}</p>
       {option ? <div className="card rain-review-option">
         <span className="fine">Preview only · your target stays {money(h.cushion)}</span>
         <h3>One option: save less for now</h3>
@@ -58,7 +58,7 @@ export default function ForecastHelpDrawer({ h, sc, sim, options = [], current, 
           ? `${money(option.outcome.goalGap)} short of your savings goal. Protecting checking now means saving more later, cutting another cost, or allowing more time.`
           : 'This forecast still reaches your savings goal if the planned contributions are made.'}</p>
         <p className="fine">Bills and everyday spending stay unchanged. This option protects your checking target for the next {h.windowDays} days; longer-term affordability is checked separately in the review.</p>
-      </div> : options.length > 0 && <div className="alert">
+      </div> : h.fundedGoals ? <button className="btn ghost" onClick={() => open('page:goals')}>Review goal contributions</button> : options.length > 0 && <div className="alert">
         <b>Saving less alone does not close this gap.</b>
         <p>Review the income and costs above, then compare other adjustments. AI cannot make a shortfall disappear.</p>
       </div>}
@@ -69,6 +69,7 @@ export default function ForecastHelpDrawer({ h, sc, sim, options = [], current, 
         baseVersion={baseVersion} plan={plan} patch={patch} preview={!!option}
         initialQuestion={option
           ? 'Compare my rainy forecast with this lower-savings preview. Explain the checking and goal trade-off, and what I should check. Keep my checking target unchanged.'
+          : h.fundedGoals ? 'Review the combined affordability of my goals. Each goal has its own deadline and monthly amount. Explain the calculated totals, without assuming any contribution has changed. Do not lower my checking buffer to hide a warning.'
           : 'My forecast is below my checking target, and saving less alone cannot resolve it. Explain what I should check next. Do not lower the target to hide the warning.'} /></div>}
       <button className="btn" onClick={() => open('compare')}>Compare adjustments</button>
       {rows.some(r => r.label === 'Planned purchases' && r.amount < 0) &&
