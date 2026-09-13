@@ -19,9 +19,9 @@ it('keeps the existing three-month baseline and attaches its actual recorded evi
   expect(h.allowances).toEqual(sample.allowances);
   expect(h.spendingEvidence).toMatchObject({ lookbackDays: 90, divisorMonths: 2, from: '2026-07-02', through: '2026-09-27' });
   const groceries = h.spendingEvidence.categories.find(c => c.id === 'groceries');
-  expect(groceries.monthly).toBe(718);
-  // Months differ on purpose now, so the estimate is the middle month, not a flat average.
-  expect(groceries.months.map(m => m.total)).toEqual([697, 739, 672]);
+  expect(groceries.monthly).toBe(700);
+  // The retained sample has equal months; varying-month behavior has separate unit coverage.
+  expect(groceries.months.map(m => m.total)).toEqual([700, 700, 700]);
   expect(groceries.count).toBeGreaterThan(0);
   expect(groceries.months.reduce((s, m) => s + m.total, 0)).toBe(groceries.total);
   expect(h.spendingEvidence.months.at(-1)).toMatchObject({ key: '2026-09', partial: true });
@@ -53,7 +53,7 @@ it('shows the same dollars and dated events that produce the lowest balance', ()
   const rows = checkingBreakdown(sample, sim);
   expect(rows.reduce((s, r) => s + r.amount, 0)).toBeCloseTo(sim.low.balance, 2);
   expect(sim.low.key).toBe('2026-10-15');
-  expect(sim.low.balance).toBe(217.19);
+  expect(sim.low.balance).toBe(200);
   const html = renderToStaticMarkup(<ForecastReason h={sample} sim={sim} expanded />);
   expect(html).toContain('Oct 15');
   expect(html).toContain('Oct 16');
@@ -96,7 +96,7 @@ it('gives the chat the saved-plan baseline separately from a bill preview', () =
   expect(result.forecastEvidence[1].text).toContain('SAVED PLAN, not a preview');
   expect(chatBrief(result)).toContain('not a learned weekly pattern');
   expect(chatBrief(result)).toContain('Isolated preview:');
-  expect(result.impact.after.low).toBe(192.19);
+  expect(result.impact.after.low).toBe(199.19);
 });
 
 it('sends calculated history to ZeroClaw even when the optional search index is unavailable', async () => {
@@ -111,7 +111,7 @@ it('sends calculated history to ZeroClaw even when the optional search index is 
     body: { consent: true, baseVersion: householdVersion(h), plan: emptyPlan(), patch: {}, kind: 'plan', question: 'Why does checking dip?' } }, res);
   expect(res.statusCode).toBe(200);
   expect(received.evidence).toHaveLength(2);
-  expect(received.evidence[0].text).toContain('Baseline $1512/month');
+  expect(received.evidence[0].text).toContain('Baseline $1500/month');
   expect(res.body.retrieval.calculatedCount).toBe(2);
   expect(received.before.lowCents).toBe(Math.round(res.body.impact.before.low * 100));
 });

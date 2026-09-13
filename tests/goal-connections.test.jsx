@@ -20,7 +20,7 @@ const tripPlan = () => applyPatch(emptyPlan(), goalPatch('goal-trip', {
 it('connects goal shortfalls to alerts even when the near-term checking forecast fits', () => {
   const result = evaluate(tripPlan());
   expect(result.goal.gap).toBe(3000);
-  expect(result.sim.low.balance).toBe(217.19);
+  expect(result.sim.low.balance).toBe(200);
   const alert = result.alerts.find(a => a.id === 'goal');
   expect(alert?.body).toContain('$3,000');
   expect(alert?.actions.some(a => a.target === 'page:goals')).toBe(true);

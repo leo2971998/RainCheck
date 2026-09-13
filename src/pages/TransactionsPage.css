@@ -1,0 +1,8 @@
+.transaction-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.transaction-filters label { display: flex; flex: 1 1 160px; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.transaction-filters select, .transaction-filters input { width: 100%; min-width: 0; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--field); color: var(--ink); font: inherit; font-size: 14px; }
+.transaction-filters select:focus-visible { outline: 3px solid #A5B4FC; outline-offset: 2px; }
+.transaction-filters .btn { min-height: 40px; }
+.transaction-filter-summary { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 12px 0; color: var(--muted); font-size: 12px; }
+.transaction-filter-error { color: var(--ink); font-size: 13px; }
+@media (max-width: 600px) { .transaction-filters label { flex-basis: 100%; } .transaction-filters select, .transaction-filters input { font-size: 16px; min-height: 44px; } }

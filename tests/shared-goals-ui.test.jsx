@@ -10,6 +10,7 @@ import BudgetDrawer from '../src/drawers/BudgetDrawer.jsx';
 import BillDrawer from '../src/drawers/BillDrawer.jsx';
 import NoticeDrawer from '../src/drawers/NoticeDrawer.jsx';
 import ForecastPage from '../src/pages/ForecastPage.jsx';
+import { monthlyOutlook } from '../src/engine/monthly-outlook.js';
 
 // A supplied notice is a separate input, not something inferred from bank transactions.
 const notice = 'From: Northline Internet\nYour internet plan will renew at $90.00 starting with your October 1 bill.';
@@ -52,7 +53,8 @@ it('keeps bill previews and forecast assumptions consistent with separate goal c
   // made the goal look like a monthly cost. The combined figure still has to be subtracted in the
   // bottom line, which is what actually matters for "does this month work".
   const forecast = renderToStaticMarkup(<ForecastPage h={h} sc={sc} plan={plan} sim={simulate(h, sc)} cap={cap} />);
-  expect(forecast).toContain('goal savings');
-  expect(forecast).toContain('$350');
+  expect(forecast).not.toContain('goal savings');
+  const month = monthlyOutlook(h, sc, '2026-10');
+  expect(month.savings).toBe(350);
   expect(forecast).not.toContain('the largest contribution');
 });

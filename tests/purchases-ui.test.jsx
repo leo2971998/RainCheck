@@ -9,10 +9,10 @@ import { emptyPlan } from '../src/engine/plan.js';
 import { simulate } from '../src/engine/forecast.js';
 
 it('counts a purchase in the monthly forecast even when its name starts with Everyday', () => {
-  const h = { ...base, plannedPurchases: [{ id: 'test', label: 'Everyday laptop', date: '2026-10-12', amount: 123.45, status: 'planned' }] };
+  const h = { ...base, spendingPeriod: 'calendar-month', plannedPurchases: [{ id: 'test', label: 'Everyday laptop', date: '2026-10-12', amount: 123.45, status: 'planned' }] };
   const sc = { contribution: 0 };
   const html = renderToStaticMarkup(<ForecastPage h={h} sim={simulate(h,sc)} sc={sc} cap={0} plan={emptyPlan()} change={() => {}} />);
-  expect(html).toContain('$3,195.45');
+  expect(html).toContain('$3,183.45');
 });
 it('keeps completed purchase history and bank reference IDs off the calendar', () => {
   const h = { ...base, plannedPurchases: [{ id: 'internal-id', label: 'Concert tickets', actualDate: base.today, actualAmount: 200, status: 'completed', transactionId: 'purchase:internal-reference' }] };

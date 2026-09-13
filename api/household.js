@@ -56,7 +56,6 @@ function recentTransactions(snap, household) {
 
   return rows
     .sort((a, b) => b.d.localeCompare(a.d))
-    .slice(0, 30)
     .map(r => {
       if (r.k === 'ev' && counts[r.what] >= 4 && !r.note && !noted.has(r.what)) {
         noted.add(r.what);

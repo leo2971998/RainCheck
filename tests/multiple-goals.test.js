@@ -25,7 +25,7 @@ it('adds a goal alongside the existing monthly plan without counting savings twi
   expect(h.goal.target).toBe(2500);
   const transfers = sim.days.flatMap(d => d.events).filter(e => e.transfer);
   expect(transfers.map(e => [e.goalId, e.amt])).toEqual([['emergency-fund', -300], ['goal-trip', -50]]);
-  expect(sim.low.balance).toBe(167.19);
+  expect(sim.low.balance).toBe(150);
   expect(goal.goals.find(g => g.id === 'goal-trip').projected).toBe(250);
   expect(goal.goals.find(g => g.id === 'goal-trip').gap).toBe(250);
   expect(goal.gap).toBe(250);

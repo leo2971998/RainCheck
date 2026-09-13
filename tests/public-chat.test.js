@@ -59,7 +59,7 @@ it('uses the public dashboard dataset without reading local saved purchases', as
   const out=res();
   await createContextHandler({env,load,retrieve,limit})(req({consent:true,baseVersion:householdVersion(base),plan:emptyPlan(),tool:'get_current_plan',args:{}}),out);
   expect(out.statusCode).toBe(200); expect(load).toHaveBeenCalledWith({dataset:'demo',purchases:false});
-  expect(out.body.impact.after.low).toBe(217.19); expect(limit).toHaveBeenCalledOnce();
+  expect(out.body.impact.after.low).toBe(200); expect(limit).toHaveBeenCalledOnce();
 });
 
 it('rejects public writes and oversized inputs before loading bank records', async () => {

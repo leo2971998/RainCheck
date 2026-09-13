@@ -1050,7 +1050,11 @@
 .recurring-previous-month { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 13px; border-top: 1px solid color-mix(in oklab, var(--accent) 18%, var(--line)); color: var(--muted); font-size: 12px; }
 .recurring-previous-month strong { color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .recurring-year-chart { min-width: 0; padding: 22px 24px 18px; background: color-mix(in oklab, var(--surface) 74%, transparent); }
-.recurring-year-chart .section-heading { margin-bottom: 8px; }
+.recurring-year-chart .section-heading { align-items: center; margin-bottom: 8px; }
+.recurring-range { display: grid; gap: 4px; color: var(--muted); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.recurring-range select { min-height: 40px; padding: 7px 32px 7px 11px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--field); color: var(--ink); font: 650 12px var(--body); text-transform: none; letter-spacing: 0; cursor: pointer; }
+.recurring-range select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .recurring-chart-scroll { min-width: 0; overflow-x: auto; padding-top: 4px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 .recurring-year-chart ol { display: grid; grid-template-columns: repeat(12, minmax(38px, 1fr)); gap: 7px; min-width: 610px; height: 166px; margin: 0; padding: 0; list-style: none; }
 .recurring-year-chart li { display: grid; grid-template-rows: 18px minmax(0, 1fr) 18px; gap: 5px; min-width: 0; text-align: center; }
@@ -1097,11 +1101,16 @@
 .section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .section-heading h3 { margin: 3px 0 0; font: 750 16px var(--display); }
 .recurring-history ol { display: grid; gap: 0; list-style: none; margin: 0; padding: 0; }
-.recurring-history li { display: grid; grid-template-columns: 76px minmax(80px, 1fr) 74px; align-items: center; gap: 14px; min-height: 42px; border-top: 1px solid var(--line-2); }
+.payment-year + .payment-year { margin-top: 14px; }
+.payment-year h4 { margin: 10px 0 6px; color: var(--muted); font: 750 11px var(--body); letter-spacing: .08em; }
+.recurring-history li { display: grid; grid-template-columns: 112px minmax(80px, 1fr) 74px; align-items: center; gap: 14px; min-height: 42px; border-top: 1px solid var(--line-2); }
 .recurring-history time { color: var(--ink-2); font-size: 12.5px; }
 .recurring-history li > b { text-align: right; font-variant-numeric: tabular-nums; }
 .payment-track { height: 7px; overflow: hidden; border-radius: 999px; background: var(--line-2); }
 .payment-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--rain), var(--mint)); }
+.previous-payments { margin-top: 12px; border-top: 1px solid var(--line); }
+.previous-payments > summary { min-height: 44px; padding: 11px 0; align-content: center; color: var(--accent-2); font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.previous-payments[open] > summary { margin-bottom: 4px; }
 .recurring-empty-history { display: flex; align-items: flex-start; gap: 10px; color: var(--muted); }
 .recurring-empty-history p { margin: 0; line-height: 1.6; }
 
@@ -1146,7 +1155,7 @@
   .recurring-company > summary::after { grid-column: 3; grid-row: 1 / span 3; }
   .recurring-company-latest { grid-column: 2; }
   .recurring-company-body > section { padding: 18px 16px; }
-  .recurring-history li { grid-template-columns: 65px minmax(50px, 1fr) 64px; gap: 10px; }
+  .recurring-history li { grid-template-columns: 98px minmax(50px, 1fr) 64px; gap: 10px; }
 }
 
   /* ===== Months on record ====================================================================

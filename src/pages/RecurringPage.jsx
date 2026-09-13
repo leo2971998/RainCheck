@@ -7,16 +7,18 @@ import { needsBillReview, NEXT_STEPS } from '../engine/bill-reviews.js';
 const monthKey = date => date?.slice(0, 7);
 const monthName = key => new Date(`${key}-01T12:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 const monthRangeName = key => new Date(`${key}-01T12:00:00`).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+const paymentDate = date => new Date(`${date}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export function sortPostedPayments(payments = []) {
   return [...payments].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))
     || String(b.id || '').localeCompare(String(a.id || '')));
 }
 
-export function recurringYear(items, today) {
+export function recurringYear(items, today, selection = today.slice(0, 4)) {
   const current = monthKey(today);
   const [currentYear, currentNumber] = current.split('-').map(Number);
-  const firstSerial = currentYear * 12 + currentNumber - 12;
+  const selectedYear = /^\d{4}$/.test(selection) ? Number(selection) : currentYear;
+  const firstSerial = selection === 'last-12' ? currentYear * 12 + currentNumber - 12 : selectedYear * 12;
   const months = Array.from({ length: 12 }, (_, index) => {
     const serial = firstSerial + index;
     const year = Math.floor(serial / 12);
@@ -63,16 +65,17 @@ function CompanyStatus({ bill, plan, reviews }) {
 function PaymentHistory({ bill }) {
   const payments = sortPostedPayments(bill.paymentHistory);
   const largest = Math.max(...payments.map(payment => payment.amount), 1);
+  const recent = payments.slice(0, 6);
+  const older = payments.slice(6);
   return <section className="recurring-history" aria-label={`${bill.label} payment history`}>
     <div className="section-heading"><div><span className="review-eyebrow">Bank records</span><h3>Payment history</h3></div>
       {!!payments.length && <span className="fine">{payments.length} posted</span>}</div>
-    {payments.length ? <ol>
-      {payments.map(payment => <li key={payment.id || `${payment.date}-${payment.amount}`}>
-        <time dateTime={payment.date}>{prettyIso(payment.date)}</time>
-        <span className="payment-track" aria-hidden="true"><i style={{ width: `${Math.max(8, payment.amount / largest * 100)}%` }} /></span>
-        <b>{money(payment.amount)}</b>
-      </li>)}
-    </ol> : <div className="recurring-empty-history">
+    {payments.length ? <>
+      <PaymentGroups payments={recent} largest={largest} />
+      {!!older.length && <details className="previous-payments"><summary>Show {older.length} older payment{older.length === 1 ? '' : 's'}</summary>
+        <PaymentGroups payments={older} largest={largest} />
+      </details>}
+    </> : <div className="recurring-empty-history">
       <Icon n="list" s={18} /><p>{bill.budgetOnly
         ? 'This is a planned recurring cost. No payment has posted from the bank.'
         : 'No posted payments are available for this company yet.'}</p>
@@ -80,22 +83,45 @@ function PaymentHistory({ bill }) {
   </section>;
 }
 
-function YearPaymentChart({ months, currentMonth }) {
+function PaymentGroups({ payments, largest }) {
+  const groups = [];
+  for (const payment of payments) {
+    const year = payment.date?.slice(0, 4) || 'Date unavailable';
+    const group = groups.at(-1);
+    if (group?.year === year) group.payments.push(payment);
+    else groups.push({ year, payments: [payment] });
+  }
+  return groups.map(group => <div className="payment-year" key={group.year}>
+    <h4>{group.year}</h4>
+    <ol>{group.payments.map(payment => <li key={payment.id || `${payment.date}-${payment.amount}`}>
+      <time dateTime={payment.date}>{paymentDate(payment.date)}</time>
+      <span className="payment-track" aria-hidden="true"><i style={{ width: `${Math.max(8, payment.amount / largest * 100)}%` }} /></span>
+      <b>{money(payment.amount)}</b>
+    </li>)}</ol>
+  </div>);
+}
+
+function YearPaymentChart({ months, currentMonth, selection, years, onSelection }) {
   const largest = Math.max(...months.map(month => month.total ?? 0), 1);
   const range = months.length ? `${monthRangeName(months[0].key)} – ${monthRangeName(months.at(-1).key)}` : '';
   return <section className="recurring-year-chart" aria-labelledby="recurring-year-title">
-    <div className="section-heading"><div><span className="review-eyebrow">Payment history</span><h3 id="recurring-year-title">Last 12 months</h3></div>
+    <div className="section-heading"><div><span className="review-eyebrow">Payment history</span><h3 id="recurring-year-title">{selection === 'last-12' ? 'Last 12 months' : `${selection} payment history`}</h3>
       <span className="fine">{range} · Posted bank payments only</span></div>
+      <label className="recurring-range"><span>Show</span><select aria-label="Payment history range" value={selection} onChange={event => onSelection(event.target.value)}>
+        {years.map((year, index) => <option value={year} key={year}>{index === 0 ? `This year · ${year}` : year}</option>)}
+        <option value="last-12">Last 12 months</option>
+      </select></label></div>
     <div className="recurring-chart-scroll">
       <ol>
         {months.map(month => {
           const hasData = month.total != null;
           const state = month.current ? 'current' : month.key > currentMonth ? 'future' : hasData ? 'recorded' : 'unavailable';
-          const description = `${month.label}: ${hasData ? `${money(month.total)} paid` : 'no payment data available'}`;
+          const displayLabel = selection === 'last-12' ? `${month.label} ’${month.key.slice(2, 4)}` : month.label;
+          const description = `${monthName(month.key)}: ${hasData ? `${money(month.total)} paid` : 'no payment data available'}`;
           return <li key={month.key} className={state} aria-label={description} title={description}>
             <span className="recurring-chart-value" aria-hidden="true">{hasData ? money(month.total) : '—'}</span>
             <span className="recurring-chart-track" aria-hidden="true"><i style={{ height: hasData ? `${Math.max(6, month.total / largest * 100)}%` : 0 }} /></span>
-            <span className="recurring-chart-month" aria-hidden="true">{month.label}</span>
+            <span className="recurring-chart-month" aria-hidden="true">{displayLabel}</span>
           </li>;
         })}
       </ol>
@@ -131,6 +157,8 @@ function CompanyFollowUp({ bill, plan, notes, open }) {
 
 export default function RecurringPage({ h, sc, plan, change, open, discovered = [], onAdopt, onDismiss, billNotes = {} }) {
   const [filter, setFilter] = useState('all');
+  const currentYear = h.today.slice(0, 4);
+  const [historyRange, setHistoryRange] = useState(currentYear);
   const bills = h.recurring.map(bill => {
     const next = nextChargeDate(bill, h.today);
     return {
@@ -145,10 +173,12 @@ export default function RecurringPage({ h, sc, plan, change, open, discovered = 
   }).sort((a, b) => a.label.localeCompare(b.label));
   const posted = bills.flatMap(bill => bill.paymentHistory || []);
   const currentMonth = monthKey(h.today);
-  const year = recurringYear(posted, h.today);
-  const currentIndex = Number(h.today.slice(5, 7)) - 1;
-  const current = year[currentIndex];
-  const previous = year[currentIndex - 1];
+  const availableYears = [...new Set([currentYear, ...posted.map(payment => payment.date?.slice(0, 4)).filter(Boolean)])].sort((a, b) => b.localeCompare(a));
+  const selectedRange = historyRange === 'last-12' || availableYears.includes(historyRange) ? historyRange : currentYear;
+  const year = recurringYear(posted, h.today, selectedRange);
+  const summaryMonths = recurringYear(posted, h.today, 'last-12');
+  const current = summaryMonths.at(-1);
+  const previous = summaryMonths.at(-2);
   const reviews = Object.keys(plan.billReviews || {}).length;
   const pendingReviews = bills.filter(bill => needsBillReview(bill, sc));
   const alertRecords = bills.filter(bill => hasAlertRecord(bill, sc));
@@ -173,7 +203,7 @@ export default function RecurringPage({ h, sc, plan, change, open, discovered = 
           <p>{current?.count || 0} posted payment{current?.count === 1 ? '' : 's'}</p>
           {previous?.total != null && <div className="recurring-previous-month"><span>{previous.label} total</span><strong>{money(previous.total)}</strong></div>}
         </article>
-        <YearPaymentChart months={year} currentMonth={currentMonth} />
+        <YearPaymentChart months={year} currentMonth={currentMonth} selection={selectedRange} years={availableYears} onSelection={setHistoryRange} />
       </div>
       <div className="recurring-review-summary">
         <span className={`pill ${pendingReviews.length ? 'warn' : 'good'}`}>{pendingReviews.length ? `${pendingReviews.length} to review` : 'Reviews up to date'}</span>
@@ -194,11 +224,11 @@ export default function RecurringPage({ h, sc, plan, change, open, discovered = 
       {visibleBills.map(bill => {
         const billReviews = reviewsFor(bill, plan.billReviews);
         const lastPayment = bill.paymentHistory?.[0];
-        return <details className="recurring-company" key={bill.id} open={needsBillReview(bill, sc)}>
+        return <details className="recurring-company" key={bill.id}>
           <summary>
             <span className="recurring-company-icon"><Icon n="repeat" s={18} /></span>
             <span className="recurring-company-name"><b>{bill.label}</b><small>{bill.payee || bill.category || 'Recurring cost'}</small></span>
-            <span className="recurring-company-latest"><small>{lastPayment ? `Paid ${prettyIso(lastPayment.date)}` : 'Expected amount'}</small><b>{money(lastPayment?.amount ?? bill.amountNow)}</b></span>
+            <span className="recurring-company-latest"><small>{lastPayment ? `Paid ${paymentDate(lastPayment.date)}` : 'Expected amount'}</small><b>{money(lastPayment?.amount ?? bill.amountNow)}</b></span>
             <CompanyStatus bill={bill} plan={sc} reviews={billReviews} />
           </summary>
           <div className="recurring-company-body">

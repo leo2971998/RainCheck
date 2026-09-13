@@ -87,13 +87,17 @@ it('keeps companies with an unresolved charge collapsed on entry', () => {
 });
 
 it('shows this month as one total and builds a rolling 12-month posted-payment series', () => {
-  const payments = h.recurring.flatMap(record => record.paymentHistory || []);
+  // Explicit records keep this behavior test independent of in-progress demo seeding.
+  const payments = [
+    { date: '2025-10-01', amount: 65 }, { date: '2025-10-05', amount: 1200 },
+    { date: '2026-08-01', amount: 65 }, { date: '2026-09-01', amount: 90 },
+  ];
   const year = recurringYear(payments, h.today, 'last-12');
 
   expect(year).toHaveLength(12);
-  expect(year[0]).toMatchObject({ key: '2025-10', label: 'Oct', total: 1554, count: 7 });
-  expect(year[10]).toMatchObject({ key: '2026-08', label: 'Aug', total: 1611, count: 7 });
-  expect(year[11]).toMatchObject({ key: '2026-09', label: 'Sep', total: 1606, count: 6, current: true });
+  expect(year[0]).toMatchObject({ key: '2025-10', label: 'Oct', total: 1265, count: 2 });
+  expect(year[10]).toMatchObject({ key: '2026-08', label: 'Aug', total: 65, count: 1 });
+  expect(year[11]).toMatchObject({ key: '2026-09', label: 'Sep', total: 90, count: 1, current: true });
   expect(year.some(month => month.key > '2026-09')).toBe(false);
 
   const html = renderToStaticMarkup(<RecurringPage h={h} sc={sc} plan={plan} cap={0} open={() => {}} />);

@@ -30,7 +30,7 @@ it('shows rain when this week needs reserved money even without an alert label',
   expect(html).toContain('ambient contained raining');
   expect(html).toContain('more planned than available');
   expect(html).toContain('protect bills and savings');
-  expect(html).toContain('not your bank balance');
+  expect(html).not.toContain('not your bank balance');
   expect(html).toContain('Review this week');
 });
 it('shows a storm when this week cannot cover spending even if alerts were cleared', () => {

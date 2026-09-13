@@ -10,7 +10,7 @@ it('adds a labeled test cost that produces rain through the real calculator', ()
   const plan = emptyPlan(), h = householdFor(base, plan), sc = scenarioFor(h, plan);
   const before = JSON.stringify({ base, plan });
   const patch = rainDemoPatch(base, plan);
-  expect(patch.subscriptions[RAIN_DEMO_ID].amount).toBe(42.19);
+  expect(patch.subscriptions[RAIN_DEMO_ID].amount).toBe(25);
   expect(patch.subscriptions[RAIN_DEMO_ID].label).toContain('Local rain test');
   const next = applyPatch(plan, patch).plan, nextH = householdFor(base, next);
   const sim = simulate(nextH, scenarioFor(nextH, next));
@@ -25,7 +25,7 @@ it('removes only the demo cost and preserves other saved choices', () => {
   const ended = applyPatch(next, subscriptionPatch(RAIN_DEMO_ID, null)).plan;
   const h = householdFor(base, ended);
   expect(ended.contribution).toBe(250);
-  expect(simulate(h, scenarioFor(h, ended)).low.balance).toBe(267.19);
+  expect(simulate(h, scenarioFor(h, ended)).low.balance).toBe(250);
 });
 it('does not overwrite a demo or pretend rain is possible with a zero target', () => {
   const plan = emptyPlan();

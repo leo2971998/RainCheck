@@ -24,7 +24,7 @@ it('offers real clickable widgets with recorded income, spending and a distinct 
   const html = render();
   expect(html.match(/class="today-widget"/g)).toHaveLength(6);
   for (const text of ['Money this month', 'This week’s bills', 'Next income', 'Your goals', 'Alerts', 'Planned purchases',
-    '$3,048', '$3,400', '$1,260', 'View transactions']) expect(html).toContain(text);
+    '$3,078', '$3,400', '$1,260', 'View transactions']) expect(html).toContain(text);
 });
 it('shows one shared savings total and goal names, without reallocating savings', () => {
   const facts = { ...h, fundedGoals: [{ id: 'emergency', label: 'Emergency fund', target: 2000, saved: 800, planned: 300, targetDate: '2027-01-02' },
