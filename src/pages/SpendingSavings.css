@@ -1,47 +1,86 @@
 .spending-page { max-width: 1180px; }
 .spending-page .topbar { align-items: center; gap: 16px; }
 .spending-page .topbar h1 { margin-bottom: 5px; }
-.spending-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; color: var(--ink-2); font-size: 12px; margin: 12px 0 22px; }
+.spending-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px; color: var(--ink-2); font-size: 12px; margin: 10px 0 16px; }
+.spending-meta > details { margin-left: auto; }
+.spending-bills-note { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 5px; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.spending-bills-note b { font-size: 13px; color: var(--ink); }
+.spending-bills-note .link { display: inline-flex; align-items: center; gap: 3px; }
 .spending-meta p { margin: 0; }
 .spending-meta details { max-width: 560px; }
 .spending-meta summary { cursor: pointer; }
 .spending-meta details p { padding-top: 8px; line-height: 1.6; }
-.spending-panels { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.3fr); align-items: start; gap: 20px; }
-.spending-panel { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); min-width: 0; padding: 24px; }
+.spending-panels { display: grid; gap: 16px; }
+.spending-panel { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); min-width: 0; padding: 20px; }
 .spending-panel-heading { display: flex; gap: 12px; align-items: center; }
-.spending-panel-heading h2 { font-size: 18px; margin: 0; }
-.spending-panel-heading p { font-size: 12px; color: var(--ink-2); margin: 5px 0 0; }
-.spending-panel-icon { display: grid; place-items: center; flex: 0 0 40px; height: 40px; border-radius: 12px; color: var(--rain); background: color-mix(in oklab, var(--rain) 10%, var(--surface)); }
+.spending-panel-heading h2 { font-size: 17px; margin: 0; }
+.spending-panel-heading p { font-size: 12px; color: var(--ink-2); margin: 4px 0 0; }
+.spending-panel-icon { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 11px; color: var(--rain); background: color-mix(in oklab, var(--rain) 10%, var(--surface)); }
 .spending-expenses .spending-panel-icon { color: var(--mint); background: color-mix(in oklab, var(--mint) 10%, var(--surface)); }
-.spending-panel-total { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; padding: 24px 0 20px; border-bottom: 1px solid var(--line); }
-.spending-panel-total strong { font-size: 32px; letter-spacing: -1px; }
+.spending-goals .spending-panel-icon { color: var(--sun-deep); background: color-mix(in oklab, var(--sun) 16%, var(--surface)); }
+.spending-panel-total { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; padding: 14px 0 12px; border-bottom: 1px solid var(--line); }
+.spending-panel-total strong { font-size: 24px; letter-spacing: -.7px; }
 .spending-panel-total span { color: var(--ink-2); font-size: 12px; }
-.upcoming-bill-list, .expense-list { padding: 0; margin: 0; list-style: none; }
-.upcoming-bill-list { margin-bottom: 18px; }
-.upcoming-bill-list li { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
-.upcoming-bill-list .bill-date { color: var(--ink-2); font-size: 12px; }
-.upcoming-bill-list b { font-weight: 550; overflow-wrap: anywhere; }
-.expense-row { padding: 20px 0 14px; border-bottom: 1px solid var(--line); }
+
+/* Bills and categories are lists to scan, not rows to dwell on: tighter leading, same content. */
+.expense-list { padding: 0; margin: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr)); gap: 0 32px; }
+.expense-row { padding: 12px 0 10px; border-bottom: 1px solid var(--line-2); }
 .expense-row:last-child { border-bottom: 0; }
-.expense-row-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; margin-bottom: 12px; }
-.expense-row h3 { margin: 0; font-size: 14px; font-weight: 650; }
+.expense-row-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; margin-bottom: 7px; }
+.expense-row h3 { margin: 0; font-size: 13.5px; font-weight: 650; }
 .expense-row-heading span { font-size: 12px; color: var(--ink-2); }
-.expense-row-heading b { font-size: 15px; color: var(--ink); }
-.category-progress { display: block; width: 100%; height: 7px; appearance: none; border: 0; background: var(--line); border-radius: 5px; overflow: hidden; }
+.expense-row-heading b { font-size: 14px; color: var(--ink); }
+.category-progress { display: block; width: 100%; height: 6px; appearance: none; border: 0; background: var(--line); border-radius: 5px; overflow: hidden; }
 .category-progress::-webkit-progress-bar { background: var(--line); }
 .category-progress::-webkit-progress-value { background: var(--rain); border-radius: 5px; }
 .category-progress::-moz-progress-bar { background: var(--rain); }
 .expense-row.is-over .category-progress::-webkit-progress-value { background: var(--warn); }
 .expense-row.is-over .category-progress::-moz-progress-bar { background: var(--warn); }
-.expense-row-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
-.expense-row-foot label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; min-height: 30px; }
-.expense-row-foot input { width: 15px; height: 15px; accent-color: var(--rain); }
+.expense-row-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; font-size: 11.5px; color: var(--ink-2); margin-top: 6px; }
+.expense-row-foot label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; min-height: 24px; }
+.expense-row-foot input { width: 14px; height: 14px; accent-color: var(--rain); }
 .expense-row.is-over .expense-row-foot > span { color: var(--warn); font-weight: 650; }
 .category-history { font-size: 12px; color: var(--ink-2); }
-.category-history summary { cursor: pointer; padding: 7px 0; }
-.category-history dl { margin: 6px 0 0; display: grid; gap: 8px; }
+.category-history summary { cursor: pointer; padding: 4px 0; }
+.category-history dl { margin: 6px 0 0; display: grid; gap: 7px; }
 .category-history dl > div { display: flex; justify-content: space-between; gap: 10px; }
 .category-history dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+/* Five fields per goal; each deadline keeps its own calculated monthly amount. */
+.spending-goals { margin-top: 16px; }
+.spending-goals .spending-panel-heading { flex-wrap: wrap; }
+.spending-goals .goal-add { margin-left: auto; }
+
+.goal-rows { display: grid; }
+.goal-row { display: grid; grid-template-columns: minmax(140px, 1.5fr) minmax(90px, .9fr) minmax(118px, 1.1fr) 90px 110px 64px;
+  align-items: center; gap: 8px 14px; padding: 13px 0; border-bottom: 1px solid var(--line-2); font-size: 13px; }
+.goal-row:last-child { border-bottom: 0; }
+.goal-row-head { padding: 14px 0 7px; border-bottom: 1px solid var(--line); color: var(--muted);
+  font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.goal-row b { display: block; font-weight: 650; overflow-wrap: anywhere; }
+.goal-row small { display: block; color: var(--ink-2); font-size: 11.5px; font-weight: 450; }
+.goal-row .r { text-align: right; }
+.goal-row-saved, .goal-row-need { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.goal-row-need small { display: inline; color: var(--muted); font-size: 11px; font-weight: 550; }
+.goal-row.is-behind .goal-row-need { color: var(--warn); }
+.goal-row-when small.is-late { color: var(--warn); font-weight: 650; }
+.goal-row-progress { display: grid; gap: 4px; }
+.goal-row-progress progress { display: block; width: 100%; height: 6px; appearance: none; border: 0; background: var(--line); border-radius: 5px; overflow: hidden; }
+.goal-row-progress progress::-webkit-progress-bar { background: var(--line); }
+.goal-row-progress progress::-webkit-progress-value { background: var(--mint); border-radius: 5px; }
+.goal-row-progress progress::-moz-progress-bar { background: var(--mint); }
+.goal-row-do { justify-self: end; white-space: nowrap; }
+.goal-row-do .btn { min-height: 32px; padding: 6px 11px; font-size: 12px; }
+
+.goal-note { margin: 14px 0 0; padding: 13px 15px; border: 1px solid color-mix(in oklab, var(--warn) 32%, var(--line)); border-radius: 12px;
+  background: color-mix(in oklab, var(--warn-bg) 55%, var(--surface)); font-size: 13px; line-height: 1.6; }
+
+.goal-paused { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 7px; }
+.goal-paused li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 13px; border: 1px dashed var(--line); border-radius: 11px; font-size: 13px; }
+.goal-paused span { color: var(--ink-2); font-size: 12px; }
+.goal-paused .link { margin-left: auto; }
+.spending-undo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding: 11px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 13px; color: var(--ink-2); }
+
 .savings-form { display: grid; gap: 18px; }
 .savings-intro { color: var(--ink-2); font-size: 14px; line-height: 1.6; }
 .savings-fields { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
@@ -65,13 +104,70 @@
 .optimization-wait { text-align: center; padding: 64px 16px; }
 .optimization-wait p { color: var(--ink-2); line-height: 1.7; }
 .optimization-spinner { display: inline-block; width: 36px; height: 36px; border: 3px solid var(--line); border-top-color: var(--rain); border-radius: 50%; animation: budget-spin 1s linear infinite; }
-.savings-empty { padding: 20px 0; color: var(--ink-2); font-size: 13px; line-height: 1.6; }
+.savings-empty { padding: 18px 0; color: var(--ink-2); font-size: 13px; line-height: 1.6; }
 @keyframes budget-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .optimization-spinner { animation: none; } }
+
+@media (max-width: 1100px) {
+  /* Too narrow to compare down a column, so each goal becomes a three-line card that carries the
+     header's labels with it: name and deadline, progress, then the two amounts and the action. */
+  .goal-row-head { display: none; }
+  .goal-row { grid-template-columns: auto auto minmax(0, 1fr); gap: 9px 16px; padding: 15px 0; }
+  .goal-row-name { grid-area: 1 / 1 / 2 / 3; }
+  .goal-row-when { grid-area: 1 / 3 / 2 / 4; text-align: right; }
+  .goal-row-progress { grid-area: 2 / 1 / 3 / 4; }
+  .goal-row-saved { grid-area: 3 / 1 / 4 / 2; }
+  .goal-row-need { grid-area: 3 / 2 / 4 / 3; }
+  .goal-row-do { grid-area: 3 / 3 / 4 / 4; justify-self: end; }
+  .goal-row-saved, .goal-row-need { text-align: left; }
+  .goal-row-saved::before { content: 'Saved '; }
+  .goal-row-need::before { content: 'Needs '; }
+  .goal-row-saved::before, .goal-row-need::before { display: block; margin-bottom: 3px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+}
 @media (max-width: 760px) {
   .spending-page .topbar { align-items: flex-start; flex-direction: column; }
   .spending-panels { grid-template-columns: 1fr; gap: 14px; }
-  .spending-panel { padding: 20px; }
-  .spending-panel-total strong { font-size: 28px; }
-  .upcoming-bill-list li { gap: 8px; }
+  .spending-panel { padding: 17px; }
+  .spending-panel-total strong { font-size: 22px; }
+}
+
+/* Optimize budgets: editable limits, live totals, and a short summary. */
+.optimization-result { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in oklab, var(--rain) 5%, var(--surface)); }
+.optimization-headline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.optimization-headline b { font-size: 30px; letter-spacing: -1px; }
+.optimization-headline > span { color: var(--ink-2); font-size: 13px; }
+.optimization-headline .pill { margin-left: auto; align-self: center; }
+.optimization-result .fine { margin: 7px 0 0; }
+.optimization-note { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.6; color: var(--ink-2); }
+.optimization-problem { padding: 14px 18px; border: 1px solid var(--line); border-left: 3px solid var(--amber, #dba54d); border-radius: 12px; background: color-mix(in oklab, #dba54d 8%, var(--surface)); font-size: 13px; }
+.optimization-problem p { margin: 5px 0 0; line-height: 1.55; color: var(--ink-2); }
+.optimization-problem > div + div { margin-top: 10px; }
+.recovery-objective { margin-top: 12px; }
+.recovery-objective > label { display: flex; align-items: center; gap: 8px; font-weight: 650; }
+.recovery-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.recovery-fields label { display: grid; gap: 6px; font-size: 12px; }
+.recovery-fields input { min-width: 0; width: 100%; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font: inherit; }
+.recovery-totals { display: grid; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.recovery-totals > div { display: flex; justify-content: space-between; gap: 16px; }
+.recovery-totals dd { margin: 0; font-weight: 700; white-space: nowrap; }
+.optimization-purpose { font-size: 13px; line-height: 1.6; margin: 12px 0 0; }
+.limit-row label .limit-review { color: var(--ink); }
+.limit-rows { display: grid; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.limit-row { display: grid; grid-template-columns: minmax(0, 1fr) 68px 104px 68px; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+.limit-row:last-child { border-bottom: 0; }
+.limit-row-head { padding: 9px 14px; background: color-mix(in oklab, var(--cloud) 45%, var(--surface)); color: var(--muted);
+  font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.limit-row .r { text-align: right; }
+.limit-row label { display: grid; gap: 2px; font-size: 13px; }
+.limit-row label small { color: var(--ink-2); font-size: 11.5px; }
+.limit-row input { width: 100%; }
+.limit-now { color: var(--ink-2); font-variant-numeric: tabular-nums; font-size: 13px; }
+.limit-freed { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+.limit-freed.is-freed { color: var(--good); font-weight: 700; }
+@media (max-width: 560px) {
+  .limit-row { grid-template-columns: minmax(0, 1fr) 92px; gap: 6px 10px; }
+  .limit-row-head { display: none; }
+  .limit-row .limit-now { grid-column: 1; text-align: left; }
+  .limit-row .limit-now::before { content: 'Now '; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+  .limit-row .limit-freed { grid-column: 2; }
 }

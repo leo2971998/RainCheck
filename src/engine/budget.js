@@ -65,6 +65,7 @@ function outcome(base, plan) {
     goalLabel: h.goal.label, target: g.target, saved: g.saved, targetDate: g.targetDate, projected: g.projected,
     gap: g.gap, supported: g.supported, contribution: g.contribution, required: g.required,
     fits: g.fits, feasible: g.feasible, checkedThrough: g.checkedThrough,
+    fundingLow: g.low?.balance ?? null, fundingLowDate: g.low?.key ?? null,
     ...(g.goals ? { goals: g.goals, shared: true } : {}) };
 }
 export function budgetImpact(base, plan, patch) {

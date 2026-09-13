@@ -26,14 +26,3 @@ export default function GoalContext({ page, h, goal, open }) {
     <p className="goal-context-note">{section[2]}</p>
   </section>;
 }
-
-export function PlanConnections({ open }) {
-  return <details className="plan-connections">
-    <summary>How your goals connect to your money</summary>
-    <p>Give each goal a target, deadline and monthly amount. We check the combined savings against expected bills and living costs. The checking buffer covers timing gaps; an emergency fund is a separate savings goal.</p>
-    <ol>{sections.map(([id, label, description]) => <li key={id}>
-      <button className="link" onClick={() => open(`page:${id}`)}>{label}<Icon n="arrow" s={14} /></button>
-      <p>{description}</p>
-    </li>)}</ol>
-  </details>;
-}

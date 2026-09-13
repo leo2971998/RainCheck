@@ -292,11 +292,14 @@ describe('alerts', () => {
     expect(alert.actions[0]).toMatchObject({ target: 'page:purchases' });
   });
 
-  it('confirms an applied plan and says nothing moved', () => {
+  it('confirms the saved plan without changing account balances', () => {
+    const before = { checking: h.checking, savings: h.savings };
     const out = alertsFor(sc, { id: 'keep', label: 'Plan set to $275/month' });
     const done = out.find(a => a.id === 'applied');
     expect(done.tone).toBe('good');
-    expect(done.body).toMatch(/Nothing was transferred/);
+    expect(done.body).toBe('Plan set to $275/month');
+    expect(done.actions).toEqual([{ label: 'View savings', target: 'page:cashflow' }]);
+    expect({ checking: h.checking, savings: h.savings }).toEqual(before);
   });
 });
 

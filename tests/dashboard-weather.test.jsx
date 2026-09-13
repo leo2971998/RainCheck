@@ -1,10 +1,13 @@
 import { expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import Dashboard from '../src/pages/Dashboard.jsx';
-import { household as h } from '../data/household.sample.js';
+import { household as sample } from '../data/household.sample.js';
 import { simulate } from '../src/engine/forecast.js';
 import { weeklyBudget } from '../src/engine/weekly-budget.js';
 import { Outlook } from '../src/components/Weather.jsx';
+const h = { ...sample, today: '2026-09-28', checking: 1260, cushion: 200, spendingModel: null,
+  spendingPeriod: 'calendar-month', allowances: [{ id: 'food', label: 'Food', monthly: 1500 }],
+  recurring: [{ id: 'rent', label: 'Rent', amount: 1200, day: 15 }], income: [], activity: null };
 
 function render(alerts, extra = {}) {
   const sc = { contribution: 0 };
@@ -14,11 +17,11 @@ function currentIcon(html) {
   return html.match(/class="sky-icon on"><svg[^>]*class="wx wx-([^"]+)"/)?.[1];
 }
 
-it('keeps this week clear when an unrelated warning is open', () => {
-  expect(currentIcon(render([{ tone: 'warn' }]))).toBe('sun');
+it('adds rain when an open alert needs review', () => {
+  expect(currentIcon(render([{ tone: 'warn' }]))).toBe('rain');
 });
 it('does not mistake alert severity for a negative checking balance', () => {
-  expect(currentIcon(render([{ tone: 'good' }, { tone: 'bad' }]))).toBe('sun');
+  expect(currentIcon(render([{ tone: 'good' }, { tone: 'bad' }]))).toBe('rain');
 });
 it('shows rain when this week needs reserved money even without an alert label', () => {
   const hh = { ...h, checking: 500, income: [], recurring: [], cushion: 200 };

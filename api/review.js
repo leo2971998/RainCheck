@@ -4,9 +4,10 @@ export { localReviewAllowed } from './_local-workspace.js';
 import { calculateReview, readReviewPlan, reviewBrief, readSpendingPreferences } from './_review.js';
 import { householdFor, scenarioFor, applyPatch } from '../src/engine/plan.js';
 import { spendingEvidenceDocuments } from '../src/engine/spending-evidence.js';
-import { optimizationDraft, savingsPreview } from '../src/engine/savings-plan.js';
+import { optimizationDraft, savingsPreview, savingsNeeds } from '../src/engine/savings-plan.js';
 import { simulate } from '../src/engine/forecast.js';
 import { forecastEvidenceDocuments } from '../src/engine/forecast-explanation.js';
+import { purchaseEvidenceDocuments } from '../src/engine/purchase-impact.js';
 import { retrieveReviewEvidence } from './_review-evidence.js';
 import { requestReview, savedReview } from './_zeroclaw.js';
 
@@ -34,7 +35,7 @@ export function createHandler({ env = process.env, load: read = loadHouseholdCon
       return res.status(413).json({ message: 'This review is too large. Please shorten the question or plan.' });
     if (req.body.consent !== true) return res.status(400).json({ message: 'Please allow cloud review before sending.' });
     if (mode === 'shared' && !await checkReviewLimit(req, res, env, limit)) return;
-    let base, snapshot, impact, draft;
+    let base, snapshot, impact, draft, recovery;
     let body = req.body;
     try { ({ base, snapshot } = await read(mode === 'shared' ? { live: true } : undefined)); }
     catch { return res.status(503).json({ message: 'Bank data could not be loaded. Your plan is unchanged; please try again.' }); }
@@ -45,8 +46,9 @@ export function createHandler({ env = process.env, load: read = loadHouseholdCon
         const protectedIds = readSpendingPreferences(base, body);
         draft = optimizationDraft(base, saved, protectedIds);
         const proposed = savingsPreview(base, saved, draft, protectedIds);
+        recovery = proposed.guidance.recovery;
         const { optimize, ...input } = body;
-        body = { ...input, patch: proposed.patch, question: 'Review these proposed monthly category limits against recorded spending. Explain the trade-offs, essential and replacement costs, and why someone might accept or change the targets. Do not claim these are optimal, already saved or approved. Keep protected categories unchanged. If no reductions are supported, explain why.' };
+        body = { ...input, patch: proposed.patch, question: 'Explain whether the recovery objective is met, separately from existing goal funding. If recovery is short, say cuts do not solve the overspend and suggest reviewing purchases, editing limits or a later recovery date. Never claim goal affordability means recovery is solved. Over-budget categories stay unchanged for purchase review; costs may be one-time. Respect essentials and replacement costs. A dated cash gap is not a monthly fee. Do not claim money saved or changes approved.' };
         impact = calculateReview(base, body);
       }
     }
@@ -66,9 +68,9 @@ export function createHandler({ env = process.env, load: read = loadHouseholdCon
       const afterPlan = readReviewPlan(applyPatch(savedPlan, body.patch).plan, base);
       const afterHousehold = householdFor(base, afterPlan);
       spendingEvidence = spendingEvidenceDocuments(savedHousehold, scenarioFor(savedHousehold, savedPlan),
-        afterHousehold, scenarioFor(afterHousehold, afterPlan), readSpendingPreferences(base, body));
+        afterHousehold, scenarioFor(afterHousehold, afterPlan), readSpendingPreferences(base, body), savingsNeeds(base, savedPlan, draft?.extras), recovery);
     }
-    const evidence = [...spendingEvidence, ...calculatedEvidence, ...retrieval.evidence].slice(0, 4);
+    const evidence = [...purchaseEvidenceDocuments(impact), ...spendingEvidence, ...calculatedEvidence, ...retrieval.evidence].slice(0, 4);
     const brief = reviewBrief(impact, body, evidence);
     retrieval = { ...retrieval, evidence, calculatedCount: calculatedEvidence.length };
     try {

@@ -17,10 +17,10 @@ import { budgetMoney as money } from './BudgetImpact.jsx';
 
 const RANK = { ok: 0, tight: 1, below: 2, over: 3 };
 
-// Balance risk takes priority. A review reminder can add clouds, never invent a storm.
+// Rain means attention is needed; a storm is reserved for a projected cash shortage.
 export function forecastWeather(state, alerts = []) {
-  if (state === 'over' || state === 'below' || state === 'tight') return state;
-  return alerts.some(a => a.tone !== 'good') ? 'tight' : 'ok';
+  if (state === 'over' || state === 'below') return state;
+  return alerts.some(a => a.tone !== 'good') ? 'below' : state;
 }
 
 /** The icon a forecast state earns, and its night-time counterpart. */

@@ -71,7 +71,8 @@ it('separates a cushion shortfall from the goal outcome assumed by scheduled con
   const result=calculateChat(base,body('preview_bill',{billId:'internet',amount:25,change:'by'}));
   const brief=chatBrief(result);
   expect(brief).toContain('Projected goal savings if those contributions happen: $2,000.00');
-  expect(brief).toContain('Supported monthly savings while preserving the cushion: $275.00');
+  expect(brief).toContain('No maximum safe saving amount or spare spending allowance is provided');
+  expect(brief).not.toContain('Supported monthly savings while preserving the cushion');
   expect(brief).toContain('Do not turn a cushion warning into a claim that the goal will be missed');
   expect(brief).toContain('Goal shortfall under the scheduled contributions: $0.00');
   expect(brief).toContain('Never offer to combine previews or change savings contributions');

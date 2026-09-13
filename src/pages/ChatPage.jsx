@@ -5,6 +5,7 @@ import { Icon, money } from '../components/ui.jsx';
 import { receiveMessage } from '../chat/messages.js';
 import { chatBrief } from '../chat/brief.js';
 import { loadChatAvailability } from '../chat/availability.js';
+import { CHAT_GROUNDING, compoundPreviewRequest, questionPreview, actionRequest, ACTION_REPLY, COMPOUND_REPLY } from '../chat/grounding.js';
 import './chat.css';
 
 const suggestions = ['How does my current plan look?', 'What if my internet bill increases by $25?', 'Could I add a $20 monthly subscription?'];
@@ -38,7 +39,10 @@ function Chat({ baseVersion, plan, visible, dataset }) {
   const list = useRef(null), input = useRef(null), stick = useRef(true), lock = useRef(false);
   const allowed = useRef(false), requests = useRef(new Set()), generation = useRef(0);
   const responseText = useRef(new Map());
+  const pending = useRef(null), greetingIds = useRef(new Set()), greeted = useRef(false);
+  const lastCalculation = useRef(null), delivering = useRef(null);
   const finish = () => { lock.current = false; setBusy(false); setProgress(''); };
+  const restorePending = () => { if (pending.current) setDraft(pending.current); pending.current = null; };
   async function calculate(tool, args) {
     if (!allowed.current) return JSON.stringify({ error: 'This chat has ended. No calculation was made.' });
     const session = generation.current, controller = new AbortController(); requests.current.add(controller);
@@ -47,6 +51,7 @@ function Chat({ baseVersion, plan, visible, dataset }) {
     try {
       const result = await post('/api/chat-context', { consent: true, ...current.current, tool, args: args || {} }, controller.signal);
       if (!allowed.current || session !== generation.current) return JSON.stringify({ error: 'Chat ended. Discard this result.' });
+      lastCalculation.current = result;
       setMessages(ms => [...ms, { id: crypto.randomUUID(), role: 'calculation', result }]);
       setProgress('Putting the answer together…');
       return chatBrief(result);
@@ -63,19 +68,27 @@ function Chat({ baseVersion, plan, visible, dataset }) {
       preview_bill: args => calculate('preview_bill', args),
       preview_monthly_cost: args => calculate('preview_monthly_cost', args),
     },
-    onConnect: () => { setStarting(false); setStarted(true); },
+    onConnect: () => { if (allowed.current) { setStarting(false); setStarted(true); } },
     onMessage: ({ source, message, event_id }) => {
+      if (!allowed.current) return;
       if (source !== 'ai' || !message.trim()) return;
+      if (!greeted.current) { greetingIds.current.add(event_id); greeted.current = true; }
       setReady(true);
-      setMessages(ms => receiveMessage(ms, { event_id, text: message })); finish();
+      setMessages(ms => receiveMessage(ms, { event_id, text: message }));
+      if (!pending.current && !greetingIds.current.has(event_id)) finish();
     },
     onAgentChatResponsePart: part => {
+      if (!allowed.current) return;
+      if (!greeted.current) greetingIds.current.add(part.event_id);
       responseText.current.set(part.event_id, (responseText.current.get(part.event_id) || '') + part.text);
       setMessages(ms => receiveMessage(ms, part));
-      if (part.type === 'stop' && responseText.current.get(part.event_id)?.trim()) finish();
+      if (part.type === 'stop' && responseText.current.get(part.event_id)?.trim()) {
+        greeted.current = true; setReady(true);
+        if (!pending.current && !greetingIds.current.has(part.event_id)) finish();
+      }
     },
-    onDisconnect: () => { allowed.current = false; generation.current++; requests.current.forEach(c => c.abort()); setStarting(false); setReady(false); finish(); },
-    onError: () => { setError('The chat connection had a problem. End this chat and start a new one to try again. Your plan is unchanged.'); setStarting(false); finish(); },
+    onDisconnect: () => { allowed.current = false; generation.current++; requests.current.forEach(c => c.abort()); restorePending(); setStarting(false); setReady(false); finish(); },
+    onError: () => { setError('Chat could not connect. Send your question again to retry. Your plan is unchanged.'); stop(); },
   });
   const connected = chat.status === 'connected';
   useEffect(() => {
@@ -89,8 +102,11 @@ function Chat({ baseVersion, plan, visible, dataset }) {
   }, [availabilityCheck]);
   useEffect(() => () => { allowed.current = false; generation.current++; requests.current.forEach(c => c.abort()); chat.endSession(); }, [chat.endSession]);
   useEffect(() => {
-    if (connected) chat.sendContextualUpdate('The saved plan or bank data may have changed. Retrieve the latest current plan before using any budget numbers. Previous previews are not saved.');
+    if (connected) chat.sendContextualUpdate(CHAT_GROUNDING + ' Retrieve the latest current plan before using any budget numbers. Previous previews are not saved.');
   }, [baseVersion, plan, connected, chat.sendContextualUpdate]);
+  useEffect(() => {
+    if (connected && ready && allowed.current && pending.current) deliver();
+  }, [connected, ready]);
   useEffect(() => {
     if (visible && stick.current && list.current) list.current.scrollTop = messages.length ? list.current.scrollHeight : 0;
   }, [messages, progress, visible]);
@@ -104,27 +120,57 @@ function Chat({ baseVersion, plan, visible, dataset }) {
     if (starting || connected || !available || !baseVersion) return;
     const session = ++generation.current, controller = new AbortController(); requests.current.add(controller);
     const timeout = setTimeout(() => controller.abort(), 15000);
-    setStarting(true); setReady(false); setError('');
+    setStarting(true); setReady(false); greeted.current = false; greetingIds.current.clear(); setError('');
     try {
       const { signedUrl } = await post('/api/chat-session', { consent: true }, controller.signal);
       if (session !== generation.current || controller.signal.aborted) return;
       setMessages([]); responseText.current.clear(); allowed.current = true; stick.current = true;
-      chat.startSession({ signedUrl, connectionType: 'websocket', textOnly: true });
-    } catch (e) { if (session === generation.current) { allowed.current = false; setError(e.message); setStarting(false); } }
+      await chat.startSession({ signedUrl, connectionType: 'websocket', textOnly: true });
+      if (session !== generation.current) chat.endSession();
+    } catch (e) { if (session === generation.current) { allowed.current = false; restorePending(); setError('Chat could not connect. Send your question again to retry.'); setStarting(false); finish(); } }
     finally { clearTimeout(timeout); requests.current.delete(controller); }
   }
   function stop() {
     allowed.current = false; generation.current++; requests.current.forEach(c => c.abort());
-    chat.endSession(); finish(); setStarting(false);
+    restorePending(); chat.endSession(); finish(); setStarting(false); setReady(false);
   }
   function send(text = draft) {
     text = text.trim();
-    if (!text || text.length > 2000 || !connected || !ready || lock.current) return;
+    if (!text || text.length > 2000 || !available || !baseVersion || lock.current) return;
+    // Do not ask the model to simulate a capability the app does not have.
+    if (compoundPreviewRequest(text) || actionRequest(text)) {
+      setMessages(ms => [...ms, { id: crypto.randomUUID(), role: 'user', text },
+        { id: crypto.randomUUID(), role: 'assistant', text: actionRequest(text) ? ACTION_REPLY : COMPOUND_REPLY }]);
+      setDraft(''); return;
+    }
     lock.current = true; setBusy(true); setError(''); stick.current = true;
-    setMessages(ms => [...ms, { id: crypto.randomUUID(), role: 'user', text }]);
-    setDraft(''); setProgress('Thinking through your question…');
-    try { chat.sendUserMessage(text); input.current?.focus(); }
-    catch { setDraft(text); setError('Your message was not sent. End this chat and reconnect to try again.'); finish(); }
+    pending.current = text; setDraft('');
+    if (connected && ready) deliver();
+    else { setProgress('Connecting to send your question…'); if (!connected) start(); }
+  }
+  async function deliver() {
+    const text = pending.current;
+    if (!text || !allowed.current || delivering.current === generation.current) return;
+    const session = generation.current;
+    delivering.current = session;
+    try {
+      lastCalculation.current = null;
+      let context = await calculate('get_current_plan', {});
+      if (!allowed.current || session !== generation.current) return;
+      if (!lastCalculation.current) throw new Error('Calculation unavailable');
+      const intent = questionPreview(text, lastCalculation.current.bills);
+      if (intent) {
+        lastCalculation.current = null;
+        context = await calculate(intent.tool, intent.args);
+        if (!lastCalculation.current?.preview) throw new Error('Preview unavailable');
+      }
+      if (!allowed.current || session !== generation.current || pending.current !== text) return;
+      chat.sendContextualUpdate('The application just calculated this question before sending it. Use these results, not mental arithmetic:\n' + context);
+      chat.sendUserMessage(text); pending.current = null;
+      setMessages(ms => [...ms, { id: crypto.randomUUID(), role: 'user', text }]);
+      setProgress('Thinking through your question…'); input.current?.focus();
+    } catch { if (session === generation.current) { restorePending(); setError('I couldn’t check the numbers for this question. Send it again to retry.'); finish(); } }
+    finally { if (delivering.current === session) delivering.current = null; }
   }
   return <section className="chat-page" aria-labelledby="chat-title">
     <header className="chat-header">
@@ -133,7 +179,7 @@ function Chat({ baseVersion, plan, visible, dataset }) {
     </header>
     <div className="chat-shell">
       <div className="chat-thread" ref={list} role="log" aria-label="Conversation" aria-live="polite" onScroll={e => { const el=e.currentTarget; stick.current=el.scrollHeight-el.scrollTop-el.clientHeight<80; }}>
-        {!started && !messages.length && <div className="chat-welcome"><span className="chat-welcome-icon"><Icon n="spark" s={32} /></span><h2>Let’s make sense of your money.</h2><p>Ask about your forecast, then try a change.<br />We’ll show the numbers and talk through what they mean.</p><div className="chat-examples">{suggestions.map((q,i) => <button key={q} onClick={() => { if (connected) send(q); else { setDraft(q); input.current?.focus(); } }}><span>0{i+1}</span>{q}<Icon n="arrow" s={15} /></button>)}</div></div>}
+        {!started && !messages.length && <div className="chat-welcome"><span className="chat-welcome-icon"><Icon n="spark" s={32} /></span><h2>Let’s make sense of your money.</h2><p>Ask about your forecast, then try a change.<br />We’ll show the numbers and talk through what they mean.</p><div className="chat-examples">{suggestions.map((q,i) => <button key={q} disabled={busy || !available || !baseVersion} onClick={() => send(q)}><span>0{i+1}</span>{q}<Icon n="arrow" s={15} /></button>)}</div></div>}
         {messages.map(m => m.role === 'calculation' ? <Calculation key={m.id} result={m.result} /> : <article key={m.id} className={`chat-message ${m.role}`} aria-label={m.role === 'user' ? 'You' : 'RainCheck'}><span className="chat-speaker">{m.role === 'user' ? 'You' : 'RainCheck'}</span><div className="chat-bubble">{m.role === 'user' ? m.text : <Streamdown skipHtml controls={false} components={markdown} isAnimating={m.streaming}>{m.text}</Streamdown>}</div></article>)}
         {busy && <p className="chat-progress" role="status"><span className="chat-dot connected" />{progress || 'Thinking…'}</p>}
         {connected && !ready && <p className="chat-progress" role="status">Getting ready for your question…</p>}
@@ -141,8 +187,7 @@ function Chat({ baseVersion, plan, visible, dataset }) {
       <div className="chat-bottom">
         {error && <p className="chat-error" role="alert">{error}</p>}
         {!connected && <div className="chat-start">
-          {started && <p>This conversation has ended. Starting again opens a new conversation; earlier messages are not carried over.</p>}
-          <button className="btn" onClick={start} disabled={starting || !available || !baseVersion}>{starting ? 'Connecting…' : started ? 'Start a new chat' : 'Start chatting'}</button>
+          {started && !starting && <p>Send a message to begin a new conversation.</p>}
           {available === null ? <p role="status">Checking chat availability…</p> : !available ? <div><p role="status">{availabilityMessage}</p>
             <button className="btn ghost sm" onClick={() => { setAvailable(null); setAvailabilityCheck(n => n + 1); }}>Try again</button></div>
             : !baseVersion && <p>Your forecast is still loading. Chat will be ready once it loads.</p>}
@@ -150,10 +195,10 @@ function Chat({ baseVersion, plan, visible, dataset }) {
         <form className="chat-compose" onSubmit={e => { e.preventDefault(); send(); }}>
           <label className="sr-only" htmlFor="chat-message">Your message</label>
           <textarea id="chat-message" ref={input} value={draft} onChange={e => setDraft(e.target.value)} placeholder={connected ? 'Ask a question or try a what-if…' : 'Your question…'} maxLength={2000} rows={2} onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} />
-          <button type="submit" className="btn" aria-label="Send message" disabled={!connected || !ready || busy || !draft.trim()}><Icon n="arrow" s={18} /><span>Send</span></button>
+          <button type="submit" className="btn" aria-label="Send message" disabled={!available || !baseVersion || busy || !draft.trim()}><Icon n="arrow" s={18} /><span>Send</span></button>
         </form>
         {publicDemo && <p className="chat-footnote">Public demo · Sample household · Up to 5 minutes per chat. Please don’t share passwords or private financial information.</p>}
-        <div className="chat-attribution"><span>Powered by ElevenLabs Agents</span><details><summary>What is shared?</summary><p>Starting a chat shares your messages, selected sandbox forecast results and matching bank-record excerpts with ElevenLabs. Its current settings retain conversation transcripts. Bill review notes are not shared. This chat never uses your microphone.</p></details></div>
+        <div className="chat-attribution"><span>Powered by ElevenLabs Agents</span><details><summary>What is shared?</summary><p>Sending a message shares your messages, selected sandbox forecast results and matching bank-record excerpts with ElevenLabs. Its current settings retain conversation transcripts. Bill review notes are not shared. This chat never uses your microphone.</p></details></div>
         <p className="chat-footnote">Estimates, not guarantees. Chat previews never change your saved plan.</p>
       </div>
     </div>

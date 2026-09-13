@@ -111,4 +111,3 @@ it('gives the review route enough time for the bounded model request', () => {
   const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
   expect(config.functions['api/review.js'].maxDuration).toBeGreaterThanOrEqual(120);
 });
-

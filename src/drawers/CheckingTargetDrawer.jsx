@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Drawer, { DrawerHeader } from '../components/Drawer.jsx';
+import Drawer, { DrawerHeader, DrawerCloseButton } from '../components/Drawer.jsx';
 import { budgetMoney as money } from '../components/BudgetImpact.jsx';
 import { readCheckingTarget } from '../engine/plan.js';
 
@@ -14,7 +14,7 @@ export default function CheckingTargetDrawer({ h, sim, change, onClose }) {
       onClose();
     } catch (e) { setError(e.message); }
   };
-  return <Drawer label="Checking target" onClose={onClose}>
+  return <Drawer label="Checking target" onClose={onClose} protectChanges>
     <DrawerHeader title="Keep money for surprises" icon="target" onClose={onClose} />
     <p>Choose how much you want to keep in checking for unexpected costs. This is separate from your savings goal.</p>
     <form className="budget-form" onSubmit={save}>
@@ -30,7 +30,7 @@ export default function CheckingTargetDrawer({ h, sim, change, onClose }) {
       {error && <p role="alert">{error}</p>}
       <div className="row wrap">
         <button className="btn" type="submit">Save target</button>
-        <button className="btn ghost" type="button" onClick={onClose}>Cancel</button>
+        <DrawerCloseButton className="btn ghost">Cancel</DrawerCloseButton>
       </div>
     </form>
   </Drawer>;

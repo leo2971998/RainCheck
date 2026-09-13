@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Icon, money, prettyIso } from '../components/ui.jsx';
-import Drawer from '../components/Drawer.jsx';
+import Drawer, { DrawerCloseButton } from '../components/Drawer.jsx';
 import { reviewNotice } from '../engine/changes.js';
 import { simulate, capacity, goalAt, goalPlan, hypothetical } from '../engine/forecast.js';
 import { householdFor, scenarioFor } from '../engine/plan.js';
@@ -42,10 +42,10 @@ export default function NoticeDrawer({ h, base, plan, cap, change, initialText =
   };
 
   return (
-    <Drawer label="Import a notice" onClose={onClose}>
+    <Drawer label="Import a notice" onClose={onClose} dirty={text !== initialText || billId !== null}>
       <div className="row between">
         <h2>Import a notice</h2>
-        <button className="btn ghost sm" onClick={onClose} aria-label="Close"><Icon n="x" s={16} /></button>
+        <DrawerCloseButton className="btn ghost sm" aria-label="Close"><Icon n="x" s={16} /></DrawerCloseButton>
       </div>
 
       {origin

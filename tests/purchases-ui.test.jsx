@@ -26,7 +26,7 @@ it('keeps the four-step workflow in the purchase form instead of repeating it ab
   const html = renderToStaticMarkup(<PurchaseDrawer initialDate={base.today} base={base} baseVersion="version" plan={emptyPlan()} refresh={() => {}} onClose={() => {}} />);
   expect(html).toContain('aria-label="Purchase planning steps"');
   for (const text of ['Add purchase details', 'Check your budget', 'Review with AI', 'Save to your plan']) expect(html).toContain(text);
-  expect(html).toContain('Optional');
+  expect(html).toContain('Preview includes cloud AI review');
   expect(pageHtml).not.toContain('How purchase planning works');
   expect(html).not.toContain('What creates an alert?');
   expect(html).not.toContain('1 · Enter a cost and date');
@@ -79,12 +79,11 @@ it('opens the purchase form on the day chosen in the calendar', () => {
   expect(html).toContain('value="2026-10-12"');
 });
 
-it('offers a direct alert link only when the saved purchase needs attention', () => {
+it('does not promise an alert was created for a purchase beyond the alert window', () => {
   let opened = false;
   const warning = purchaseSaveToast({ status: { tone: 'warn' }, previewMonth: 'October 2026', onOpenAlerts: () => { opened = true; } });
-  expect(warning.title).toBe('October 2026 budget alert added');
-  expect(warning.actions[0].label).toBe('Review alert');
-  warning.actions[0].run();
-  expect(opened).toBe(true);
+  expect(warning.title).toBe('Purchase saved — plan needs attention');
+  expect(warning.actions).toEqual([]);
+  expect(opened).toBe(false);
   expect(purchaseSaveToast({ status: { tone: 'good' }, previewMonth: 'October 2026' }).actions).toEqual([]);
 });

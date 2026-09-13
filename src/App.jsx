@@ -4,7 +4,6 @@ import { useReducedMotion } from './hooks/useMotion.js';
 import { useTheme } from './hooks/useTheme.js';
 import { Toasts, toast } from './components/Toast.jsx';
 import { useHousehold } from './hooks/useHousehold.js';
-import { useTransfer } from './hooks/useTransfer.js';
 import { usePersistentState, clearPersisted, hasPersisted } from './hooks/usePersistentState.js';
 import { simulate, capacity, goalPlan, dateToReach, hypothetical } from './engine/forecast.js';
 import { emptyPlan, applyPatch, undoLatest, scenarioFor, householdFor } from './engine/plan.js';
@@ -20,7 +19,6 @@ import AlertsPage from './pages/AlertsPage.jsx';
 import TransactionsPage from './pages/TransactionsPage.jsx';
 import RecurringPage from './pages/RecurringPage.jsx';
 import CashFlowPage from './pages/CashFlowPage.jsx';
-import GoalsPage from './pages/GoalsPage.jsx';
 import BillDrawer from './drawers/BillDrawer.jsx';
 import BillReviewDrawer from './drawers/BillReviewDrawer.jsx';
 import CompareDrawer from './drawers/CompareDrawer.jsx';
@@ -40,9 +38,14 @@ import SettingsDrawer from './drawers/SettingsDrawer.jsx';
 import { rainDemoPatch, RAIN_DEMO_ID } from './engine/rain-demo.js';
 import { subscriptionPatch } from './engine/budget.js';
 import GoalContext from './components/GoalContext.jsx';
+import Drawer from './components/Drawer.jsx';
 
 const ChatPage = lazy(() => import('./pages/ChatPage.jsx'));
-const NAV = [['dashboard', 'Today', 'dash'], ['alerts', 'Alerts', 'bell'], ['forecast', 'Forecast', 'trend'], ['purchases', 'Purchases', 'cart'], ['transactions', 'Transactions', 'list', 'Activity'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Spending & Savings', 'bars', 'Spending'], ['goals', 'Goals', 'target']];
+const NAV = [['dashboard', 'Today', 'dash'], ['alerts', 'Alerts', 'bell'], ['forecast', 'Forecast', 'trend'], ['purchases', 'Purchases', 'cart'], ['transactions', 'Transactions', 'list', 'Activity'], ['recurring', 'Recurring', 'repeat'], ['cashflow', 'Spending & Savings', 'bars', 'Spending']];
+
+// Goals moved onto Spending & Savings, where the budget that funds them is decided. The old id
+// still resolves, so saved links, dashboard widgets and alert actions do not dead-end.
+const PAGE_ALIAS = { goals: 'cashflow' };
 
 function Navigation({ page, setPage, badges = {} }) {
   return NAV.map(([id, label, icon, short = label]) => (
@@ -104,7 +107,7 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
     } catch { clearTimeout(watchdog); go(); }
   }, [reducedMotion]);
   const [backTo, setBackTo] = useState(null);
-  const navigate = useCallback(id => { setBackTo(null); setPage(id); }, [setPage]);
+  const navigate = useCallback(id => { setBackTo(null); setPage(PAGE_ALIAS[id] ?? id); }, [setPage]);
   const [drawer, setDrawer] = useState(() => new URLSearchParams(window.location.search).has('review') ? 'assistant' : null);
   const [confirm, setConfirm] = useState(null);
   const [previewId, setPreviewId] = useState(null);      // an option's identity, not a snapshot of it
@@ -179,24 +182,25 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
     id: `unusual:${chargeKey(t)}`, tone: 'bad', icon: 'warn',
     amount: Math.abs(t.amt), metricLabel: plan.chargeAnswers?.[chargeKey(t)]?.answer === 'unknown' ? 'unrecognised charge' : 'charge to review',
     title: plan.chargeAnswers?.[chargeKey(t)]?.answer === 'unknown' ? `${t.what}: you marked this unrecognised.` : `${t.what}: was this you?`,
-    body: `${t.unusual.note} Confirming it clears the flag. Marking it unrecognised keeps it listed so you can raise it with your bank — RainCheck cannot contact them for you.`,
+    body: t.unusual.note,
+    note: 'Confirming clears the flag. Marking it unrecognised keeps it listed so you can raise it with your bank — RainCheck cannot contact them for you.',
     actions: [
       { label: 'Yes, that was me', primary: true, run: () => change(answerChargePatch(t, 'mine'), `${t.what} confirmed`) },
       { label: 'I do not recognise this', run: () => change(answerChargePatch(t, 'unknown'), `${t.what} marked unrecognised`) },
     ],
   })), [unusual, plan]);
 
-  const transfer = useTransfer(source);
   const [reviewedNotices, setReviewedNotices] = usePersistentState('reviewedNotices', {});
   const waiting = pendingNotices.filter(n => !reviewedNotices[n.id]);
   const allAlerts = useMemo(() => [...unusualAlerts, ...alerts], [unusualAlerts, alerts]);
+  const attentionAlerts = [...allAlerts, ...waiting.map(n => ({ id: `notice:${n.id}`, tone: 'warn' }))];
   const navBadges = {
     ...badges,
     alerts: allAlerts.filter(a => a.tone !== 'good').length + waiting.length,
   };
 
   const open = (what, id = null, date = null) => {
-    if (what.startsWith('page:')) { setDrawer(null); setBackTo(page === 'dashboard' ? 'dashboard' : null); setPage(what.slice(5)); return; }
+    if (what.startsWith('page:')) { const id = what.slice(5); setDrawer(null); setBackTo(page === 'dashboard' ? 'dashboard' : null); setPage(PAGE_ALIAS[id] ?? id); return; }
     if (what === 'purchase') setPurchaseDate(date);
     setBillId(id); setDrawer(what);
   };
@@ -278,7 +282,7 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
 
   return (
     <div className={`app${chatVisible ? ' chat-is-open' : ''}`}>
-      <Ambient state={page === 'dashboard' ? weekly.state : forecastWeather(sim.worst, alerts)} />
+      <Ambient state={forecastWeather(page === 'dashboard' ? weekly.state : sim.worst, attentionAlerts)} />
       <aside>
         <div className="brand"><span className="mark"><span className="weather-mark" aria-hidden="true">☂</span></span><div><b>RainCheck</b><small>Financial forecast</small></div></div>
         <nav aria-label="Main navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
@@ -297,14 +301,13 @@ function Workspace({ household: base, baseVersion, transactions, notice, source,
         <nav className="tabs" aria-label="Section navigation"><Navigation page={page} setPage={navigate} badges={navBadges} /></nav>
         {backTo && page !== backTo && <button className="back-link" onClick={() => navigate(backTo)}><i className="back-ic"><Icon n="arrow" s={14} /></i>Back to Today</button>}
         <GoalContext page={page} h={h} goal={goal} open={open} />
-        {page === 'dashboard' && <Dashboard h={h} sc={sc} weekly={weekly} alerts={allAlerts} open={open} history={history} onUndo={undo} dark={theme.dark} />}
+        {page === 'dashboard' && <Dashboard h={h} sc={sc} weekly={weekly} alerts={attentionAlerts} open={open} history={history} onUndo={undo} dark={theme.dark} />}
         {page === 'alerts' && <AlertsPage h={h} sc={sc} alerts={allAlerts} reminders={reminders} leadDays={leadDays} setLeadDays={setLeadDays} onPaid={markPaid} waiting={waiting} onReviewNotice={reviewNoticeItem} open={open} />}
         {page === 'forecast' && <ForecastPage h={h} sc={sc} plan={plan} change={change} sim={sim} cap={cap} goal={goal} open={open} />}
         {page === 'purchases' && <PurchasesPage h={h} available={purchasesAvailable} open={open} refresh={refresh} />}
         {page === 'transactions' && <TransactionsPage transactions={transactions} allowances={h.allowances} h={h} sc={sc} unusual={unusual} corrections={corrections} setCorrections={setCorrections} open={open} />}
         {page === 'recurring' && <RecurringPage h={h} sc={sc} plan={plan} change={change} cap={cap} open={open} discovered={discovered} onAdopt={adopt} onDismiss={dismiss} billNotes={billNotes} />}
-        {page === 'cashflow' && <CashFlowPage base={base} baseVersion={baseVersion} h={h} sc={sc} plan={plan} protectedIds={protectedIds} setProtectedIds={setProtectedIds} change={change} open={open} />}
-        {page === 'goals' && <GoalsPage h={h} base={base} plan={plan} change={change} cap={cap} goal={goal} history={history} onUndo={undo} open={open} transfer={transfer} />}
+        {page === 'cashflow' && <CashFlowPage base={base} baseVersion={baseVersion} h={h} sc={sc} plan={plan} goal={goal} protectedIds={protectedIds} setProtectedIds={setProtectedIds} change={change} open={open} history={history} onUndo={undo} />}
       </main>
 
       {!chatVisible && !drawer && !confirm && <ChatLauncher onOpen={showChat} />}
@@ -345,27 +348,19 @@ export function lastAction(history) {
 }
 
 function ConfirmPlan({ h, confirm, onApply, onCancel }) {
-  useEffect(() => {
-    const onKey = e => { if (e.key === 'Escape') onCancel(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onCancel]);
-
   return (
-    <div className="modal-bg" role="dialog" aria-modal="true" aria-labelledby="confirm-plan-title" onClick={onCancel}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+    <Drawer variant="modal" label="Apply this plan?" onClose={onCancel}>
         <h2 id="confirm-plan-title">Apply this plan?</h2>
         <div className="option on"><h3>{confirm.title}</h3><p>{confirm.detail}</p></div>
         {confirm.conditional
           ? <div className="alert"><b>This records an intention, not a result.</b>
               <p>Your forecast will not change until you confirm the cancellation actually went through, on the Recurring page.</p></div>
           : <div className="alert"><b>This updates your plan. It does not move money.</b>
-              <p>Savings stay at {money(h.savings)} until you complete a contribution on the Goals page.</p></div>}
+              <p>Your saved balance stays at {money(h.savings)}.</p></div>}
         <div className="row">
-          <button className="btn" onClick={onApply} autoFocus><Icon n="check" s={15} />Apply</button>
-          <button className="btn ghost" onClick={onCancel}>Cancel</button>
+          <button className="btn" onClick={onApply}><Icon n="check" s={15} />Apply</button>
+          <button className="btn ghost" onClick={onCancel} data-initial-focus>Cancel</button>
         </div>
-      </div>
-    </div>
+    </Drawer>
   );
 }

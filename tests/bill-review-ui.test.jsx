@@ -34,10 +34,10 @@ it('leads Alerts with one resolvable item and keeps the rest in a compact queue'
 
   expect(html).toContain('2 things need you');
   expect(html).toContain('Plan date Sep 28, 2026');
-  expect(html).toContain('alert-card bad lead');
+  expect(html).toContain('Needs you first');
   expect(html).toContain('$192.19');
   expect(html).not.toContain('Nothing changes until you choose');
-  expect(html.match(/class="alert-card /g)).toHaveLength(2);
+  expect(html).toContain('Next in your queue');
   expect(html).toContain('Reliant Energy payment is higher than usual.');
 });
 

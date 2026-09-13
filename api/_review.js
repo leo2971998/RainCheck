@@ -147,7 +147,9 @@ export function reviewBrief(impact, body, evidence) {
     goalTargetCents: cents(o.target), goalProjectedCents: cents(o.projected), contributionCents: cents(o.contribution),
     goalDate: o.targetDate, contributionFits: o.fits, goalFeasible: o.feasible, checkedThrough: o.checkedThrough });
   return { version: 3, source: 'nessie-demo', asOf: impact.asOf, kind: body.kind, windowDays: impact.windowDays,
-    cushionCents: cents(impact.cushion), before: outcome(impact.before), after: outcome(impact.after),
+    cushionCents: cents(impact.cushion), before: outcome(impact.before), after: { ...outcome(impact.after),
+      ...(impact.funding ? { contributionFits: impact.after.fits && impact.funding.fits,
+        goalFeasible: impact.after.feasible && impact.funding.fits, checkedThrough: impact.funding.checkedThrough } : {}) },
     question: body.question.trim(), evidence: evidence.map(e => ({ title: e.title, text: e.text, asOf: e.asOf })),
     ...(impact.week ? { purchaseWeek: { startsOn: impact.week.startsOn, endsOn: impact.week.endsOn,
       beforeLowCents: cents(impact.week.beforeLow), afterLowCents: cents(impact.week.afterLow) } } : {}) };

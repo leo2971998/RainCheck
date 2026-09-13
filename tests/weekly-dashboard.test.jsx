@@ -23,7 +23,7 @@ it('leads with one weekly spending amount and removes the dense forecasting pane
 it('offers real clickable widgets with recorded income, spending and a distinct checking balance', () => {
   const html = render();
   expect(html.match(/class="today-widget"/g)).toHaveLength(6);
-  for (const text of ['Money this month', 'This week’s bills', 'Next income', 'Your goals', 'Alerts', 'Planned purchases',
+  for (const text of ['Money this month', 'This week’s bills', 'Next income', 'Savings', 'Alerts', 'Planned purchases',
     '$3,078', '$3,400', '$1,260', 'View transactions']) expect(html).toContain(text);
   for (const text of ['Open to see what needs attention', 'No open budget alerts', 'Try a purchase before committing']) expect(html).not.toContain(text);
 });
@@ -36,12 +36,12 @@ it('shows one shared savings total and goal names, without reallocating savings'
   expect(html).not.toContain('Concert: $0');
   expect(JSON.stringify(facts)).toBe(before);
 });
-it('keeps this week clear when only a later week is short or an alert needs review', () => {
+it('adds rain when an alert needs review without claiming this week is overdrawn', () => {
   const facts = { ...h, plannedPurchases: [{ id: 'later', label: 'Later concert', amount: 5000, date: '2026-10-15', status: 'planned' }] };
   const html = render(facts, sc, { alerts: [{ tone: 'bad' }] });
   expect(simulate(facts, sc).worst).toBe('over');
-  expect(html).toContain('data-weather="ok"');
-  expect(html).not.toContain('contained raining');
+  expect(html).toContain('data-weather="below"');
+  expect(html).toContain('contained raining');
 });
 it('shows the amount that exceeds this week’s available budget, with an action', () => {
   const initial = weeklyBudget(h, sc);
@@ -49,7 +49,7 @@ it('shows the amount that exceeds this week’s available budget, with an action
   const html = render(facts);
   expect(html).toContain('data-weather="below"');
   expect(html).toContain('$25 more planned than available');
-  expect(html).toContain('Review this week');
+  expect(html).toContain('Review spending &amp; savings');
 });
 it('keeps the explanation and adjustment links in the weekly detail panel', () => {
   const weekly = weeklyBudget(h, sc);

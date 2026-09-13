@@ -1,7 +1,7 @@
 const STEPS = [
   ['Add purchase details', 'Enter what you are considering, its estimated cost, and the date.'],
   ['Check your budget', 'RainCheck calculates that week, your checking cushion, and your savings plan.'],
-  ['Review with AI', 'Optional: allow AI to explain the calculated trade-offs and assumptions.'],
+  ['Review with AI', 'AI explains the calculated cash gap and tested ways to adjust the purchase.'],
   ['Save to your plan', 'Only a saved purchase is included in that month and can create an alert.'],
 ];
 

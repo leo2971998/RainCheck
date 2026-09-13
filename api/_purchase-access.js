@@ -36,4 +36,3 @@ export async function checkPurchaseLimit(req, res, env, limit = consumeChatLimit
   }
   return false;
 }
-

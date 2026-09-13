@@ -110,4 +110,3 @@ it('does not substitute an older snapshot when the shared household cannot load'
   expect(JSON.stringify(out.body)).not.toContain('private upstream');
   expect(load).toHaveBeenCalledWith({ dataset: undefined, purchases: true, live: true });
 });
-

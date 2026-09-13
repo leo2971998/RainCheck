@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { money, prettyIso } from '../components/ui.jsx';
 import { goalAt, goalPlan } from '../engine/forecast.js';
 import { scenarioFor } from '../engine/plan.js';
-import Drawer, { DrawerHeader } from '../components/Drawer.jsx';
+import Drawer, { DrawerHeader, DrawerCloseButton } from '../components/Drawer.jsx';
 
 // Preserve old planning choices without presenting them as verified company statements.
 export default function BillDrawer({ h, billId, plan, change, cap, notes = {}, saveNote, onCompare, onClose }) {
@@ -17,6 +17,7 @@ function EstimateEditor({ h, bill, plan, change, cap, notes, saveNote, onCompare
   const [text, setText] = useState(notes[key] || '');
   const [amount, setAmount] = useState(String(current));
   const [error, setError] = useState('');
+  const [removing, setRemoving] = useState(false);
   const goal = h.fundedGoals ? goalPlan(h, scenarioFor(h, plan), h.goal) : goalAt(h, cap);
   const save = e => {
     e.preventDefault();
@@ -28,7 +29,7 @@ function EstimateEditor({ h, bill, plan, change, cap, notes, saveNote, onCompare
     saveNote?.(key, text.trim());
     onClose();
   };
-  return <Drawer label={bill.label + ' estimate & notes'} onClose={onClose}>
+  return <Drawer label={bill.label + ' estimate & notes'} onClose={onClose} protectChanges>
     <DrawerHeader title={bill.payee || bill.label} onClose={onClose} />
     <span className="pill neutral">Saved forecast estimate</span>
     <div className="ba">
@@ -45,7 +46,7 @@ function EstimateEditor({ h, bill, plan, change, cap, notes, saveNote, onCompare
         <label>Future bill estimate ($)<input type="number" min="0" max="1000000" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} /></label>
         <p className="fine">Only a confirmed edit changes the forecast. It does not change the company’s price.</p>
       </details>
-      <button className="btn" type="submit">Save notes &amp; estimate</button>
+      <div className="row wrap budget-actions"><button className="btn" type="submit">Save notes &amp; estimate</button><DrawerCloseButton className="btn ghost">Cancel</DrawerCloseButton></div>
       {error && <p className="alert" role="alert">{error}</p>}
     </form>
     <details><summary>Impact on savings</summary>
@@ -56,8 +57,11 @@ function EstimateEditor({ h, bill, plan, change, cap, notes, saveNote, onCompare
       <p className="fine">Goal contributions stay unchanged until you edit them. Each goal keeps its own deadline; this projection can still leave checking below its buffer.</p>
       <button className="btn ghost sm" onClick={onCompare}>Compare options</button>
     </details>
-    {plan.billChanges?.[bill.id] && <button className="link" onClick={() => {
-      change({ billChanges: { [bill.id]: null }, whatIf: { [bill.id]: undefined } }, bill.label + ' saved estimate removed'); onClose();
-    }}>Remove saved estimate</button>}
+    {plan.billChanges?.[bill.id] && (removing ? <section className="alert" role="region" aria-label="Remove estimate confirmation">
+      <h3>Remove the {bill.label} estimate?</h3><p>Your forecast returns to the recorded bill amount. Your saved notes stay. The bill itself is not cancelled.</p>
+      <div className="row wrap budget-actions"><button className="btn" onClick={() => {
+        change({ billChanges: { [bill.id]: null }, whatIf: { [bill.id]: undefined } }, bill.label + ' saved estimate removed'); onClose();
+      }}>Remove estimate</button><button className="btn ghost" onClick={() => setRemoving(false)}>Keep estimate</button></div>
+    </section> : <button className="link budget-remove" onClick={() => setRemoving(true)}>Remove saved estimate</button>)}
   </Drawer>;
 }

@@ -5,7 +5,7 @@ import { emptyPlan, householdFor, scenarioFor, applyPatch } from '../src/engine/
 import { goalPatch } from '../src/engine/budget.js';
 import { simulate, goalPlan, capacity } from '../src/engine/forecast.js';
 import { buildAlerts } from '../src/engine/alerts.js';
-import GoalContext, { PlanConnections } from '../src/components/GoalContext.jsx';
+import GoalContext from '../src/components/GoalContext.jsx';
 import { createBillReview, billReviewKey } from '../src/engine/bill-reviews.js';
 
 function evaluate(plan, household = base) {
@@ -67,9 +67,6 @@ it('anchors each section to the active goal and explains the current data-proces
   const html = renderToStaticMarkup(<GoalContext page="transactions" h={h} goal={goal} open={() => {}} />);
   for (const text of ['Trip', '$5,000', '$300/month', 'View goal', 'category edits', 'do not change the forecast'])
     expect(html.includes(text)).toBe(true);
-  const links = renderToStaticMarkup(<PlanConnections open={() => {}} />);
-  for (const label of ['Transactions', 'Recurring', 'Purchases', 'Forecast', 'Alerts']) expect(links.includes(label)).toBe(true);
-  expect(links).not.toMatch(/<details[^>]*\bopen/);
 });
 
 it('keeps goal status off the recurring payment-history page', () => {
@@ -85,4 +82,12 @@ it('keeps the shared goal banner off the forecast page', () => {
 it('keeps the Alerts decision queue ahead of unrelated goal context', () => {
   const { h, goal } = evaluate(tripPlan());
   expect(renderToStaticMarkup(<GoalContext page="alerts" h={h} goal={goal} open={() => {}} />)).toBe('');
+});
+
+it('confirms the saved plan without directing users to the removed practice transfer', () => {
+  const { h, sc, sim, goal } = evaluate(emptyPlan());
+  const applied = buildAlerts(h, sc, sim, capacity(h, sc), { label: 'Monthly savings updated' }, goal)
+    .find(alert => alert.id === 'applied');
+  expect(applied.body).toBe('Monthly savings updated');
+  expect(applied.actions).toEqual([{ label: 'View savings', target: 'page:cashflow' }]);
 });

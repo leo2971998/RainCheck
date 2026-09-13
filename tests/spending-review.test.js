@@ -76,3 +76,21 @@ it('keeps protected budgets unchanged during optimization and rejects pre-filled
   expect(() => calculateReview(base, { ...body(), optimize: true })).toThrow();
   expect(() => calculateReview(base, { ...body(), patch: {}, optimize: false })).toThrow();
 });
+
+it('gives cloud review the goal funding gaps and distinguishes past overspending from future cuts', async () => {
+  const h = { ...base, today: '2026-09-13', checking: 10000,
+    income: [{ date: '2026-09-18', amount: 1800 }],
+    goal: { label: 'Emergency fund', target: 2000, saved: 800, planned: 280, targetDate: '2026-12-18' },
+    spendingEvidence: { ...base.spendingEvidence, asOf: '2026-09-13' } };
+  const review = vi.fn(async facts => ({ status: 'complete', facts, result: { summary: 'Review remaining goal funding.' } }));
+  const handler = createHandler({ env: { RAINCHECK_AI_LOCAL: '1' }, load: async () => ({ base: h, snapshot }),
+    retrieve: async () => ({ status: 'unavailable', evidence: [] }), review });
+  const res = response();
+  await handler(request({ ...body(), baseVersion: householdVersion(h), patch: {}, optimize: true }), res);
+  expect(res.statusCode).toBe(200);
+  const brief = review.mock.calls[0][0];
+  expect(JSON.stringify(brief.evidence)).toContain('needs $300/month; planned $280/month; extra needed $20/month');
+  expect(brief.question).toContain('recovery is short');
+  expect(brief.question).toContain('Never claim goal affordability means recovery is solved');
+  expect(brief.evidence.length).toBeLessThanOrEqual(4);
+});

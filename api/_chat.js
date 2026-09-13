@@ -3,6 +3,9 @@ import { budgetImpact, readSubscription, subscriptionPatch } from '../src/engine
 import { householdFor, scenarioFor } from '../src/engine/plan.js';
 import { amountFor, nextChargeDate, round2, simulate } from '../src/engine/forecast.js';
 import { forecastEvidenceDocuments } from '../src/engine/forecast-explanation.js';
+import { weeklyBudget } from '../src/engine/weekly-budget.js';
+import { spendingInsights } from '../src/engine/spending-insights.js';
+import { optimizationDraft, savingsPreview } from '../src/engine/savings-plan.js';
 
 const object = (value, keys) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(k => keys.includes(k));
 export function calculateChat(base, body) {
@@ -33,7 +36,20 @@ export function calculateChat(base, body) {
     patch = subscriptionPatch(id, item);
     preview = { label: item.label, amount: item.amount, startsOn: item.startsOn, applied: false };
   } else throw new Error('This chat cannot perform that action');
+  // A labeled calculator example, not an AI-reviewed or applied optimization. Keep groceries
+  // unchanged here; the Spending & Savings editor uses the user's actual checkbox choices.
+  let recoveryExample = null;
+  const insights = spendingInsights(h, sc);
+  if (insights.available && insights.categories.some(c => c.over > 0)) {
+    const draft = optimizationDraft(base, plan, { groceries: true });
+    const example = savingsPreview(base, plan, draft, { groceries: true });
+    recoveryExample = { ...example.guidance.recovery, monthlyReduction: example.freed, extraSavings: example.extraSavings };
+  }
   return { impact: budgetImpact(base, plan, patch), bills, preview, ...(base.spendingModel ? { history: base.spendingModel } : {}),
+    recoveryExample,
+    weekly: weeklyBudget(h, sc),
+    categoryOverruns: insights.categories.filter(c => c.over > 0)
+      .map(({ label, spent, budget, over }) => ({ label, spent, budget, over })),
     forecastEvidence: forecastEvidenceDocuments(h, simulate(h, sc)),
     assumptions: ['Nessie sandbox data, not a real bank account.', 'Forecasts are estimates based on the current plan.', 'Any preview is separate from your saved plan. No payment or budget changes have been made.'] };
 }

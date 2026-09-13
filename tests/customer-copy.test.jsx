@@ -28,7 +28,7 @@ it('shows the AI explanation without process badges and boilerplate', () => {
   const optimization = { status: 'ready', data: { review: { status: 'complete', result: { summary: 'A smaller dining limit leaves room for your trip.' } },
     optimization: { draft: { targets: Object.fromEntries(base.allowances.map(a => [a.id, a.monthly])), extras: {} } } } };
   const html = renderToStaticMarkup(<SavingsPlanner optimization={optimization} base={base} plan={emptyPlan()} onClose={() => {}} />);
-  expect(html).toContain('Why these limits');
+  expect(html).not.toContain('Why these limits');
   expect(html).toContain('A smaller dining limit leaves room for your trip.');
   expect(html).not.toContain('AI review complete');
   expect(html).not.toContain('AI reviewed starting limits');

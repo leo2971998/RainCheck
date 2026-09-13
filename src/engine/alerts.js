@@ -100,7 +100,8 @@ export function buildAlerts(h, sc, sim, cap, lastAction, datedGoal) {
   // Use the current dated goal, not the original sample's contribution count.
   if (!breach && !breachExplained && (goal.gap > 0 || !goal.fits)) {
     alerts.push({
-      id: 'goal', tone: 'warn', amount: goal.gap, metricLabel: 'goal gap', title: `${h.goal.label} needs a plan adjustment.`,
+      id: 'goal', tone: 'warn', amount: goal.gap, metricLabel: 'goal gap', title: goal.shared ? 'Your savings plan needs an adjustment.'
+        : `${h.goal.label} needs a plan adjustment.`,
       body: `${goalSentence} Review the monthly saving amount, costs, or deadline.`,
       actions: [{ label: 'Review goal', target: 'page:goals', primary: true },
         { label: 'Compare options', target: 'compare' }],
@@ -113,8 +114,8 @@ export function buildAlerts(h, sc, sim, cap, lastAction, datedGoal) {
       id: 'applied',
       tone: 'good',
       title: 'Plan updated.',
-      body: `${lastAction.label}. Nothing was transferred; complete a contribution on the Goals page when you are ready.`,
-      actions: [{ label: 'Open Goals', target: 'page:goals' }],
+      body: lastAction.label,
+      actions: [{ label: 'View savings', target: 'page:cashflow' }],
     });
   }
 

@@ -38,7 +38,7 @@ function ReviewEditor({ bill, charge, record, note, h, plan, change, saveNote, o
       saveNote(key, text.trim()); onClose();
     } catch (e) { setError(e.message); }
   };
-  return <Drawer label={`Review ${bill.label} charge`} onClose={onClose} className="bill-review-drawer">
+  return <Drawer label={`Review ${bill.label} charge`} onClose={onClose} className="bill-review-drawer" protectChanges>
     <DrawerHeader title={`Review ${bill.label} charge`} icon="list" onClose={onClose} />
     <section className="bill-evidence"><span className="review-eyebrow">What the bank recorded</span>
       <h3>{bill.payee || bill.label}</h3>

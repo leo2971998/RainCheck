@@ -50,11 +50,12 @@ export function weeklyBudget(h, sc = {}) {
   const room = round2(lowReserved - h.cushion);
   const available = round2(Math.max(0, Math.min(remainingBudget, room)));
   const shortfall = round2(Math.max(0, remainingBudget - room));
-  const state = lowEssentials - remainingBudget < -0.005 ? 'over' : shortfall > 0 ? 'below'
+  const overspent = spent == null ? 0 : round2(Math.max(0, spent - budget));
+  const state = lowEssentials - remainingBudget < -0.005 ? 'over' : shortfall > 0 || overspent > 0 ? 'below'
     : room - remainingBudget < 0.01 ? 'tight' : 'ok';
   const total = flag => round2(-events.filter(e => e[flag]).reduce((sum, e) => sum + e.amt, 0)) || 0;
   return { start, end, asOf: h.today, budget, spent, remainingBudget, available, shortfall, state, room,
-    overspent: spent == null ? 0 : round2(Math.max(0, spent - budget)),
+    overspent,
     bills: events.filter(e => e.bill), billsTotal: total('bill'),
     purchases, purchasesTotal: total('purchase'), covered, savings: total('transfer'),
     expectedIncome: -total('pay') || 0, nextPay: events.find(e => e.pay), month: activity?.month ?? null };

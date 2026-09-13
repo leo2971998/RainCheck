@@ -10,13 +10,16 @@ import { reviewBrief } from '../api/_review.js';
 import WeeklyBudgetDrawer from '../src/drawers/WeeklyBudgetDrawer.jsx';
 import { weeklyBudget } from '../src/engine/weekly-budget.js';
 
-it('groups upcoming bills and every category into two panels with an optimize action', () => {
+it('keeps bills in a compact summary above the expense categories and optimize action', () => {
   const html = renderToStaticMarkup(<CashFlowPage base={base} h={base} sc={{ contribution: 300 }} plan={emptyPlan()}
     protectedIds={{ groceries: true }} setProtectedIds={() => {}} change={() => {}} open={() => {}} />);
-  for (const text of ['Spending &amp; Savings', 'Expenses', 'Optimize budgets', 'Keep unchanged', 'Upcoming bills',
+  for (const text of ['Spending &amp; Savings', 'Expenses', 'Optimize budgets', 'Keep unchanged', 'in bills over the next 30 days',
     'Recorded through']) expect(html).toContain(text);
   expect(html).not.toContain('No money moves');
-  expect(html.match(/class="spending-panel[" ]/g)).toHaveLength(2);
+  expect(html.match(/class="spending-panel[" ]/g)).toHaveLength(1);
+  expect(html).toContain('spending-bills-note');
+  expect(html).toContain('See them');
+  expect(html).not.toContain('Upcoming bills');
   expect(html.match(/class="category-progress"/g)).toHaveLength(base.allowances.length);
   expect(html).not.toContain('Adjust budget');
   expect(html).not.toContain('Income in October');
@@ -35,7 +38,16 @@ it('shows AI reasoning and editable limits only after a completed analysis', () 
   const optimization = { status: 'ready', data: { review: { status: 'complete', result: { summary: 'Dining has room for a small reduction.', observations: [], questions: [] } },
     optimization: { draft: { targets: Object.fromEntries(base.allowances.map(a => [a.id, a.monthly])), extras: {} } } } };
   const html = renderToStaticMarkup(<SavingsPlanner base={base} plan={emptyPlan()} optimization={optimization} protectedIds={{ groceries: true }} onClose={() => {}} />);
-  for (const text of ['Dining has room for a small reduction.', 'Why these limits', 'Preview changes', '<input', 'Plan extra savings']) expect(html).toContain(text);
+  for (const text of ['Dining has room for a small reduction.', 'Monthly limits', '<input', 'Send the freed money to a goal',
+    'New limit', 'Frees', 'Confirm budget &amp; savings changes']) expect(html).toContain(text);
+  expect(html).not.toContain('Preview changes');
+  expect(html).not.toContain('Why these limits');
+  expect(html).not.toContain('Written by the cloud review');
+  // ui-update: protection constrains the AI, not an explicit user edit of an amount.
+  const targetInputs = html.match(/<input[^>]+id="saving-[^>]+>/g);
+  expect(targetInputs).toHaveLength(base.allowances.length);
+  for (const input of targetInputs) expect(input).not.toMatch(/readonly|disabled/i);
+  expect(html).toContain('unchanged by AI');
   expect(html).not.toContain('Ask ZeroClaw');
 });
 it('offers a retry without editable budgets when analysis fails or data changes', () => {
@@ -45,7 +57,7 @@ it('offers a retry without editable budgets when analysis fails or data changes'
     expect(html).not.toContain('<input');
   }
 });
-it('lists unpaid upcoming bills, retaining cancellations that are only requested', () => {
+it('totals unpaid bills in the summary, retaining cancellations that are only requested', () => {
   const h = { ...base, today: '2026-09-13', recurring: [
     { id: 'settled', label: 'Already paid service', amount: 25, day: 15 },
     { id: 'ended', label: 'Ended service', amount: 30, day: 15 },
@@ -53,8 +65,7 @@ it('lists unpaid upcoming bills, retaining cancellations that are only requested
   ] };
   const html = renderToStaticMarkup(<CashFlowPage base={h} h={h} sc={{ paid: { settled: '2026-09' }, cancelled: { ended: true }, pendingCancel: { pending: true } }}
     plan={emptyPlan()} setProtectedIds={() => {}} open={() => {}} />);
-  expect(html).toContain('Awaiting cancellation');
-  expect(html).toContain('Sep 15');
+  expect(html).toMatch(/\$40<\/b> in bills over the next 30 days \(1 payment\)/);
   expect(html).not.toContain('Already paid service');
   expect(html).not.toContain('Ended service');
 });

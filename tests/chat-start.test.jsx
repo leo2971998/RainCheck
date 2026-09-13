@@ -9,9 +9,10 @@ vi.mock('@elevenlabs/react', () => ({
 vi.mock('streamdown', () => ({ Streamdown: ({ children }) => children }));
 import ChatPage from '../src/pages/ChatPage.jsx';
 
-it('offers one explicit start action instead of a separate cloud-chat checkbox', () => {
+it('offers a message composer instead of a separate start action or cloud-chat checkbox', () => {
   const html = renderToStaticMarkup(<ChatPage baseVersion="test-version" plan={{}} visible />);
-  expect(html).toContain('Start chatting');
+  expect(html).not.toContain('Start chatting');
+  expect(html).toContain('Send message');
   expect(html).not.toContain('type="checkbox"');
   expect(html).not.toContain('Allow ElevenLabs cloud chat');
 });

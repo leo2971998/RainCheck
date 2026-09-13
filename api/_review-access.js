@@ -33,4 +33,3 @@ export function savedReviewAllowed(query, env) {
     && typeof query.token === 'string' && /^[a-f0-9]{64}$/.test(query.token)
     && timingSafeEqual(Buffer.from(query.token, 'hex'), Buffer.from(savedReviewToken(query.id, env), 'hex'));
 }
-

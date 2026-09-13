@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon, prettyIso } from '../components/ui.jsx';
 import { budgetMoney as money } from '../components/BudgetImpact.jsx';
+import SavingsGoals from '../components/SavingsGoals.jsx';
 import { spendingInsights } from '../engine/spending-insights.js';
 import { simulate } from '../engine/forecast.js';
 import useBudgetOptimization from '../hooks/useBudgetOptimization.js';
@@ -10,7 +11,13 @@ import './SpendingSavings.css';
 
 const monthName = key => new Date(key + '-01T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-export default function CashFlowPage({ base, baseVersion, h, sc, plan, protectedIds = {}, setProtectedIds, change, open }) {
+/**
+ * One page for the whole of it: what is going out, what it is going on, and what is being kept.
+ * Goals live here rather than on a page of their own because Optimize budgets is the bridge —
+ * it looks for room in the categories below and offers that room to the goals underneath them.
+ */
+export default function CashFlowPage({ base, baseVersion, h, sc, plan, goal, protectedIds = {}, setProtectedIds,
+  change, open, history, onUndo }) {
   const insight = useMemo(() => spendingInsights(h, sc, protectedIds), [h, sc, protectedIds]);
   const [planner, setPlanner] = useState(false), [saved, setSaved] = useState(false);
   const optimization = useBudgetOptimization({ baseVersion, plan, protectedIds });
@@ -19,21 +26,20 @@ export default function CashFlowPage({ base, baseVersion, h, sc, plan, protected
   const billsTotal = upcoming.reduce((sum, b) => sum - b.amt, 0);
   const optimize = () => { setPlanner(true); optimization.start(); };
   const close = () => { optimization.cancel(); setPlanner(false); };
+  const lastAction = history?.at(-1);
   return <div className="spending-page">
-    <div className="topbar"><div><h1>Spending &amp; Savings</h1><div className="sub">Your bills. Your limits. A little more room.</div></div>
+    <div className="topbar"><div><h1>Spending &amp; Savings</h1><div className="sub">Your bills. Your limits. What the rest is for.</div></div>
       <button className="btn" onClick={optimize}><Icon n="target" s={16} />Optimize budgets</button></div>
-    <div className="spending-meta"><p>{monthName(insight.month)} · Recorded through {prettyIso(insight.asOf)}</p>
-      <details><summary>About optimization</summary><p>Clicking Optimize budgets sends category summaries and calculated proposals through ZeroClaw to its cloud AI for review. No raw receipts or account credentials are shared. Reviews stay on your server; changes need your confirmation.</p></details></div>
-    {saved && <p className="alert good" role="status">Your budgets were updated. You can undo this from Today.</p>}
+    {/* Bills are committed money: they frame the limits below without being editable here, so the
+        total earns its place and the seven-row list does not. The list lives on Recurring. */}
+    <div className="spending-meta">
+      <p>{monthName(insight.month)} · Recorded through {prettyIso(insight.asOf)}</p>
+      <p className="spending-bills-note"><b className="num">{money(billsTotal)}</b> in bills over the next 30 days
+        {upcoming.length ? ` (${upcoming.length} payment${upcoming.length === 1 ? '' : 's'})` : ''} · not part of the limits below{' '}
+        <button className="link" onClick={() => open('page:recurring')}>See them<Icon n="arrow" s={13} /></button></p>
+      <details><summary>About optimization</summary><p>Optimize budgets looks for room in the categories below and offers it to your goals. Category summaries and calculated proposals go through ZeroClaw to its cloud AI for review. No raw receipts or account credentials are shared. Reviews stay on your server; changes need your confirmation.</p></details></div>
+    {saved && <p className="alert good" role="status">Your budgets were updated. You can undo this below or from Today.</p>}
     <div className="spending-panels">
-      <section className="spending-panel spending-upcoming" aria-label="Upcoming bills">
-        <header className="spending-panel-heading"><span className="spending-panel-icon"><Icon n="repeat" s={20} /></span><div><h2>Upcoming bills</h2><p>Next 30 days · scheduled amounts</p></div></header>
-        <div className="spending-panel-total"><strong className="num">{money(billsTotal)}</strong><span>{upcoming.length} payment{upcoming.length === 1 ? '' : 's'} coming up</span></div>
-        {upcoming.length ? <ul className="upcoming-bill-list">{upcoming.map(b => <li key={b.id + b.date}>
-          <span className="bill-date">{prettyIso(b.date)}</span><b>{b.label}</b><strong className="num">{money(-b.amt)}</strong>
-        </li>)}</ul> : <p className="savings-empty">No bills scheduled in the next 30 days.</p>}
-        <button className="btn ghost sm" onClick={() => open('page:recurring')}>View scheduled bills<Icon n="arrow" s={14} /></button>
-      </section>
       <section className="spending-panel spending-expenses" aria-label="Expenses">
         <header className="spending-panel-heading"><span className="spending-panel-icon"><Icon n="bars" s={20} /></span><div><h2>Expenses</h2><p>Spent this month against your monthly limits</p></div></header>
         <div className="spending-panel-total"><strong className="num">{insight.spent == null ? '—' : money(insight.spent)}</strong><span>of {money(insight.budget)} · bills listed separately</span></div>
@@ -55,6 +61,8 @@ export default function CashFlowPage({ base, baseVersion, h, sc, plan, protected
         <p className="fine">Keep unchanged protects a category during optimization. Limits are planning estimates, not bank restrictions.</p>
       </section>
     </div>
+    {goal && <SavingsGoals h={h} base={base || h} plan={plan} goal={goal} open={open} />}
+    {lastAction && <div className="spending-undo"><span>{lastAction.label}</span><button className="link" onClick={onUndo}>Undo</button></div>}
     {planner && createPortal(<SavingsPlanner base={base || h} baseVersion={baseVersion} plan={plan} protectedIds={protectedIds}
       optimization={optimization.state} onRetry={optimization.start}
       change={(patch, label) => { change(patch, label); setSaved(true); }} onClose={close} />, document.body)}

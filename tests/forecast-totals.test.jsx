@@ -66,4 +66,3 @@ it('does not label unprovided historical bill totals as zero', () => {
   expect(bills).toContain('Not included in this history');
   expect(bills).not.toContain('$0');
 });
-

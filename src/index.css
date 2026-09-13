@@ -242,12 +242,23 @@
 /* The drawer is a flex column, so a scrollable block inside it collapses to zero height unless
    it is told not to shrink. This hid the entire comparison table. */
 .drawer > * { flex: 0 0 auto; }
+.drawer-content { display: contents; }
+.drawer-content[hidden] { display: none; }
+.drawer-content > * { flex: 0 0 auto; }
+.drawer-discard { display: grid; gap: 16px; margin-block: auto; padding-block: 24px; }
 .drawer-bg { z-index: 70; }
 .modal-bg { z-index: 80; }
 
 /* Budget changes: ordinary labelled forms, then an explicit before/after decision. */
 .budget-form { display: grid; gap: 16px; }
 .budget-form label { display: grid; gap: 7px; font-weight: 600; font-size: 14px; }
+.goal-monthly-plan { display: grid; gap: 10px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.goal-monthly-plan .link { justify-self: start; text-align: left; }
+.purchase-removal { display: grid; gap: 16px; }
+.goal-savings-options { border-block: 1px solid var(--line); padding-bottom: 12px; }
+.goal-savings-options[open] { display: grid; gap: 12px; }
+.budget-form .goal-active { display: flex; align-items: center; gap: 10px; }
+.budget-form .goal-active input { width: 18px; min-height: 18px; height: 18px; flex-shrink: 0; }
 .budget-form input, .budget-form select, .budget-form textarea { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: var(--field); color: var(--ink); }
 .budget-form textarea { resize: vertical; line-height: 1.6; }
 .bill-review-drawer .fine, .bill-reviews .fine, .bill-evidence p { color: var(--ink-2); }
@@ -377,9 +388,9 @@
 .purchase-week > div { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .purchase-week b { display: block; margin-top: 6px; font-size: 24px; font-variant-numeric: tabular-nums; }
 .purchase-week h3 { margin-block: 12px; }
-.purchase-drawer > p { margin: 0; line-height: 1.6; }
+.purchase-drawer .drawer-content > p { margin: 0; line-height: 1.6; }
 .purchase-drawer .purchase-week { margin-block: 4px; padding: 16px; }
-.purchase-drawer > h3 { margin-top: 8px; }
+.purchase-drawer .drawer-content > h3 { margin-top: 8px; }
 .purchase-week .fine, .purchase-coverage { color: var(--ink-2); line-height: 1.6; }
 .purchase-week .review-eyebrow { color: var(--ink-2); }
 .purchase-preview-head { display: grid; gap: 10px; padding: 18px; border: 1px solid var(--line); border-left: 4px solid var(--rain); border-radius: 14px; background: var(--surface); }
@@ -1210,6 +1221,12 @@
     cursor: pointer; box-shadow: 0 4px 14px color-mix(in oklab, var(--rain) 6%, transparent); transition: border-color .15s, transform .15s; }
   .today-widget:hover { border-color: var(--rain); transform: translateY(-2px); }
   .today-widget:focus-visible { outline: 3px solid var(--rain); outline-offset: 3px; }
+  .today-widget.is-warning { --widget-warning: #ad312e; border-color: color-mix(in oklab, var(--widget-warning) 50%, var(--line)); background: color-mix(in oklab, var(--widget-warning) 6%, var(--surface)); }
+  [data-theme="dark"] .today-widget.is-warning { --widget-warning: #ffaaa1; }
+  .today-widget.is-warning .widget-value, .today-widget.is-warning .widget-subtitle { color: var(--widget-warning); }
+  .today-widget.is-warning progress::-webkit-progress-value { background: var(--widget-warning); }
+  .today-widget.is-warning progress::-moz-progress-bar { background: var(--widget-warning); }
+  .weekly-alert-link { display: inline-flex; align-items: center; gap: 7px; padding: 10px 0; border: 0; background: none; color: inherit; font: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
   .widget-heading { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
   .widget-heading i { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; border-radius: 10px;
     color: var(--rain); background: color-mix(in oklab, var(--rain) 12%, var(--surface)); }
@@ -1347,3 +1364,7 @@
     .alerts-secondary .item .btn { grid-column: 2 / -1; justify-self: start; }
   }
   @media (prefers-reduced-motion: reduce) { .alert-card { animation: none; } }
+.purchase-analysis, .purchase-analysis-reading { padding: 18px; margin: 16px 0; border: 1px solid var(--line); border-radius: 14px; background: var(--field); }
+.purchase-analysis h3, .purchase-analysis-reading h3 { margin-top: 0; }
+.purchase-analysis p, .purchase-analysis-reading p { line-height: 1.6; }
+.purchase-goal-verdict { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }

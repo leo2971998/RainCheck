@@ -5,7 +5,7 @@ import { emptyPlan, applyPatch, householdFor, scenarioFor } from '../src/engine/
 import { fundGoalPatch } from '../src/engine/budget.js';
 import { goalPlan, simulate, capacity } from '../src/engine/forecast.js';
 import { reviewNotice } from '../src/engine/changes.js';
-import GoalsPage from '../src/pages/GoalsPage.jsx';
+import SavingsGoals from '../src/components/SavingsGoals.jsx';
 import BudgetDrawer from '../src/drawers/BudgetDrawer.jsx';
 import BillDrawer from '../src/drawers/BillDrawer.jsx';
 import NoticeDrawer from '../src/drawers/NoticeDrawer.jsx';
@@ -15,25 +15,29 @@ import { monthlyOutlook } from '../src/engine/monthly-outlook.js';
 // A supplied notice is a separate input, not something inferred from bank transactions.
 const notice = 'From: Northline Internet\nYour internet plan will renew at $90.00 starting with your October 1 bill.';
 
-it('shows combined monthly funding and each goal, with the checking buffer tucked into settings', () => {
+it('shows each goal and its needed monthly saving without the planning ledger', () => {
   const plan = applyPatch(emptyPlan(), fundGoalPatch(base, emptyPlan(), 'goal-trip',
     { label: 'Trip', target: 500, targetDate: '2027-02-02' }, { monthly: 50, saved: 0, active: true })).plan;
   const h = householdFor(base, plan), sc = scenarioFor(h, plan), goal = goalPlan(h, sc, h.goal);
-  const html = renderToStaticMarkup(<GoalsPage base={base} h={h} plan={plan} goal={goal} open={() => {}} />);
-  for (const text of ['Your goals', 'Emergency fund', 'Trip', '$350', 'Total monthly saving', 'Edit checking buffer'])
+  const html = renderToStaticMarkup(<SavingsGoals base={base} h={h} plan={plan} goal={goal} open={() => {}} />);
+  for (const text of ['Savings goals', 'Emergency fund', 'Trip', 'Progress', 'Deadline', 'Saved', 'Needs / month', 'Edit'])
     expect(html.includes(text)).toBe(true);
   expect(html.includes('One goal at a time')).toBe(false);
-  expect(html).toMatch(/<details[^>]*><summary>Checking safety buffer<\/summary>/);
-  expect(html.includes('Already allocated across goals')).toBe(true);
+  // These are still in the saved model; the savings overview only displays the goal fields.
+  expect(goal.contribution).toBe(350);
+  expect(html).not.toContain('Savings plan details');
+  expect(html).not.toContain('Allocated across goals');
+  expect(html).not.toContain('Practice a savings transfer');
   expect(html).not.toContain('Accepting a plan does not move money');
   expect(html).not.toContain('Future income and spending are estimates');
 });
 
-it('asks for an explicit monthly amount and an allocation rather than replacing the active goal', () => {
+it('offers an editable monthly amount and optional existing savings without replacing other goals', () => {
   const html = renderToStaticMarkup(<BudgetDrawer kind="goal" base={base} plan={emptyPlan()} change={() => {}} onClose={() => {}} />);
-  for (const text of ['Monthly saving ($)', 'Already saved for this goal ($)', 'Other goals stay in your plan'])
+  for (const text of ['Save each month ($)', 'Use existing savings · optional', 'alongside your bills and other goals'])
     expect(html.includes(text)).toBe(true);
   expect(html.includes('Explore one goal at a time')).toBe(false);
+  expect(html.includes('Already saved for this goal')).toBe(false);
 });
 
 it('keeps bill previews and forecast assumptions consistent with separate goal contributions', () => {
