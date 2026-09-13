@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import PurchaseDrawer from '../src/drawers/PurchaseDrawer.jsx';
 import { household as sample } from '../data/household.sample.js';
 import { emptyPlan } from '../src/engine/plan.js';
+import { purchaseImpact } from '../src/engine/purchase-impact.js';
 
 const purchase = { id: 'tickets', revision: 1, label: 'Concert tickets', date: '2026-10-12', amount: 100, status: 'planned', accountId: 'test-checking' };
 const base = { ...sample, checkingId: 'test-checking', plannedPurchases: [purchase] };
@@ -13,7 +14,9 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 beforeEach(() => {
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
   refresh = vi.fn().mockResolvedValue(true); close = vi.fn();
-  fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }); vi.stubGlobal('fetch', fetcher);
+  fetcher = vi.fn(async (url, options) => ({ ok: true, json: async () => url === '/api/review'
+    ? { impact: purchaseImpact(base, emptyPlan(), JSON.parse(options.body).patch), review: { status: 'complete',
+      result: { summary: 'Review the purchase before saving it.', observations: [] } } } : {} })); vi.stubGlobal('fetch', fetcher);
 });
 afterEach(async () => { await act(() => root.unmount()); host.remove(); vi.unstubAllGlobals(); });
 async function render() { await act(() => root.render(<PurchaseDrawer id="tickets" base={base} baseVersion="version" plan={emptyPlan()} refresh={refresh} onClose={close} />)); }
@@ -37,7 +40,7 @@ it('uses a short, named removal confirmation without an AI or purchase-planning 
 
 it('does not submit again when saving succeeded but reloading the updated household failed', async () => {
   refresh.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
-  await render(); await click('Preview impact'); await click('Save purchase');
+  await render(); await click('Analyze purchase'); await click('Save purchase');
   expect(writes()).toHaveLength(1);
   expect(host.textContent).toContain('Your purchase was saved');
   expect(button('Save purchase').disabled).toBe(true);

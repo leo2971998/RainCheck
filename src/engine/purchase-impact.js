@@ -36,7 +36,14 @@ function purchaseFunding(base, plan, patch, next, effective) {
       laterDate = paydays.find(date => run(withPurchase(base, { ...patch.draft, date }, patch.id), through(date)).low.balance >= h.cushion) || null;
     }
   }
-  return { fits, baselineFits, checkedThrough, low, lowDate: current.low.key,
+  const options = [];
+  const option = (kind, amount, date) => {
+    const end = through(date), result = run(withPurchase(base, { ...patch.draft, amount, date }, patch.id), end);
+    return { kind, amount, date, low: result.low.balance, lowDate: result.low.key, checkedThrough: end };
+  };
+  if (laterDate) options.push(option('later', patch.draft.amount, laterDate));
+  if (maxAmount > 0 && maxAmount < patch.draft?.amount) options.push(option('smaller', maxAmount, patch.draft.date));
+  return { fits, baselineFits, checkedThrough, low, lowDate: current.low.key, options,
     neededToAvoidNegative: money(Math.max(0, -low)), neededToKeepCushion: money(Math.max(0, h.cushion - low)),
     maxAmount, laterDate, withoutSavingLow: run(next, checkedThrough, true).low.balance };
 }
@@ -63,6 +70,8 @@ export function purchaseImpact(base, plan, patch) {
 export function purchaseEvidenceDocuments(impact) {
   const f = impact.funding;
   if (!f) return [];
-  return [{ title: 'Purchase affordability and tested alternatives', asOf: impact.asOf,
+  const evidence = [{ title: 'Purchase affordability and tested alternatives', asOf: impact.asOf,
     text: `Checked through ${f.checkedThrough}: low $${f.low} on ${f.lowDate}; needs $${f.neededToAvoidNegative} to avoid negative checking or $${f.neededToKeepCushion} to keep the cushion. Fits: ${f.fits}. Without this purchase fits: ${f.baselineFits}. With goal contributions paused, low $${f.withoutSavingLow}. Tested smaller purchase: ${f.maxAmount == null ? 'none fits' : '$' + f.maxAmount}; tested later date: ${f.laterDate || 'none found'}. Goal totals assume contributions; never call an unfundable goal on track. Money saved after the cash-gap date cannot fix it. These are previews, not changes.` }];
+  return evidence.concat(f.options.length ? [{ title: 'Purchase plan choices', asOf: impact.asOf,
+      text: `All choices keep existing bills and goal contributions unchanged. ${f.options.map(o => `${o.kind}: purchase $${o.amount} on ${o.date}; checking stays at least $${o.low}, checked through ${o.checkedThrough}.`).join(' ')} Prefer a later date to preserve the intended purchase amount; a smaller cost means changing what is bought. Explain these trade-offs, not just whether the original fails. No changes are saved.` }] : []);
 }

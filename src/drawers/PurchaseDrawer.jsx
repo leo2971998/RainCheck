@@ -32,20 +32,23 @@ export default function PurchaseDrawer({ id, initialDate, base, baseVersion, pla
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [saved, setSaved] = useState(null);
   const [analysisStatus, setAnalysisStatus] = useState('idle');
+  const [reviewed, setReviewed] = useState(null);
+  const reviewKey = JSON.stringify({ baseVersion, plan, patch: preview?.patch });
+  const reviewedData = reviewed?.key === reviewKey ? reviewed.data : null;
   const close = () => { if (!busy) onClose(); };
   const update = e => { setDraft(d => ({ ...d, [e.target.name]: e.target.value })); setError(''); };
   const title = existing ? 'Review purchase' : 'Plan a purchase';
-  const showPreview = (e, remove = false) => {
+  const showPreview = (e, remove = false, candidate = draft) => {
     e?.preventDefault();
     try {
-      const patch = remove ? { id, remove: true } : { ...(id ? { id } : {}), draft: readPurchase(draft, base) };
+      const patch = remove ? { id, remove: true } : { ...(id ? { id } : {}), draft: readPurchase(candidate, base) };
       const next = householdFor(withPurchase(base, patch.draft, id, remove), plan);
       const allocation = purchaseSchedule(next, scenarioFor(next, plan)).allocations[id || 'preview'];
-      setPreview({ patch, impact: purchaseImpact(base, plan, patch), allocation, remove }); setAnalysisStatus(remove ? 'idle' : 'loading'); setError('');
+      setPreview({ patch, impact: purchaseImpact(base, plan, patch), allocation, remove }); setReviewed(null); setAnalysisStatus(remove ? 'idle' : 'loading'); setError('');
     } catch(e) { setError(e.message); }
   };
   const save = async (action = 'save') => {
-    if (busy || saved) return; setBusy(true); setError('');
+    if (busy || saved || (action === 'save' && !preview?.remove && !reviewedData)) return; setBusy(true); setError('');
     try {
       const matching = action === 'match', removing = preview?.remove;
       const response = await fetch('/api/purchases', { method: matching ? 'POST' : removing ? 'DELETE' : existing ? 'PUT' : 'POST',
@@ -80,12 +83,13 @@ export default function PurchaseDrawer({ id, initialDate, base, baseVersion, pla
     } catch { setError('The updated plan still could not load. Please try reloading again.'); }
     finally { setBusy(false); }
   };
-  const status = preview && budgetStatus({ ...preview.impact.after, low: preview.impact.funding.low,
-    fits: preview.impact.funding.fits && preview.impact.after.fits }, base.cushion);
+  const impact = reviewedData?.impact || preview?.impact;
+  const status = impact && budgetStatus({ ...impact.after, low: impact.funding.low,
+    fits: impact.funding.fits && impact.after.fits }, impact.cushion);
   const previewMonth = preview && monthName(preview.remove ? existing.date : preview.patch.draft.date);
   return <Drawer label={title} onClose={close} className="purchase-drawer" protectChanges={!saved} busy={busy}><DrawerHeader title={title} icon="cart" onClose={close} />
     <p>Add a one-time cost and see its effect on checking before you save it.</p>
-    {!matches && !preview?.remove && <PurchaseSteps compact current={preview ? 2 : 1} />}
+    {!matches && !preview?.remove && <PurchaseSteps compact current={preview ? reviewedData ? 4 : 3 : 1} />}
     {!preview && !matches && <>
       <form className="budget-form" onSubmit={showPreview}>
         <label>What are you planning?<input name="label" value={draft.label} onChange={update} maxLength={100} required placeholder="e.g. Concert tickets" disabled={busy} /></label>
@@ -96,7 +100,7 @@ export default function PurchaseDrawer({ id, initialDate, base, baseVersion, pla
         </select></label>
         <p className="fine">Using an allowance moves that spending to this date. Any amount above the remaining allowance counts as extra.</p>
         <p className="fine">Preview includes cloud AI review of calculated amounts and budget summaries. No account credentials are shared.</p>
-        <div className="row wrap budget-actions"><button className="btn" disabled={busy} type="submit">Preview impact</button><DrawerCloseButton className="btn ghost">Cancel</DrawerCloseButton></div>
+        <div className="row wrap budget-actions"><button className="btn" disabled={busy} type="submit">Analyze purchase</button><DrawerCloseButton className="btn ghost">Cancel</DrawerCloseButton></div>
       </form>
       {existing && <div className="purchase-secondary"><button className="btn ghost" onClick={findMatches} disabled={busy}>Find a posted charge</button>
         <button className="link budget-remove" onClick={() => showPreview(null, true)} disabled={busy}>Remove planned purchase</button>
@@ -111,23 +115,25 @@ export default function PurchaseDrawer({ id, initialDate, base, baseVersion, pla
         <button className="btn ghost" disabled={busy || !!saved} onClick={() => setPreview(null)}>Keep purchase</button></div>
     </section>}
     {preview && !preview.remove && <>
+      <PurchaseReview key={reviewKey} baseVersion={baseVersion} plan={plan} patch={preview.patch} onStatus={setAnalysisStatus} onResult={setReviewed} onRefresh={reload} />
+      {reviewedData && <>
       <section className={`purchase-preview-head ${status.tone}`}>
-        <div><span className="review-eyebrow">Step 2 · Calculated plan check</span><span className={`pill ${status.tone}`}>{status.label}</span></div>
+        <div><span className="review-eyebrow">Reviewed purchase</span><span className={`pill ${status.tone}`}>{status.label}</span></div>
         <h3>{preview.patch.draft.label} · {budgetMoney(preview.patch.draft.amount)}</h3>
         <p>Planned for {budgetDate(preview.patch.draft.date)} and included in the {previewMonth} plan.</p>
       </section>
       {preview.allocation && <p className="purchase-coverage">{preview.allocation.covered > 0
         ? `${budgetMoney(preview.allocation.covered)} comes from the existing allowance. ${budgetMoney(preview.allocation.extra)} is extra spending.` : 'Counted once as extra spending.'}</p>}
-      <PurchaseReview baseVersion={baseVersion} plan={plan} patch={preview.patch} onStatus={setAnalysisStatus} />
-      <PurchaseAnalysis impact={preview.impact} amount={preview.patch.draft.amount}
-        onTryAmount={amount => { setDraft(d => ({ ...d, amount })); setPreview(null); }}
-        onTryDate={date => { setDraft(d => ({ ...d, date })); setPreview(null); }} />
+      <PurchaseAnalysis impact={impact} amount={preview.patch.draft.amount}
+        onChoose={option => { const candidate = { ...draft, amount: option.amount, date: option.date }; setDraft(candidate); showPreview(null, false, candidate); }} />
       <section className="purchase-save-card">
         <div className="purchase-decision-number" aria-hidden="true">4</div><div><span className="review-eyebrow">Your decision</span><h3>Add this to {previewMonth}?</h3>
           <p>Saving updates your plan and any related alerts.</p></div>
         <div className="row wrap budget-actions"><button className="btn" disabled={busy || !!saved || analysisStatus === 'loading'} onClick={() => save()}>{busy ? 'Saving…' : 'Save purchase'}</button>
-          <button className="btn ghost" disabled={busy || !!saved} onClick={() => setPreview(null)}>Back to details</button></div>
+          </div>
       </section>
+      </>}
+      <button className="btn ghost" disabled={busy || !!saved} onClick={() => { setPreview(null); setReviewed(null); }}>Back to details</button>
     </>}
     {matches && <section aria-label="Match a posted charge"><h3>Is one of these your purchase?</h3>
       <p>We look for a similar purchase description, an amount within 10% (or $1), and a date within 7 days. Only posted checking purchases qualify.</p>

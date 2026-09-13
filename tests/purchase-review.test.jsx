@@ -39,3 +39,15 @@ it('keeps an incomplete review explicit and allows a read-only retry', async () 
   expect(host.textContent).toContain('A smaller purchase would leave room');
   expect(status).toHaveBeenLastCalledWith('ready');
 });
+
+it('reloads changed household data instead of retrying the same stale request', async () => {
+  const fetcher = vi.fn().mockResolvedValue({ ok: false, status: 409, json: async () => ({}) });
+  vi.stubGlobal('fetch', fetcher);
+  host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+  const reload = vi.fn();
+  await act(() => root.render(<PurchaseReview baseVersion="old" patch={{}} plan={{}} onStatus={() => {}} onRefresh={reload} />));
+  expect(host.textContent).toContain('Reload purchases');
+  await act(() => host.querySelector('button').click());
+  expect(reload).toHaveBeenCalledTimes(1);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});

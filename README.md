@@ -12,7 +12,7 @@ A weather-themed planner connecting everyday spending, upcoming bills, planned p
 - **Alerts:** specific unusual charges and recurring-bill differences. General weekly overspending stays on Today and Spending & Savings instead of becoming a duplicate alert.
 - **Forecast:** compare recorded months with a selected month's estimate, including category spending, scheduled bills, and planned one-time costs.
 - **Spending & Savings:** category limits, protected expenses, and multiple savings goals checked against one combined budget. **Optimize budgets** explains proposed changes and how much of an overspend they recover. Edit and confirm before applying.
-- **Purchases:** enter a cost and date, check the cash needed before payment, and read an AI explanation. Try a smaller cost or later payday when the calculation supports it. Save, edit, or remove explicitly.
+- **Purchases:** enter a cost and date, then **Analyze purchase**. Wait for AI to review the calculated cash gap and tested alternatives before the plan appears. Compare a later date or smaller cost with its effect on checking and goal contributions. Selecting an option runs a fresh review; nothing saves automatically.
 - **Ask RainCheck:** type directly into the floating chat. ElevenLabs Agents can explain calculations and preview changes, but cannot accept a plan or move money.
 
 ## Judge walkthrough
@@ -20,7 +20,7 @@ A weather-themed planner connecting everyday spending, upcoming bills, planned p
 1. Open **Today**, switch Light/Dark, and inspect the highlighted spending gap.
 2. Open **Alerts**. Review an unfamiliar purchase or a recurring charge difference. Bank records show what changed, not why a company charged it.
 3. Open **Spending & Savings → Optimize budgets**. Wait for analysis, edit the limits, and compare the recovery amount with the unresolved gap.
-4. Open **Purchases → Plan a purchase**. Try a cost before the next payday. Compare the calculated shortfall and available alternatives before saving.
+4. Open **Purchases → Plan a purchase → Analyze purchase**. Try a cost before the next payday. Wait for the reviewed plan, then try **Review this date** or **Review this amount**. Save only after the updated review completes.
 5. Ask the chatbot, “What if my internet bill increases by $25?” Its explanation should agree with the calculated preview.
 
 **Use fictional details only.** This is a shared mock household. Public demo purchases are visible to teammates and other visitors. Most other decisions stay in your browser. Local and hosted purchases share records when configured for the same household and demo session.
@@ -43,7 +43,7 @@ Captured with Playwright on desktop and phone layouts. These use a connected moc
 <details>
 <summary>Purchase analysis and mobile chat</summary>
 
-![Purchase affordability check and AI explanation](output/playwright/readme/purchase-analysis.webp)
+![Reviewed purchase plan with tested date and cost alternatives](output/playwright/readme/purchase-reviewed-plan.png)
 <img src="output/playwright/readme/today-mobile.webp" width="360" alt="Today on a phone" />
 <img src="output/playwright/readme/chat-mobile.webp" width="360" alt="A real conversation with Ask RainCheck" />
 
@@ -114,7 +114,7 @@ npm test
 npm run build
 
 # Focused purchase, recovery, and public-access regressions:
-npx vitest run tests/purchase-guidance.test.js tests/purchase-review.test.jsx tests/purchase-dialog.test.jsx tests/budget-recovery.test.js tests/today-attention.test.jsx tests/hosted-review.test.js
+npx vitest run tests/purchase-guidance.test.js tests/purchase-review.test.jsx tests/purchase-plan-flow.test.jsx tests/purchase-dialog.test.jsx tests/budget-recovery.test.js tests/today-attention.test.jsx tests/hosted-review.test.js
 
 # Real browser workflow checks:
 npx --package @playwright/cli playwright-cli open http://127.0.0.1:5176/

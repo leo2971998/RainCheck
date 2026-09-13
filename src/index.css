@@ -1368,3 +1368,12 @@
 .purchase-analysis h3, .purchase-analysis-reading h3 { margin-top: 0; }
 .purchase-analysis p, .purchase-analysis-reading p { line-height: 1.6; }
 .purchase-goal-verdict { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.purchase-plan-options{display:grid;gap:14px;margin:20px 0}
+.purchase-plan-option{border:1px solid var(--line);border-radius:14px;padding:18px;background:var(--field)}
+.purchase-plan-option:first-child{border-color:var(--accent)}
+.purchase-plan-option h3{margin:8px 0}
+.purchase-plan-option dl{display:grid;gap:8px;margin:16px 0}
+.purchase-plan-option dl>div{display:flex;justify-content:space-between;gap:16px}
+.purchase-plan-option dd{margin:0;font-weight:700;text-align:right}
+.purchase-review-reasons{padding-left:20px}
+.purchase-review-reasons li+li{margin-top:8px}

@@ -13,6 +13,15 @@ it('works backward from the dated cash shortage without promising unfundable goa
   const result = purchaseImpact(base, plan, { draft });
   expect(result.funding).toMatchObject({ fits: false, low: -685, neededToAvoidNegative: 685,
     neededToKeepCushion: 885, maxAmount: 315, laterDate: '2026-09-18', withoutSavingLow: -685 });
+  expect(result.funding.options.map(o => o.kind)).toEqual(['later', 'smaller']);
+  for (const option of result.funding.options) {
+    const checked = purchaseImpact(base, plan, { draft: { ...draft, date: option.date, amount: option.amount } });
+    expect(option.low).toBe(checked.funding.low);
+    expect(option.low).toBeGreaterThanOrEqual(base.cushion);
+    expect(option.checkedThrough).toBe(checked.funding.checkedThrough);
+    expect(checked.after.contribution).toBe(300);
+  }
+  expect(purchaseEvidenceDocuments(result).some(e => e.text.includes('2026-09-18') && e.text.includes('1200'))).toBe(true);
   expect(purchaseImpact(base, plan, { draft: { ...draft, amount: result.funding.maxAmount } }).funding.fits).toBe(true);
   expect(purchaseImpact(base, plan, { draft: { ...draft, amount: result.funding.maxAmount + .01 } }).funding.fits).toBe(false);
   expect(purchaseImpact(base, plan, { draft: { ...draft, date: result.funding.laterDate } }).funding.fits).toBe(true);
